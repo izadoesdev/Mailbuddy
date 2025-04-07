@@ -127,22 +127,6 @@ export default function Home() {
         >
           <Logo size="s" icon={false} href="https://once-ui.com" />
           <Row gap="12" hide="s">
-            <Button
-              href="https://discord.com/invite/5EyAQ4eNdS"
-              prefixIcon="discord"
-              size="s"
-              label="Discord"
-              weight="default"
-              variant="tertiary"
-            />
-            <Button
-              href="https://github.com/once-ui-system"
-              prefixIcon="github"
-              size="s"
-              label="GitHub"
-              weight="default"
-              variant="tertiary"
-            />
             <Row position="fixed" top="20" right="20">
               <StyleOverlay
                 position="fixed"

@@ -11,10 +11,12 @@ export const auth = betterAuth({
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID as string,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+            scope: ["email", "profile", "https://www.googleapis.com/auth/gmail.readonly"],
         },
         github: { 
             clientId: process.env.GITHUB_CLIENT_ID as string,
             clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+            scope: ["user:email", "read:user"],
         },
     },
     emailAndPassword: {

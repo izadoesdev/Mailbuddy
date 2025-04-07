@@ -1,24 +1,13 @@
 "use client"
 
-import { signIn, signOut, signUp } from '../../../auth-client';
+import { signIn, signOut, signUp, useSession } from '../../../auth-client';
 
-interface TwoFactorResponse {
-  data?: {
-    totpURI?: string;
-    backupCodes?: string[];
-    twoFactorEnabled: boolean;
-  };
-  error?: {
-    message: string;
-  };
-}
-
+export * from '../../../auth-client';
 interface AuthOptions {
   redirectUrl?: string;
   router?: any; // Next.js router
   onError?: (error: any) => void;
 }
-
 /**
  * Helper function to sign in with email and password with simplified redirect handling
  */
