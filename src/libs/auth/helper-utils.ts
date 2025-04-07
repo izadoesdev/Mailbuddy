@@ -1,6 +1,6 @@
 "use client"
 
-import { signIn, signOut, signUp, authClient } from './client';
+import { signIn, signOut, signUp } from '../../../auth-client';
 
 interface TwoFactorResponse {
   data?: {

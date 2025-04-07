@@ -16,6 +16,7 @@
     "classnames": "^2.5.1",
     "compressorjs": "^1.2.1",
     "next": "15.2.3",
+    "pg": "^8.14.1",
     "postcss": "^8.4.39",
     "postcss-preset-env": "^9.5.15",
     "prisma": "^6.5.0",
