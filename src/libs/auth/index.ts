@@ -7,11 +7,6 @@ export const auth = betterAuth({
         provider: "postgresql", 
     }),
     appName: "mailer.ai",
-    cookie: {
-        domain: process.env.NODE_ENV === "production" ? ".mailer.ai" : undefined,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax"
-    },
     socialProviders: {
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID as string,
