@@ -1,4 +1,6 @@
 import { createAuthClient } from "better-auth/react"
+import { auth } from "./auth";
+import { customSessionClient } from "better-auth/client/plugins";
 
 export type AuthClientConfig = {
   baseURL?: string;
@@ -14,6 +16,7 @@ const defaultConfig: AuthClientConfig = {
 // Create a singleton instance with the default configuration
 let _authClient = createAuthClient({
   baseURL: defaultConfig.baseURL,
+    plugins: [ customSessionClient<typeof auth>() ]
 });
 
 // Function to initialize or reconfigure the auth client
@@ -22,6 +25,7 @@ export function initAuthClient(config: AuthClientConfig = {}) {
   
   _authClient = createAuthClient({
     baseURL: mergedConfig.baseURL,
+    plugins: [ customSessionClient<typeof auth>() ]
   });
   
   return _authClient;
