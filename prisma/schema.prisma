@@ -24,6 +24,7 @@ model User {
   updatedAt     DateTime
   sessions      Session[]
   accounts      Account[]
+  emails        Email[]
 
   @@map("users")
 }
@@ -71,4 +72,26 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+}
+
+model Email {
+  id        String   @id
+  threadId  String
+  userId    String
+  subject   String?
+  from      String?
+  to        String?
+  snippet   String?
+  body      String?
+  isRead    Boolean  @default(false)
+  isStarred Boolean  @default(false)
+  labels    String[]
+  fetchedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([threadId])
+  @@map("emails")
 }

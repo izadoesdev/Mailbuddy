@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getEmails } from "./actions/emails";
 import {
   Column,
@@ -10,29 +10,56 @@ import {
   Card,
   useToast,
   Background,
-  Line,
   Button,
-  Icon,
+  Spinner,
+  Badge,
 } from "@/once-ui/components";
 import { signOut } from "@/libs/auth/client";
 import { useRouter } from "next/navigation";
 
+interface Email {
+  id: string;
+  subject: string;
+  from: string;
+  to: string;
+  snippet: string;
+  isRead: boolean;
+  isStarred: boolean;
+}
+
+interface EmailResponse {
+  messages?: Email[];
+  newEmailsCount?: number;
+  error?: string;
+  stats?: {
+    totalEmails: number;
+    existingEmails: number;
+    newEmails: number;
+    fetchTime: number;
+    batchCount: number;
+  };
+}
+
 export default function TestPage() {
-  const [emails, setEmails] = useState<any[]>([]);
+  const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAuthError, setIsAuthError] = useState(false);
+  const [newEmailsCount, setNewEmailsCount] = useState(0);
+  const [stats, setStats] = useState<EmailResponse['stats'] | null>(null);
   const { addToast } = useToast();
   const router = useRouter();
 
-  const fetchEmails = async () => {
+  const fetchEmails = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       setIsAuthError(false);
+      setStats(null);
+      
       const result = await getEmails();
       
-      if ('error' in result) {
+      if (result.error) {
         setError(result.error);
         
         // Check if it's an authentication error
@@ -49,6 +76,15 @@ export default function TestPage() {
       }
       
       setEmails(result.messages || []);
+      setNewEmailsCount(result.newEmailsCount || 0);
+      setStats(result.stats || null);
+      
+      if (result.newEmailsCount && result.newEmailsCount > 0) {
+        addToast({
+          variant: "success",
+          message: `Fetched ${result.newEmailsCount} new emails`,
+        });
+      }
     } catch (err) {
       setError("Failed to fetch emails");
       addToast({
@@ -59,12 +95,12 @@ export default function TestPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast]);
 
   // Only fetch once on initial mount
   useEffect(() => {
     fetchEmails();
-  }, []);
+  }, [fetchEmails]);
 
   const handleLogout = async () => {
     try {
@@ -147,19 +183,28 @@ export default function TestPage() {
             </Row>
           )}
           
+          {stats && (
+            <Row
+              background="overlay"
+              border="neutral-alpha-weak"
+              radius="l"
+              padding="16"
+              fillWidth
+              gap="16"
+              wrap
+            >
+              <Badge title={`Total: ${stats.totalEmails}`} color="neutral" />
+              <Badge title={`New: ${stats.newEmails}`} color="brand" />
+              <Badge title={`Existing: ${stats.existingEmails}`} color="neutral" />
+              <Badge title={`Batches: ${stats.batchCount}`} color="neutral" />
+              <Badge title={`Time: ${stats.fetchTime}ms`} color="neutral" />
+            </Row>
+          )}
+          
           {loading ? (
-            <Column gap="16" fillWidth>
-              {[...Array(5)].map((_, i) => (
-                <Row
-                  key={i}
-                  background="overlay"
-                  border="neutral-alpha-weak"
-                  radius="l"
-                  padding="16"
-                  fillWidth
-                  height="80"
-                />
-              ))}
+            <Column gap="16" fillWidth horizontal="center" paddingY="32">
+              <Spinner size="l" />
+              <Text onBackground="neutral-medium">Loading emails...</Text>
             </Column>
           ) : (
             <Column gap="16" fillWidth>
@@ -185,8 +230,16 @@ export default function TestPage() {
                     fillWidth
                   >
                     <Column gap="8">
-                      <Heading variant="heading-strong-m">Email ID: {email.id}</Heading>
-                      <Text onBackground="neutral-medium">Thread ID: {email.threadId}</Text>
+                      <Heading variant="heading-strong-m">{email.subject || "No Subject"}</Heading>
+                      <Row gap="16">
+                        <Text onBackground="neutral-medium">From: {email.from || "Unknown"}</Text>
+                        {email.isRead ? (
+                          <Text onBackground="neutral-weak">Read</Text>
+                        ) : (
+                          <Text onBackground="brand-medium">Unread</Text>
+                        )}
+                      </Row>
+                      <Text onBackground="neutral-medium">{email.snippet || "No preview available"}</Text>
                     </Column>
                   </Card>
                 ))
