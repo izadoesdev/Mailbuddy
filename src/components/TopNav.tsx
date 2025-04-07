@@ -13,11 +13,10 @@ import {
   SmartLink,
   useToast,
 } from "@/once-ui/components";
-import { logout } from "@/libs/auth/helper-utils";
+import { signOut } from "@/libs/auth/client";
 import { useSession } from "@/libs/auth/client";
 
 export default function TopNav() {
-  const router = useRouter();
   const { data: session } = useSession();
   const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -26,16 +25,8 @@ export default function TopNav() {
   const handleLogout = async () => {
     setIsLoading(true);
     try {
-      await logout({
-        redirectUrl: "/login",
-        router,
-        onError: (error) => {
-          addToast({
-            variant: "danger",
-            message: "Logout failed. Please try again.",
-          });
-        },
-      });
+      await signOut();
+      
     } catch (error) {
       addToast({
         variant: "danger",
@@ -114,8 +105,8 @@ export default function TopNav() {
           name={session?.user?.name}
           subline={session?.user?.email}
           avatarProps={{
-            src: session?.user?.image || "",
-            value: session?.user?.name?.charAt(0) || "",
+            src: session?.user?.image || undefined,
+            value: session?.user?.image ? undefined : (session?.user?.name?.charAt(0) || ""),
           }}
           dropdown={userDropdown}
         />

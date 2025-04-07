@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "@/libs/auth/helper-utils";
+import { useSession } from "@/libs/auth/client";
 import { useRouter } from "next/navigation";
 import {
   Row,
@@ -12,7 +12,7 @@ import {
   useToast,
   Background,
 } from "@/once-ui/components";
-import { logout } from "@/libs/auth/helper-utils";
+import { signOut } from "@/libs/auth/client";
 import { useState } from "react";
 
 export default function TestLayout({
@@ -21,23 +21,13 @@ export default function TestLayout({
   children: React.ReactNode;
 }) {
   const { data: session } = useSession();
-  const router = useRouter();
   const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogout = async () => {
     setIsLoading(true);
     try {
-      await logout({
-        redirectUrl: "/login",
-        router,
-        onError: (error) => {
-          addToast({
-            variant: "danger",
-            message: "Logout failed. Please try again.",
-          });
-        },
-      });
+      await signOut();
     } catch (error) {
       addToast({
         variant: "danger",
@@ -119,8 +109,8 @@ export default function TestLayout({
                 name={session.user?.name || ""}
                 subline={session.user?.email}
                 avatarProps={{
-                  src: session.user?.image || "",
-                  value: session.user?.name?.charAt(0) || "",
+                  src: session.user?.image || undefined,
+                  value: session.user?.image ? undefined : (session.user?.name?.charAt(0) || ""),
                 }}
                 dropdown={userDropdown}
               />

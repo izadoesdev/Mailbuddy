@@ -19,7 +19,7 @@ import {
   useToast,
   Line,
 } from "@/once-ui/components";
-import { registerWithEmail } from "@/libs/auth/helper-utils";
+import { signUp } from "@/libs/auth/client";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -63,23 +63,26 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      const result = await registerWithEmail(email, password, name, {
-        redirectUrl: "/test",
-        router,
-        onError: (error) => {
-          addToast({
-            variant: "danger",
-            message: "Registration failed. Please try again.",
-          });
-        },
+      const result = await signUp.email({
+        email,
+        password,
+        name,
+        fetchOptions: {
+          onSuccess: () => {
+            addToast({
+              variant: "success",
+              message: "Registration successful!",
+            });
+            router.push("/test");
+          },
+          onError: () => {
+            addToast({
+              variant: "danger",
+              message: "Registration failed. Please try again.",
+            });
+          },
+        }
       });
-
-      if (result.success) {
-        addToast({
-          variant: "success",
-          message: "Registration successful!",
-        });
-      }
     } catch (error) {
       addToast({
         variant: "danger",

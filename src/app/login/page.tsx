@@ -19,7 +19,7 @@ import {
   useToast,
   Line,
 } from "@/once-ui/components";
-import { loginWithEmail, loginWithGoogle, loginWithGithub } from "@/libs/auth/helper-utils";
+import { signIn } from "@/libs/auth/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -51,23 +51,25 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      const result = await loginWithEmail(email, password, {
-        redirectUrl: "/test",
-        router,
-        onError: (error) => {
-          addToast({
-            variant: "danger",
-            message: "Login failed. Please check your credentials.",
-          });
+      await signIn.email({
+        email,
+        password,
+        fetchOptions: {
+          onSuccess: () => {
+            addToast({
+              variant: "success",
+              message: "Login successful!",
+            });
+            router.push("/test");
+          },
+          onError: () => {
+            addToast({
+              variant: "danger",
+              message: "Login failed. Please check your credentials.",
+            });
+          },
         },
       });
-
-      if (result.success) {
-        addToast({
-          variant: "success",
-          message: "Login successful!",
-        });
-      }
     } catch (error) {
       addToast({
         variant: "danger",
@@ -79,27 +81,43 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    loginWithGoogle({
-      redirectUrl: "/test",
-      router,
-      onError: (error) => {
-        addToast({
-          variant: "danger",
-          message: "Google login failed. Please try again.",
-        });
+    signIn.social({
+      provider: "google",
+      fetchOptions: {
+        onSuccess: () => {
+          addToast({
+            variant: "success",
+            message: "Login successful!",
+          });
+          router.push("/test");
+        },
+        onError: () => {
+          addToast({
+            variant: "danger",
+            message: "Google login failed. Please try again.",
+          });
+        },
       },
     });
   };
 
   const handleGithubLogin = () => {
-    loginWithGithub({
-      redirectUrl: "/test",
-      router,
-      onError: (error) => {
-        addToast({
-          variant: "danger",
-          message: "GitHub login failed. Please try again.",
-        });
+    signIn.social({
+      provider: "github",
+      fetchOptions: {
+        onSuccess: () => {
+          addToast({
+            variant: "success",
+            message: "Login successful!",
+          });
+          router.push("/test");
+        },
+        onError: () => {
+          addToast({
+            variant: "danger",
+            message: "GitHub login failed. Please try again.",
+          });
+        },
       },
     });
   };
