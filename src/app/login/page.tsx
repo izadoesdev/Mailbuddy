@@ -52,7 +52,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const result = await loginWithEmail(email, password, {
-        redirectUrl: "/dashboard",
+        redirectUrl: "/test",
         router,
         onError: (error) => {
           addToast({
@@ -80,7 +80,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = () => {
     loginWithGoogle({
-      redirectUrl: "/dashboard",
+      redirectUrl: "/test",
       router,
       onError: (error) => {
         addToast({
@@ -93,7 +93,7 @@ export default function LoginPage() {
 
   const handleGithubLogin = () => {
     loginWithGithub({
-      redirectUrl: "/dashboard",
+      redirectUrl: "/test",
       router,
       onError: (error) => {
         addToast({

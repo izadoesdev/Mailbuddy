@@ -64,7 +64,7 @@ export default function RegisterPage() {
     setIsLoading(true);
     try {
       const result = await registerWithEmail(email, password, name, {
-        redirectUrl: "/dashboard",
+        redirectUrl: "/test",
         router,
         onError: (error) => {
           addToast({
