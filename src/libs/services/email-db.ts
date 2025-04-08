@@ -116,6 +116,7 @@ export async function storeEmails(emails: EmailData[]): Promise<number> {
             encryptedSnippet = encodeEncryptedData(encryptedSnippetData, snippetIv, snippetAuthTag);
         }
         
+        // Preserve all other fields, including internalDate
         return {
             ...email,
             body: encryptedBody,

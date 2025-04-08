@@ -23,6 +23,7 @@ export interface EmailData {
   isRead: boolean;
   isStarred: boolean;
   labels: string[];
+  internalDate?: string;
 }
 
 /**
@@ -217,7 +218,8 @@ export async function fetchEmailFromGmail(accessToken: string, userId: string, m
             body: content.html || content.text || fullMessage.data.snippet || 'No content available',
             isRead: fullMessage.data.labelIds?.includes('UNREAD') ? false : true,
             isStarred: fullMessage.data.labelIds?.includes('STARRED') || false,
-            labels: fullMessage.data.labelIds || []
+            labels: fullMessage.data.labelIds || [],
+            internalDate: fullMessage.data.internalDate || undefined
         };
     } catch (error: any) {
         console.error(`[Gmail Service] Error fetching email ${messageId}:`, error);

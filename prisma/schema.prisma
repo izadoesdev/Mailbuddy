@@ -87,6 +87,7 @@ model Email {
   isRead    Boolean  @default(false)
   isStarred Boolean  @default(false)
   labels    String[]
+  internalDate String?
   fetchedAt DateTime @default(now())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
