@@ -4,9 +4,16 @@ import { google } from "googleapis";
 import { auth } from "@/libs/auth";
 import { headers } from "next/headers";
 import { PrismaClient } from '@prisma/client';
+import crypto from 'crypto';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
+
+// Encryption configuration
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 16;
+const AUTH_TAG_LENGTH = 16;
 
 interface EmailResponse {
   messages?: any[];
@@ -33,7 +40,6 @@ interface EmailData {
   isRead: boolean;
   isStarred: boolean;
   labels: string[];
-  isHtml: boolean;
 }
 
 async function getUser() {
@@ -44,6 +50,75 @@ async function getUser() {
         }
     }
     return session
+}
+
+// Encryption function
+function encryptText(text: string): { encryptedData: string; iv: string; authTag: string } {
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, Buffer.from(ENCRYPTION_KEY, 'hex'), iv);
+    
+    let encryptedData = cipher.update(text, 'utf8', 'hex');
+    encryptedData += cipher.final('hex');
+    
+    const authTag = cipher.getAuthTag();
+    
+    return {
+        encryptedData,
+        iv: iv.toString('hex'),
+        authTag: authTag.toString('hex')
+    };
+}
+
+// Decryption function
+function decryptText(encryptedData: string, iv: string, authTag: string): string {
+    const decipher = crypto.createDecipheriv(
+        ENCRYPTION_ALGORITHM, 
+        Buffer.from(ENCRYPTION_KEY, 'hex'), 
+        Buffer.from(iv, 'hex')
+    );
+    
+    decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+    
+    let decryptedData = decipher.update(encryptedData, 'hex', 'utf8');
+    decryptedData += decipher.final('utf8');
+    
+    return decryptedData;
+}
+
+// Helper function to encode encrypted data for storage
+function encodeEncryptedData(encryptedData: string, iv: string, authTag: string): string {
+    return JSON.stringify({
+        data: encryptedData,
+        iv: iv,
+        authTag: authTag
+    });
+}
+
+// Helper function to decode encrypted data from storage
+function decodeEncryptedData(encodedData: string | null): { encryptedData: string; iv: string; authTag: string } {
+    if (!encodedData) {
+        return {
+            encryptedData: '',
+            iv: '',
+            authTag: ''
+        };
+    }
+    
+    try {
+        const parsed = JSON.parse(encodedData);
+        return {
+            encryptedData: parsed.data,
+            iv: parsed.iv,
+            authTag: parsed.authTag
+        };
+    } catch (error) {
+        console.error('Error decoding encrypted data:', error);
+        return {
+            encryptedData: '',
+            iv: '',
+            authTag: ''
+        };
+    }
 }
 
 export async function getEmails(): Promise<EmailResponse> {
@@ -77,13 +152,33 @@ export async function getEmails(): Promise<EmailResponse> {
             take: 20
         });
         
+        // Decrypt email bodies
+        const decryptedEmails = existingEmails.map(email => {
+            if (email.body) {
+                try {
+                    const { encryptedData, iv, authTag } = decodeEncryptedData(email.body);
+                    return {
+                        ...email,
+                        body: decryptText(encryptedData, iv, authTag)
+                    };
+                } catch (error) {
+                    console.error(`[Email Fetch] Error decrypting email ${email.id}:`, error);
+                    return {
+                        ...email,
+                        body: '[Content decryption failed]'
+                    };
+                }
+            }
+            return email;
+        });
+        
         // Return existing emails immediately
         const initialResponse: EmailResponse = {
-            messages: existingEmails,
+            messages: decryptedEmails,
             newEmailsCount: 0,
             stats: {
-                totalEmails: existingEmails.length,
-                existingEmails: existingEmails.length,
+                totalEmails: decryptedEmails.length,
+                existingEmails: decryptedEmails.length,
                 newEmails: 0,
                 fetchTime: Date.now() - startTime
             },
@@ -232,6 +327,11 @@ async function fetchNewEmails(session: any, existingEmails: any[]): Promise<void
                     // Get the email content
                     const content = await getFullMessageContent(gmail, session.user.email, msg.id);
                     
+                    // Encrypt the email content
+                    const emailContent = content.html || content.text || fullMessage.data.snippet || 'No content available';
+                    const { encryptedData, iv, authTag } = encryptText(emailContent);
+                    const encryptedBody = encodeEncryptedData(encryptedData, iv, authTag);
+                    
                     // Create email object
                     return {
                         id: msg.id,
@@ -241,11 +341,10 @@ async function fetchNewEmails(session: any, existingEmails: any[]): Promise<void
                         from,
                         to,
                         snippet: fullMessage.data.snippet || null,
-                        body: content.html || content.text || fullMessage.data.snippet || 'No content available',
-                        isHtml: !!content.html,
+                        body: encryptedBody,
                         isRead: fullMessage.data.labelIds?.includes('UNREAD') ? false : true,
                         isStarred: fullMessage.data.labelIds?.includes('STARRED') || false,
-                        labels: fullMessage.data.labelIds || [],
+                        labels: fullMessage.data.labelIds || []
                     } as EmailData;
                 } catch (error) {
                     console.error(`[Email Fetch] Error fetching email ${msg.id}:`, error);

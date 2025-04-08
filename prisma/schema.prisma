@@ -84,7 +84,6 @@ model Email {
   snippet   String?
   body      String?
   isRead    Boolean  @default(false)
-  isHtml    Boolean  @default(false)
   isStarred Boolean  @default(false)
   labels    String[]
   fetchedAt DateTime @default(now())
