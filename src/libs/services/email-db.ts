@@ -17,6 +17,8 @@ export interface EmailResponse {
     existingEmails: number;
     newEmails: number;
     fetchTime: number;
+    currentPage?: number;
+    totalPages?: number;
   };
   isComplete?: boolean;
 }
@@ -25,9 +27,10 @@ export interface EmailResponse {
  * Fetches existing emails from the database
  * @param userId User ID
  * @param limit Maximum number of emails to fetch
+ * @param skip Number of emails to skip (for pagination)
  * @returns Array of emails
  */
-export async function getExistingEmails(userId: string, limit: number = 20): Promise<any[]> {
+export async function getExistingEmails(userId: string, limit: number = 20, skip: number = 0): Promise<any[]> {
     return prisma.email.findMany({
         where: {
             userId
@@ -35,7 +38,8 @@ export async function getExistingEmails(userId: string, limit: number = 20): Pro
         orderBy: {
             createdAt: 'desc'
         },
-        take: limit
+        take: limit,
+        skip: skip
     });
 }
 

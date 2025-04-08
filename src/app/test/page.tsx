@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { getEmails } from "./actions/emails";
 import {
   Column,
@@ -42,6 +42,8 @@ interface EmailResponse {
     newEmails: number;
     fetchTime: number;
     batchCount: number;
+    currentPage?: number;
+    totalPages?: number;
   };
 }
 
@@ -50,12 +52,17 @@ export default function TestPage() {
   const { addToast } = useToast();
   const router = useRouter();
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  
   const { 
     data: emailData, 
     isLoading, 
+    isFetching,
     error: queryError, 
     refetch 
-  } = useEmails();
+  } = useEmails(currentPage, pageSize);
   
   const [isAuthError, setIsAuthError] = useState(false);
   
@@ -65,16 +72,28 @@ export default function TestPage() {
       const errorMessage = typeof queryError === 'string' ? queryError : 'Failed to fetch emails';
       
       if (errorMessage.includes("Authentication failed") || 
-          errorMessage.includes("Access token not available")) {
+          errorMessage.includes("Access token not available") ||
+          errorMessage.includes("User not found")) {
         setIsAuthError(true);
+        
+        // Show a more specific error message
+        addToast({
+          variant: "danger",
+          message: "Your session has expired. Please log in again.",
+        });
+      } else {
+        addToast({
+          variant: "danger",
+          message: errorMessage,
+        });
       }
-      
-      addToast({
-        variant: "danger",
-        message: errorMessage,
-      });
     }
   }, [queryError, addToast]);
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
 
   // Ensure body scroll is restored when component unmounts
   useEffect(() => {
@@ -160,10 +179,10 @@ export default function TestPage() {
               />
             )}
             <Button
-              label={isLoading ? "Refreshing..." : "Refresh Emails"}
+              label={isFetching ? "Refreshing..." : "Refresh Emails"}
               prefixIcon="refresh"
               onClick={() => refetch()}
-              disabled={isLoading}
+              disabled={isFetching}
               variant="secondary"
             />
           </Row>
@@ -194,10 +213,13 @@ export default function TestPage() {
               <Badge title={`New: ${emailData.stats.newEmails}`} color="brand" />
               <Badge title={`Existing: ${emailData.stats.existingEmails}`} color="neutral" />
               <Badge title={`Time: ${emailData.stats.fetchTime}ms`} color="neutral" />
+              {emailData.stats.currentPage && emailData.stats.totalPages && (
+                <Badge title={`Page ${emailData.stats.currentPage} of ${emailData.stats.totalPages}`} color="neutral" />
+              )}
             </Row>
           )}
           
-          {isLoading ? (
+          {(isLoading || isFetching) ? (
             <Column gap="16" fillWidth horizontal="center" paddingY="32">
               <Spinner size="l" />
               <Text onBackground="neutral-medium">Loading emails...</Text>
@@ -216,31 +238,86 @@ export default function TestPage() {
                   <Text onBackground="neutral-medium">No emails found</Text>
                 </Row>
               ) : (
-                emailData.messages.map((email) => (
-                  <Card
-                    key={email.id}
-                    background="overlay"
-                    border="neutral-alpha-weak"
-                    radius="l"
-                    padding="16"
-                    fillWidth
-                    onClick={() => setSelectedEmail(email)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <Column gap="8">
-                      <Heading variant="heading-strong-m">{email.subject || "No Subject"}</Heading>
-                      <Row gap="16">
-                        <Text onBackground="neutral-medium">From: {email.from || "Unknown"}</Text>
-                        {email.isRead ? (
-                          <Text onBackground="neutral-weak">Read</Text>
-                        ) : (
-                          <Text onBackground="brand-medium">Unread</Text>
-                        )}
-                      </Row>
-                      <Text onBackground="neutral-medium">{email.snippet || "No preview available"}</Text>
-                    </Column>
-                  </Card>
-                ))
+                <>
+                  {emailData.messages.map((email) => (
+                    <Card
+                      key={email.id}
+                      background="overlay"
+                      border="neutral-alpha-weak"
+                      radius="l"
+                      padding="16"
+                      fillWidth
+                      onClick={() => setSelectedEmail(email)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <Column gap="8">
+                        <Heading variant="heading-strong-m">{email.subject || "No Subject"}</Heading>
+                        <Row gap="16">
+                          <Text onBackground="neutral-medium">From: {email.from || "Unknown"}</Text>
+                          {email.isRead ? (
+                            <Text onBackground="neutral-weak">Read</Text>
+                          ) : (
+                            <Text onBackground="brand-medium">Unread</Text>
+                          )}
+                        </Row>
+                        <Text onBackground="neutral-medium">{email.snippet || "No preview available"}</Text>
+                      </Column>
+                    </Card>
+                  ))}
+                  
+                  {/* Pagination Controls */}
+                  {emailData?.stats?.totalPages && emailData.stats.totalPages > 1 && (
+                    <Row 
+                      fillWidth 
+                      horizontal="center" 
+                      gap="8" 
+                      paddingY="16"
+                    >
+                      <Button
+                        label="Previous"
+                        prefixIcon="chevron-left"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage <= 1 || isFetching}
+                        variant="secondary"
+                      />
+                      
+                      {Array.from({ length: emailData?.stats?.totalPages || 0 }, (_, i) => i + 1)
+                        .filter(page => {
+                          // Show first page, last page, current page, and pages around current page
+                          const totalPages = emailData?.stats?.totalPages || 0;
+                          return page === 1 || 
+                                 page === totalPages || 
+                                 (page >= currentPage - 1 && page <= currentPage + 1);
+                        })
+                        .map((page, index, array) => {
+                          // Add ellipsis between non-consecutive pages
+                          const showEllipsis = index > 0 && page - array[index - 1] > 1;
+                          
+                          return (
+                            <React.Fragment key={page}>
+                              {showEllipsis && (
+                                <Text onBackground="neutral-medium" paddingX="8">...</Text>
+                              )}
+                              <Button
+                                label={page.toString()}
+                                onClick={() => handlePageChange(page)}
+                                disabled={isFetching}
+                                variant={page === currentPage ? "primary" : "secondary"}
+                              />
+                            </React.Fragment>
+                          );
+                        })}
+                      
+                      <Button
+                        label="Next"
+                        prefixIcon="chevron-right"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage >= (emailData?.stats?.totalPages || 1) || isFetching}
+                        variant="secondary"
+                      />
+                    </Row>
+                  )}
+                </>
               )}
             </Column>
           )}

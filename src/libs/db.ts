@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import env from "./env";
+import { Redis } from 'ioredis';
 
 export * from '@prisma/client';
 
@@ -11,9 +12,11 @@ const getPrismaClient = () => {
     log: ['error'],
   });
   
-  
   return client;
 };
+
+// Upstash Redis client for caching and sync state management
+export const redis = new Redis(process.env.REDIS_URL || '');
 
 // Add prisma to the global type
 const globalForPrisma = globalThis as unknown as {

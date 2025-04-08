@@ -44,6 +44,7 @@ export const auth = betterAuth({
                     image: user.image,
                     emailVerified: user.emailVerified || false,
                     accessToken: dbUser?.accounts[0].accessToken,
+                    refreshToken: dbUser?.accounts[0].refreshToken,
                 },
                 session: {
                     id: session.id,

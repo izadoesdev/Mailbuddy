@@ -25,6 +25,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   emails        Email[]
+  messages      Message[]
 
   @@map("users")
 }
@@ -90,8 +91,23 @@ model Email {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   Message? @relation(fields: [id], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([threadId])
   @@map("emails")
+}
+
+model Message {
+  id        String   @id @unique
+  threadId  String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     Email?
+
+  @@index([userId])
+  @@index([threadId])
+  @@map("messages")
 }
