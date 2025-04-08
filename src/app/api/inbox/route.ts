@@ -10,12 +10,16 @@ import env from "@/libs/env";
 // For API requests
 const GMAIL_USER_ID = 'me';
 const PAGE_SIZE = 5; // Default number of emails per page
+const FETCH_BATCH_SIZE = 5; // Number of emails to fetch from Gmail at once
 
 // Helper function to log messages
 const log = (message: string, ...args: any[]) => {
   console.log(`[Inbox API] ${message}`, ...args);
 };
 
+/**
+ * GET handler for inbox API
+ */
 export async function GET(request: NextRequest) {
   // Get request parameters
   const { searchParams } = new URL(request.url);
@@ -35,166 +39,48 @@ export async function GET(request: NextRequest) {
     // Calculate offset based on page
     const skip = (page - 1) * pageSize;
     
-    // Fetch thread IDs from the database
-    const threads = await prisma.message.groupBy({
-      by: ['threadId', 'createdAt'],
-      where: {
-        userId
-      },
-      orderBy: {
-          createdAt: 'asc'
-      },
-      skip,
-      take: pageSize,
-      _count: true
-    });
+    log(`Fetching inbox for user: ${userId}, page: ${page}, pageSize: ${pageSize}, threadView: ${threadView}`);
     
-    const totalThreads = await prisma.message.groupBy({
-      by: ['threadId'],
-      where: {
-        userId
-      },
-      _count: true
-    });
+    // Get total thread count
+    const totalCount = await getTotalThreadCount(userId);
+    log(`Total thread count: ${totalCount}`);
     
-    const totalCount = totalThreads.length;
-    const hasMore = totalCount > (skip + pageSize);
+    // Get message IDs 
+    const messageIds = await getMessageIds(userId, threadView, pageSize, skip);
+    log(`Retrieved ${messageIds.length} message IDs`);
     
-    // Get threads for the current page
-    const emails = [];
+    // Get existing emails from database
+    const existingEmails = await getExistingEmails(messageIds);
+    log(`Found ${existingEmails.length} existing emails in database`);
     
-    // Fetch emails for each thread
-    for (const thread of threads) {
-      const threadId = thread.threadId;
-      
-      // Get messages in this thread
-      const messages = await prisma.message.findMany({
-        where: {
-          threadId,
-          userId
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      });
-      
-      // Get emails for these messages
-      for (const message of messages) {
-        // Check if email already exists
-        const existingEmail = await prisma.email.findUnique({
-          where: {
-            id: message.id
-          }
-        });
-        
-        if (existingEmail) {
-          // Decrypt and add to results
-          const decryptedEmail = decryptEmail(existingEmail);
-          emails.push(decryptedEmail);
-        } else if (session.user.accessToken) {
-          // Fetch from Gmail if we have access token
-          try {
-            // Set up Gmail API client
-            const oauth2Client = new google.auth.OAuth2();
-            oauth2Client.setCredentials({ access_token: session.user.accessToken });
-            const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-            
-            // Fetch email from Gmail
-            const fullMessage = await gmail.users.messages.get({
-              userId: GMAIL_USER_ID,
-              id: message.id,
-              format: 'full'
-            });
-            
-            if (fullMessage.data) {
-              // Extract email details
-              const headers = fullMessage.data.payload?.headers || [];
-              const subject = headers.find((h: any) => h.name === 'Subject')?.value || '';
-              const from = headers.find((h: any) => h.name === 'From')?.value || '';
-              const to = headers.find((h: any) => h.name === 'To')?.value || '';
-              
-              // Get email content
-              const content = fullMessage.data.payload 
-                ? extractContentFromParts(fullMessage.data.payload) 
-                : { text: '', html: '' };
-              
-              // Create email object
-              const emailData = {
-                id: message.id,
-                threadId: message.threadId,
-                userId,
-                subject,
-                from,
-                to,
-                snippet: fullMessage.data.snippet || null,
-                body: content.html || content.text || fullMessage.data.snippet || 'No content available',
-                isRead: fullMessage.data.labelIds?.includes('UNREAD') ? false : true,
-                isStarred: fullMessage.data.labelIds?.includes('STARRED') || false,
-                labels: fullMessage.data.labelIds || [],
-                internalDate: fullMessage.data.internalDate || null,
-                createdAt: message.createdAt
-              };
-              
-              // Store email in database
-              await encryptAndStoreEmail(emailData)
-              
-              // Add to results
-              emails.push(emailData);
-            }
-          } catch (error) {
-            log(`Error fetching email for message ${message.id}:`, error);
-            
-            // Check if this is an auth error
-            if (
-              error instanceof Error && 
-              (error.message.includes('invalid_grant') || 
-               error.message.includes('Invalid Credentials') ||
-               error.message.includes('token has been expired or revoked'))
-            ) {
-              // Try to refresh token
-              const newToken = await refreshAccessToken(userId);
-              if (!newToken) {
-                return NextResponse.json({ error: "Authentication failed. Please sign in again." }, { status: 401 });
-              }
-            }
-          }
-        }
-      }
-    }
+    // Find missing emails
+    const existingEmailIds = new Set(existingEmails.map(e => e.id));
+    const missingMessageIds = messageIds
+      .map(m => m.id)
+      .filter(id => !existingEmailIds.has(id));
+    log(`Need to fetch ${missingMessageIds.length} emails from Gmail API`);
     
-    // Sort emails by date
-    emails.sort((a, b) => {
-      // Use internalDate if available, otherwise fall back to createdAt
-      const dateA = a.internalDate ? new Date(parseInt(a.internalDate)) : new Date(a.createdAt);
-      const dateB = b.internalDate ? new Date(parseInt(b.internalDate)) : new Date(b.createdAt);
-      return dateB.getTime() - dateA.getTime();
-    });
+    // Fetch missing emails from Gmail
+    const fetchedEmails = await fetchMissingEmails(
+      missingMessageIds, 
+      userId, 
+      session.user.accessToken ?? null
+    );
+    log(`Successfully fetched ${fetchedEmails.length} emails from Gmail API`);
     
-    // If in thread view, only keep the most recent email for each thread
-    const processedEmails = threadView 
-      ? Object.values(
-          emails.reduce((threads, email) => {
-            const emailDate = email.internalDate 
-              ? new Date(parseInt(email.internalDate)) 
-              : new Date(email.createdAt);
-            
-            if (!threads[email.threadId] || 
-                emailDate > (threads[email.threadId].internalDate 
-                  ? new Date(parseInt(threads[email.threadId].internalDate)) 
-                  : new Date(threads[email.threadId].createdAt))) {
-              threads[email.threadId] = email;
-            }
-            return threads;
-          }, {} as Record<string, any>)
-        )
-      : emails;
+    // Process emails
+    const allEmails = processEmails(
+      existingEmails, 
+      fetchedEmails, 
+      threadView
+    );
+    log(`Total emails to display: ${allEmails.length}`);
     
     // Return the results
     return NextResponse.json({
-      emails: processedEmails,
-      hasMore,
+      emails: allEmails,
+      hasMore: totalCount > (skip + pageSize),
       totalCount,
-      totalThreads: threads.length,
       page,
       pageSize
     });
@@ -207,7 +93,305 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Cancel an ongoing inbox fetch
+/**
+ * Count total threads for a user
+ */
+async function getTotalThreadCount(userId: string): Promise<number> {
+  const result = await prisma.message.groupBy({
+    by: ['threadId'],
+    where: { userId },
+    _count: true
+  });
+  
+  return result.length;
+}
+
+/**
+ * Get message IDs based on view type and pagination
+ */
+async function getMessageIds(
+  userId: string, 
+  threadView: boolean, 
+  pageSize: number, 
+  skip: number
+): Promise<{ id: string }[]> {
+  if (threadView) {
+    log(`Thread view: fetching threads with skip=${skip}, take=${pageSize}`);
+    
+    try {
+      // First try to get thread data from the emails table which is faster
+      // and includes more details like internalDate for better sorting
+      const threadsFromEmails = await prisma.email.findMany({
+        where: { userId },
+        select: { 
+          id: true,
+          threadId: true,
+          internalDate: true,
+          createdAt: true,
+        },
+        distinct: ['threadId'],
+        orderBy: [
+          // First try to sort by internalDate (Gmail's timestamp) if available
+          { internalDate: 'desc' },
+          // Otherwise fall back to our database timestamp
+          { createdAt: 'asc' }
+        ],
+        take: 1000 // Reasonable limit to avoid processing too many threads
+      });
+      
+      log(`Found ${threadsFromEmails.length} threads from emails table`);
+      
+      if (threadsFromEmails.length > 0) {
+        // Sort the threads by date (newest first)
+        const sortedEmails = threadsFromEmails.sort((a, b) => {
+          const dateA = a.internalDate ? parseInt(a.internalDate) : a.createdAt.getTime();
+          const dateB = b.internalDate ? parseInt(b.internalDate) : b.createdAt.getTime();
+          return dateB - dateA;
+        });
+        
+        // Apply pagination after sorting
+        const paginatedEmails = sortedEmails.slice(skip, skip + pageSize);
+        log(`After pagination: returning ${paginatedEmails.length} thread emails`);
+        
+        // Return email IDs for the paginated threads
+        return paginatedEmails.map(email => ({ id: email.id }));
+      }
+      
+      // Fallback: If no emails are found, try messages table
+      log(`No emails found in emails table, falling back to messages table`);
+      
+      // Get all thread IDs for this user with a reasonable limit
+      const allThreads = await prisma.message.findMany({
+        where: { userId },
+        select: { 
+          id: true,
+          threadId: true, 
+          createdAt: true 
+        },
+        orderBy: { createdAt: 'asc' },
+        take: 1000 // Limit to prevent performance issues
+      });
+      
+      log(`Fallback: Found ${allThreads.length} thread messages from messages table`);
+      
+      if (allThreads.length === 0) {
+        return [];
+      }
+      
+      // Group messages by threadId and find the latest in each thread
+      const latestMessagesByThread = Object.values(
+        allThreads.reduce((threads, message) => {
+          if (!threads[message.threadId] || 
+              message.createdAt > threads[message.threadId].createdAt) {
+            threads[message.threadId] = message;
+          }
+          return threads;
+        }, {} as Record<string, typeof allThreads[0]>)
+      );
+      
+      // Sort by creation date (newest first)
+      latestMessagesByThread.sort((a, b) => 
+        b.createdAt.getTime() - a.createdAt.getTime()
+      );
+      
+      // Apply pagination
+      const paginatedMessages = latestMessagesByThread.slice(skip, skip + pageSize);
+      log(`After filtering and pagination: ${paginatedMessages.length} thread messages`);
+      
+      // Return just the IDs
+      return paginatedMessages.map(msg => ({ id: msg.id }));
+    } catch (error) {
+      log('Error fetching thread messages:', error);
+      return [];
+    }
+  } else {
+    log(`Message view: fetching messages directly with skip=${skip}, take=${pageSize}`);
+    
+    try {
+      // For non-thread view, get all message IDs with pagination
+      const messages = await prisma.message.findMany({
+        where: { userId },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+        skip,
+        take: pageSize,
+      });
+      
+      log(`Found ${messages.length} messages`);
+      return messages;
+    } catch (error) {
+      log('Error fetching direct messages:', error);
+      return [];
+    }
+  }
+}
+
+/**
+ * Get existing emails from database
+ */
+async function getExistingEmails(messageIds: { id: string }[]): Promise<any[]> {
+  if (messageIds.length === 0) {
+    return [];
+  }
+  
+  const ids = messageIds.map(m => m.id);
+  log(`Looking for emails with IDs: ${ids.join(', ')}`);
+  
+  const emails = await prisma.email.findMany({
+    where: {
+      id: {
+        in: ids
+      }
+    }
+  });
+  
+  log(`Found ${emails.length} emails in database before decryption`);
+  
+  // Decrypt emails
+  return emails.map(email => decryptEmail(email));
+}
+
+/**
+ * Fetch missing emails from Gmail
+ */
+async function fetchMissingEmails(
+  missingIds: string[], 
+  userId: string, 
+  accessToken: string | null
+): Promise<any[]> {
+  if (missingIds.length === 0 || !accessToken) {
+    return [];
+  }
+  
+  // Set up Gmail API client once
+  const oauth2Client = new google.auth.OAuth2();
+  oauth2Client.setCredentials({ access_token: accessToken });
+  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+  
+  // Fetch messages in batches to avoid overwhelming Gmail API
+  const fetchedEmails = [];
+  
+  for (let i = 0; i < missingIds.length; i += FETCH_BATCH_SIZE) {
+    const batch = missingIds.slice(i, i + FETCH_BATCH_SIZE);
+    
+    // Fetch messages in parallel
+    const messageBatchPromises = batch.map(async (messageId) => {
+      try {
+        // Get the message details from database first
+        const message = await prisma.message.findUnique({
+          where: { id: messageId },
+          select: { id: true, threadId: true, createdAt: true }
+        });
+        
+        if (!message) return null;
+        
+        // Fetch from Gmail API
+        const fullMessage = await gmail.users.messages.get({
+          userId: GMAIL_USER_ID,
+          id: messageId,
+          format: 'full'
+        });
+        
+        if (!fullMessage.data) return null;
+        
+        // Extract email details
+        const headers = fullMessage.data.payload?.headers || [];
+        const subject = headers.find((h: any) => h.name === 'Subject')?.value || '';
+        const from = headers.find((h: any) => h.name === 'From')?.value || '';
+        const to = headers.find((h: any) => h.name === 'To')?.value || '';
+        
+        // Get email content
+        const content = fullMessage.data.payload 
+          ? extractContentFromParts(fullMessage.data.payload) 
+          : { text: '', html: '' };
+        
+        // Create email object
+        const emailData = {
+          id: messageId,
+          threadId: message.threadId,
+          userId,
+          subject,
+          from,
+          to,
+          snippet: fullMessage.data.snippet || null,
+          body: content.html || content.text || fullMessage.data.snippet || 'No content available',
+          isRead: fullMessage.data.labelIds?.includes('UNREAD') ? false : true,
+          isStarred: fullMessage.data.labelIds?.includes('STARRED') || false,
+          labels: fullMessage.data.labelIds || [],
+          internalDate: fullMessage.data.internalDate || null,
+          createdAt: message.createdAt
+        };
+        
+        return emailData;
+      } catch (error) {
+        log(`Error fetching email for message ${messageId}:`, error);
+        return null;
+      }
+    });
+    
+    // Wait for all fetches to complete
+    const fetchedBatch = await Promise.all(messageBatchPromises);
+    const validEmails = fetchedBatch.filter(email => email !== null) as any[];
+    
+    // Batch store the emails in database
+    if (validEmails.length > 0) {
+      // Encrypt and store each email
+      const storePromises = validEmails.map(emailData => encryptAndStoreEmail(emailData));
+      await Promise.all(storePromises);
+      
+      // Add to results
+      fetchedEmails.push(...validEmails);
+    }
+  }
+  
+  return fetchedEmails;
+}
+
+/**
+ * Process and sort emails
+ */
+function processEmails(
+  existingEmails: any[], 
+  fetchedEmails: any[], 
+  threadView: boolean
+): any[] {
+  // Combine existing and fetched emails
+  const allEmails = [...existingEmails, ...fetchedEmails];
+  
+  // Sort emails by date
+  allEmails.sort((a, b) => {
+    // Use internalDate if available, otherwise fall back to createdAt
+    const dateA = a.internalDate ? new Date(parseInt(a.internalDate)) : new Date(a.createdAt);
+    const dateB = b.internalDate ? new Date(parseInt(b.internalDate)) : new Date(b.createdAt);
+    return dateB.getTime() - dateA.getTime();
+  });
+  
+  // Process for thread view 
+  if (!threadView) {
+    return allEmails;
+  }
+  
+  // Only keep the most recent email for each thread
+  return Object.values(
+    allEmails.reduce((threads, email) => {
+      const emailDate = email.internalDate 
+        ? new Date(parseInt(email.internalDate)) 
+        : new Date(email.createdAt);
+      
+      if (!threads[email.threadId] || 
+          emailDate > (threads[email.threadId].internalDate 
+            ? new Date(parseInt(threads[email.threadId].internalDate)) 
+            : new Date(threads[email.threadId].createdAt))) {
+        threads[email.threadId] = email;
+      }
+      return threads;
+    }, {} as Record<string, any>)
+  );
+}
+
+/**
+ * Cancel an ongoing inbox fetch
+ */
 export async function DELETE(request: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
