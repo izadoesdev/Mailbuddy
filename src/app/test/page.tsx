@@ -13,9 +13,12 @@ import {
   Button,
   Spinner,
   Badge,
+  Dialog,
+  IconButton,
 } from "@/once-ui/components";
 import { signOut } from "@/libs/auth/client";
 import { useRouter } from "next/navigation";
+import { useEmails } from "@/libs/query/useEmails";
 
 interface Email {
   id: string;
@@ -23,6 +26,8 @@ interface Email {
   from: string;
   to: string;
   snippet: string;
+  body: string;
+  isHtml: boolean;
   isRead: boolean;
   isStarred: boolean;
 }
@@ -41,66 +46,58 @@ interface EmailResponse {
 }
 
 export default function TestPage() {
-  const [emails, setEmails] = useState<Email[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isAuthError, setIsAuthError] = useState(false);
-  const [newEmailsCount, setNewEmailsCount] = useState(0);
-  const [stats, setStats] = useState<EmailResponse['stats'] | null>(null);
+  const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const { addToast } = useToast();
   const router = useRouter();
-
-  const fetchEmails = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setIsAuthError(false);
-      setStats(null);
+  
+  const { 
+    data: emailData, 
+    isLoading, 
+    error: queryError, 
+    refetch 
+  } = useEmails();
+  
+  const [isAuthError, setIsAuthError] = useState(false);
+  
+  // Check for authentication errors
+  useEffect(() => {
+    if (queryError) {
+      const errorMessage = typeof queryError === 'string' ? queryError : 'Failed to fetch emails';
       
-      const result = await getEmails();
-      
-      if (result.error) {
-        setError(result.error);
-        
-        // Check if it's an authentication error
-        if (result.error.includes("Authentication failed") || 
-            result.error.includes("Access token not available")) {
-          setIsAuthError(true);
-        }
-        
-        addToast({
-          variant: "danger",
-          message: result.error,
-        });
-        return;
+      if (errorMessage.includes("Authentication failed") || 
+          errorMessage.includes("Access token not available")) {
+        setIsAuthError(true);
       }
       
-      setEmails(result.messages || []);
-      setNewEmailsCount(result.newEmailsCount || 0);
-      setStats(result.stats || null);
-      
-      if (result.newEmailsCount && result.newEmailsCount > 0) {
-        addToast({
-          variant: "success",
-          message: `Fetched ${result.newEmailsCount} new emails`,
-        });
-      }
-    } catch (err) {
-      setError("Failed to fetch emails");
       addToast({
         variant: "danger",
-        message: "Failed to fetch emails",
+        message: errorMessage,
       });
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
-  }, [addToast]);
+  }, [queryError, addToast]);
 
-  // Only fetch once on initial mount
+  // Ensure body scroll is restored when component unmounts
   useEffect(() => {
-    fetchEmails();
-  }, [fetchEmails]);
+    return () => {
+      document.body.style.overflow = "unset";
+      document.body.childNodes.forEach((node) => {
+        if (node instanceof HTMLElement) {
+          node.inert = false;
+        }
+      });
+    };
+  }, []);
+
+  const handleCloseDialog = () => {
+    setSelectedEmail(null);
+    // Ensure body scroll is restored
+    document.body.style.overflow = "unset";
+    document.body.childNodes.forEach((node) => {
+      if (node instanceof HTMLElement) {
+        node.inert = false;
+      }
+    });
+  };
 
   const handleLogout = async () => {
     try {
@@ -163,15 +160,15 @@ export default function TestPage() {
               />
             )}
             <Button
-              label={loading ? "Refreshing..." : "Refresh Emails"}
+              label={isLoading ? "Refreshing..." : "Refresh Emails"}
               prefixIcon="refresh"
-              onClick={fetchEmails}
-              disabled={loading}
+              onClick={() => refetch()}
+              disabled={isLoading}
               variant="secondary"
             />
           </Row>
           
-          {error && (
+          {queryError && (
             <Row
               background="danger-weak"
               border="danger-alpha-medium"
@@ -179,11 +176,11 @@ export default function TestPage() {
               padding="16"
               fillWidth
             >
-              <Text onBackground="danger-strong">{error}</Text>
+              <Text onBackground="danger-strong">{typeof queryError === 'string' ? queryError : 'Failed to fetch emails'}</Text>
             </Row>
           )}
           
-          {stats && (
+          {emailData?.stats && (
             <Row
               background="overlay"
               border="neutral-alpha-weak"
@@ -193,22 +190,21 @@ export default function TestPage() {
               gap="16"
               wrap
             >
-              <Badge title={`Total: ${stats.totalEmails}`} color="neutral" />
-              <Badge title={`New: ${stats.newEmails}`} color="brand" />
-              <Badge title={`Existing: ${stats.existingEmails}`} color="neutral" />
-              <Badge title={`Batches: ${stats.batchCount}`} color="neutral" />
-              <Badge title={`Time: ${stats.fetchTime}ms`} color="neutral" />
+              <Badge title={`Total: ${emailData.stats.totalEmails}`} color="neutral" />
+              <Badge title={`New: ${emailData.stats.newEmails}`} color="brand" />
+              <Badge title={`Existing: ${emailData.stats.existingEmails}`} color="neutral" />
+              <Badge title={`Time: ${emailData.stats.fetchTime}ms`} color="neutral" />
             </Row>
           )}
           
-          {loading ? (
+          {isLoading ? (
             <Column gap="16" fillWidth horizontal="center" paddingY="32">
               <Spinner size="l" />
               <Text onBackground="neutral-medium">Loading emails...</Text>
             </Column>
           ) : (
             <Column gap="16" fillWidth>
-              {emails.length === 0 ? (
+              {!emailData?.messages || emailData.messages.length === 0 ? (
                 <Row
                   background="overlay"
                   border="neutral-alpha-weak"
@@ -220,7 +216,7 @@ export default function TestPage() {
                   <Text onBackground="neutral-medium">No emails found</Text>
                 </Row>
               ) : (
-                emails.map((email) => (
+                emailData.messages.map((email) => (
                   <Card
                     key={email.id}
                     background="overlay"
@@ -228,6 +224,8 @@ export default function TestPage() {
                     radius="l"
                     padding="16"
                     fillWidth
+                    onClick={() => setSelectedEmail(email)}
+                    style={{ cursor: 'pointer' }}
                   >
                     <Column gap="8">
                       <Heading variant="heading-strong-m">{email.subject || "No Subject"}</Heading>
@@ -248,6 +246,60 @@ export default function TestPage() {
           )}
         </Column>
       </Column>
+
+      {selectedEmail && (
+        <Dialog
+          isOpen={!!selectedEmail}
+          onClose={handleCloseDialog}
+          title={selectedEmail.subject || "No Subject"}
+          base={false}
+          footer={
+            <Row horizontal="end" gap="8">
+              <Button 
+                label="Close" 
+                onClick={handleCloseDialog} 
+                variant="secondary" 
+              />
+            </Row>
+          }
+        >
+          <Column gap="16" fillWidth>
+            <Row gap="16" wrap>
+              <Text onBackground="neutral-medium">From: {selectedEmail.from || "Unknown"}</Text>
+              <Text onBackground="neutral-medium">To: {selectedEmail.to || "Unknown"}</Text>
+            </Row>
+            <Row gap="16" wrap>
+              {selectedEmail.isRead ? (
+                <Badge title="Read" color="neutral" />
+              ) : (
+                <Badge title="Unread" color="brand" />
+              )}
+              {selectedEmail.isStarred && (
+                <Badge title="Starred" color="warning" />
+              )}
+            </Row>
+            <Card
+              background="overlay"
+              border="neutral-alpha-weak"
+              radius="l"
+              padding="16"
+              fillWidth
+            >
+              <div 
+                dangerouslySetInnerHTML={{ __html: selectedEmail.body }} 
+                style={{ 
+                  fontFamily: 'var(--font-primary)',
+                  lineHeight: '1.6',
+                  fontSize: '1rem',
+                  overflowWrap: 'break-word',
+                  wordBreak: 'break-word'
+                }}
+                className="email-content"
+              />
+            </Card>
+          </Column>
+        </Dialog>
+      )}
     </Column>
   );
 } 

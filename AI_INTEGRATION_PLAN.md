@@ -31,7 +31,7 @@ Enhance the email system with AI capabilities to provide intelligent email manag
   - Follow-up needed
 
 ### 4. Smart Organization
-- Implement intelligent sorting based on:
+- Implement intelligent sorting based on:   
   - Priority
   - Sender importance
   - Content relevance

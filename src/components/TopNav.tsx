@@ -99,7 +99,7 @@ export default function TopNav() {
         fillWidth
       >
         <Link href="/">
-          <Text variant="heading-strong-m">Mailer</Text>
+          <Text variant="heading-strong-m">Mailbuddy</Text>
         </Link>
         <UserMenu
           name={session?.user?.name}

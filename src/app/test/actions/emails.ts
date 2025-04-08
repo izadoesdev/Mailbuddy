@@ -17,7 +17,6 @@ interface EmailResponse {
     existingEmails: number;
     newEmails: number;
     fetchTime: number;
-    batchCount: number;
   };
   isComplete?: boolean;
 }
@@ -34,6 +33,7 @@ interface EmailData {
   isRead: boolean;
   isStarred: boolean;
   labels: string[];
+  isHtml: boolean;
 }
 
 async function getUser() {
@@ -48,7 +48,7 @@ async function getUser() {
 
 export async function getEmails(): Promise<EmailResponse> {
     const startTime = Date.now();
-    console.log(`[Email Fetch] Starting email fetch process at ${new Date().toISOString()}`);
+    console.log(`[Email Fetch] Starting email fetch process`);
     
     const session = await getUser()
     if ('error' in session) {
@@ -66,10 +66,7 @@ export async function getEmails(): Promise<EmailResponse> {
     }
     
     try {
-        console.log(`[Email Fetch] Authenticated as user: ${session.user.email}`);
-        
-        // First, get existing emails from database to show immediately
-        console.log(`[Email Fetch] Fetching existing emails from database...`);
+        // Get existing emails from database to show immediately
         const existingEmails = await prisma.email.findMany({
             where: {
                 userId: session.user.id
@@ -80,8 +77,6 @@ export async function getEmails(): Promise<EmailResponse> {
             take: 20
         });
         
-        console.log(`[Email Fetch] Found ${existingEmails.length} existing emails in database`);
-        
         // Return existing emails immediately
         const initialResponse: EmailResponse = {
             messages: existingEmails,
@@ -90,8 +85,7 @@ export async function getEmails(): Promise<EmailResponse> {
                 totalEmails: existingEmails.length,
                 existingEmails: existingEmails.length,
                 newEmails: 0,
-                fetchTime: Date.now() - startTime,
-                batchCount: 0
+                fetchTime: Date.now() - startTime
             },
             isComplete: false
         };
@@ -103,12 +97,10 @@ export async function getEmails(): Promise<EmailResponse> {
         
         return initialResponse;
     } catch (error: any) {
-        const endTime = Date.now();
-        console.error(`[Email Fetch] Error after ${endTime - startTime}ms:`, error);
+        console.error(`[Email Fetch] Error:`, error);
         
         // Handle specific error cases
         if (error.status === 401) {
-            console.error(`[Email Fetch] Authentication error (401): Session may have expired`);
             return {
                 error: "Authentication failed. Your session may have expired. Please log out and log in again."
             }
@@ -120,9 +112,67 @@ export async function getEmails(): Promise<EmailResponse> {
     }
 }
 
+// Helper function to decode base64 content
+function decodeBase64(data: string) {
+    return Buffer.from(data, 'base64').toString();
+}
+
+// Helper function to extract email content from parts
+function extractContentFromParts(payload: any): { text: string; html: string } {
+    const result = { text: '', html: '' };
+    
+    if (!payload.parts) {
+        // Handle single part messages
+        if (payload.body && payload.body.data) {
+            const content = decodeBase64(payload.body.data);
+            if (payload.mimeType === 'text/plain') {
+                result.text = content;
+            } else if (payload.mimeType === 'text/html') {
+                result.html = content;
+            }
+        }
+        return result;
+    }
+    
+    // Process all parts recursively
+    for (const part of payload.parts) {
+        if (part.mimeType === 'text/plain' && part.body && part.body.data) {
+            result.text = decodeBase64(part.body.data);
+        } else if (part.mimeType === 'text/html' && part.body && part.body.data) {
+            result.html = decodeBase64(part.body.data);
+        } else if (part.parts) {
+            // Recursively process nested parts
+            const nestedContent = extractContentFromParts(part);
+            if (nestedContent.text) result.text = nestedContent.text;
+            if (nestedContent.html) result.html = nestedContent.html;
+        }
+    }
+    
+    return result;
+}
+
+// Helper function to get the full message content
+async function getFullMessageContent(gmail: any, userId: string, messageId: string): Promise<{ text: string; html: string }> {
+    try {
+        const fullMessage = await gmail.users.messages.get({
+            userId,
+            id: messageId,
+            format: 'full'
+        });
+
+        if (!fullMessage.data || !fullMessage.data.payload) {
+            return { text: '', html: '' };
+        }
+
+        return extractContentFromParts(fullMessage.data.payload);
+    } catch (error) {
+        console.error(`[Email Fetch] Error getting full message content:`, error);
+        return { text: '', html: '' };
+    }
+}
+
 async function fetchNewEmails(session: any, existingEmails: any[]): Promise<void> {
     const startTime = Date.now();
-    console.log(`[Email Fetch] Starting background fetch of new emails`);
     
     try {
         // Set up Gmail API client
@@ -131,19 +181,14 @@ async function fetchNewEmails(session: any, existingEmails: any[]): Promise<void
         const gmail = google.gmail({ version: "v1", auth: oauth2Client });
         
         // Get list of email IDs
-        console.log(`[Email Fetch] Fetching email list from Gmail API...`);
         const listResponse = await gmail.users.messages.list({ 
             userId: session.user.email, 
             maxResults: 20 
         });
         
         if (!listResponse.data.messages || listResponse.data.messages.length === 0) {
-            console.log(`[Email Fetch] No emails found for user ${session.user.email}`);
             return;
         }
-        
-        const totalEmails = listResponse.data.messages.length;
-        console.log(`[Email Fetch] Found ${totalEmails} emails from Gmail API`);
         
         // Get existing email IDs
         const existingEmailIds = new Set(existingEmails.map(email => email.id));
@@ -153,24 +198,17 @@ async function fetchNewEmails(session: any, existingEmails: any[]): Promise<void
             msg => msg.id && !existingEmailIds.has(msg.id)
         );
         
-        console.log(`[Email Fetch] Need to fetch ${emailsToFetch.length} new emails from Gmail API`);
-        
         if (emailsToFetch.length === 0) {
-            console.log(`[Email Fetch] No new emails to fetch`);
             return;
         }
         
-        // Process emails in larger batches to improve performance
+        // Process emails in batches
         const batchSize = 5;
         const newEmails: EmailData[] = [];
-        const batchCount = Math.ceil(emailsToFetch.length / batchSize);
         
         for (let i = 0; i < emailsToFetch.length; i += batchSize) {
-            const batchNumber = Math.floor(i / batchSize) + 1;
             const batch = emailsToFetch.slice(i, i + batchSize);
-            console.log(`[Email Fetch] Processing batch ${batchNumber}/${batchCount} (${batch.length} emails)...`);
             
-            const batchStartTime = Date.now();
             const batchPromises = batch.map(async (msg) => {
                 if (!msg.id) return null;
                 
@@ -191,15 +229,10 @@ async function fetchNewEmails(session: any, existingEmails: any[]): Promise<void
                     const from = headers.find((h: any) => h.name === 'From')?.value || '';
                     const to = headers.find((h: any) => h.name === 'To')?.value || '';
                     
-                    // Get email body
-                    let body = '';
-                    if (fullMessage.data.snippet) {
-                        body = fullMessage.data.snippet;
-                    } else if (fullMessage.data.payload?.body?.data) {
-                        body = Buffer.from(fullMessage.data.payload.body.data, 'base64').toString();
-                    }
+                    // Get the email content
+                    const content = await getFullMessageContent(gmail, session.user.email, msg.id);
                     
-                    // Create email object without database operation
+                    // Create email object
                     return {
                         id: msg.id,
                         threadId: msg.threadId || '',
@@ -208,7 +241,8 @@ async function fetchNewEmails(session: any, existingEmails: any[]): Promise<void
                         from,
                         to,
                         snippet: fullMessage.data.snippet || null,
-                        body,
+                        body: content.html || content.text || fullMessage.data.snippet || 'No content available',
+                        isHtml: !!content.html,
                         isRead: fullMessage.data.labelIds?.includes('UNREAD') ? false : true,
                         isStarred: fullMessage.data.labelIds?.includes('STARRED') || false,
                         labels: fullMessage.data.labelIds || [],
@@ -224,31 +258,16 @@ async function fetchNewEmails(session: any, existingEmails: any[]): Promise<void
             
             // Bulk insert emails to database
             if (validResults.length > 0) {
-                console.log(`[Email Fetch] Storing ${validResults.length} emails in database...`);
                 await prisma.email.createMany({
                     data: validResults,
                     skipDuplicates: true
                 });
-                console.log(`[Email Fetch] Successfully stored ${validResults.length} emails in database`);
-            }
-            
-            newEmails.push(...validResults);
-            
-            const batchEndTime = Date.now();
-            console.log(`[Email Fetch] Batch ${batchNumber}/${batchCount} completed in ${batchEndTime - batchStartTime}ms`);
-            
-            // Add a small delay between batches to avoid rate limits
-            if (i + batchSize < emailsToFetch.length) {
-                console.log(`[Email Fetch] Waiting 500ms before next batch...`);
-                await new Promise(resolve => setTimeout(resolve, 500));
+                newEmails.push(...validResults);
             }
         }
         
-        const endTime = Date.now();
-        console.log(`[Email Fetch] Background email fetch completed in ${endTime - startTime}ms`);
-        console.log(`[Email Fetch] Fetched ${newEmails.length} new emails`);
-        
+        console.log(`[Email Fetch] Completed in ${Date.now() - startTime}ms. Fetched ${newEmails.length} new emails.`);
     } catch (error) {
-        console.error(`[Email Fetch] Background fetch error:`, error);
+        console.error(`[Email Fetch] Error in background fetch:`, error);
     }
 }

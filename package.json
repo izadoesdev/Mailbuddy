@@ -12,6 +12,7 @@
   "dependencies": {
     "@floating-ui/react-dom": "^2.1.1",
     "@prisma/client": "^6.5.0",
+    "@tanstack/react-query": "^5.72.0",
     "better-auth": "^1.2.5",
     "classnames": "^2.5.1",
     "compressorjs": "^1.2.1",

@@ -6,7 +6,7 @@ export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: "postgresql", 
     }),
-    appName: "mailer.ai",
+    appName: "mailbuddy.ai",
     socialProviders: {
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID as string,

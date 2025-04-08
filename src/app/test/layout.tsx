@@ -101,7 +101,7 @@ export default function TestLayout({
           fillWidth
         >
           <SmartLink href="/">
-            <Text variant="heading-strong-m">Mailer</Text>
+            <Text variant="heading-strong-m">Mailbuddy</Text>
           </SmartLink>
           <Row gap="16" vertical="center">
             {session ? (

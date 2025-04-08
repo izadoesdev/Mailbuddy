@@ -7,6 +7,7 @@ import { headers } from "next/headers";
 import { baseURL, meta, og, schema, style } from "@/app/resources/config";
 import { Background, Column, Flex, ThemeProvider, ToastProvider } from "@/once-ui/components";
 import { Meta, Schema } from "@/once-ui/modules";
+import { QueryProvider } from "@/libs/query/QueryProvider";
 
 import { Geist } from "next/font/google";
 import { Geist_Mono } from "next/font/google";
@@ -133,7 +134,9 @@ export default function RootLayout({
                 height: "0.25rem",
               }}
             />
-            {children}
+            <QueryProvider>
+              {children}
+            </QueryProvider>
           </Column>
         </ToastProvider>
       </ThemeProvider>
