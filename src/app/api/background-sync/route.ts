@@ -4,7 +4,7 @@ import { google } from "googleapis";
 import env from "@/libs/env";
 import { encryptText, encodeEncryptedData } from "@/libs/utils/encryption";
 import { extractContentFromParts } from "@/libs/utils/email-content";
-import { auth } from "@/libs/auth";
+import { auth, type User } from "@/libs/auth";
 import { headers } from "next/headers";
 
 // Constants
@@ -73,7 +73,7 @@ function initializeGmailClient(accessToken: string) {
 async function refreshAccessToken(userId: string): Promise<string | null> {
     try {
         // Find the user
-        const user = await prisma.user.findUnique({
+        const user: User = await prisma.user.findUnique({
             where: { id: userId },
             include: { accounts: true },
         });
@@ -249,20 +249,20 @@ async function processUserChanges(
                     userId: GMAIL_USER_ID,
                 });
 
-                historyId = profile.data.historyId || null;
+                const newHistoryId = profile.data.historyId || null;
 
                 // Update sync state with the new history ID
-                if (historyId) {
+                if (newHistoryId) {
                     await prisma.syncState.update({
                         where: { userId },
-                        data: { historyId },
+                        data: { historyId: newHistoryId },
                     });
 
-                    log(`Initialized history ID ${historyId} for user ${userId}`);
+                    log(`Initialized history ID ${newHistoryId} for user ${userId}`);
                 }
 
                 // Return early - we'll start syncing from this point next time
-                return { success: true, newHistoryId: historyId };
+                return { success: true, newHistoryId };
             } catch (error) {
                 log(`Error initializing history ID for user ${userId}:`, error);
                 return { success: false, newHistoryId: null };

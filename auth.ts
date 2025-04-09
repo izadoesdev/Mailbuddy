@@ -1,4 +1,4 @@
-import { betterAuth } from "better-auth";
+import { type Account, betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./src/libs/db";
 import { customSession } from "better-auth/plugins";
@@ -56,3 +56,5 @@ export const auth = betterAuth({
         }),
     ],
 });
+
+export type User = (typeof auth)["$Infer"]["Session"]["user"] & { accounts: Account[] };
