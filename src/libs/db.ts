@@ -9,7 +9,26 @@ export * from '@prisma/client';
  */
 const getPrismaClient = () => {
   const client = new PrismaClient({
-    log: ['error'],
+    log: ['query', 'error', 'warn'],
+    datasources: {
+      db: {
+        url: env.DATABASE_URL,
+      },
+    },
+  }).$extends({
+    query: {
+      $allModels: {
+        async $allOperations({ args, query, operation }) {
+          const startTime = Date.now();
+          const result = await query(args);
+          const duration = Date.now() - startTime;
+          if (duration > 100) {
+            console.log(`Slow query (${duration}ms): ${operation}`);
+          }
+          return result;
+        },
+      },
+    },
   });
   
   return client;

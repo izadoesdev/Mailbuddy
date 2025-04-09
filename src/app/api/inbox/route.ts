@@ -10,7 +10,7 @@ import env from "@/libs/env";
 // For API requests
 const GMAIL_USER_ID = 'me';
 const PAGE_SIZE = 20; // Default number of emails per page
-const FETCH_BATCH_SIZE = 10; // Number of emails to fetch from Gmail at once
+const FETCH_BATCH_SIZE = 20; // Number of emails to fetch from Gmail at once
 
 // Helper function to log messages
 const log = (message: string, ...args: any[]) => {
@@ -473,7 +473,6 @@ function decryptEmail(email: any) {
   
   return decryptedEmail;
 }
-
 /**
  * Refresh access token for a user
  */
@@ -532,4 +531,5 @@ async function refreshAccessToken(userId: string): Promise<string | null> {
     return null;
   }
 }
+
 
