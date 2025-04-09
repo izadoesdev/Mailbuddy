@@ -20,19 +20,12 @@
     },
     "linter": {
         "enabled": true,
-<<<<<<< HEAD
-        "rules": { "recommended": true, 
-        "suspicious": {
-            "noExplicitAny": "off"
-        } }
-=======
         "rules": {
             "recommended": true,
             "suspicious": {
                 "noExplicitAny": "off"
             }
         }
->>>>>>> 039c79af631e6839931f846e3f85153e05c34046
     },
     "javascript": {
         "formatter": {
