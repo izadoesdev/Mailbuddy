@@ -60,7 +60,7 @@ export default function LoginPage() {
               variant: "success",
               message: "Login successful!",
             });
-            router.push("/test");
+            router.push("/inbox");
           },
           onError: () => {
             addToast({
@@ -89,7 +89,7 @@ export default function LoginPage() {
             variant: "success",
             message: "Login successful!",
           });
-          router.push("/test");
+          router.push("/inbox");
         },
         onError: () => {
           addToast({
@@ -110,7 +110,7 @@ export default function LoginPage() {
             variant: "success",
             message: "Login successful!",
           });
-          router.push("/test");
+          router.push("/inbox");
         },
         onError: () => {
           addToast({

@@ -1,7 +1,6 @@
 "use client";
 
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { getEmails } from "@/app/test/actions/emails";
 import { useRouter } from "next/navigation";
 import { signOut } from "@/libs/auth/client";
 import { useToast } from "@/once-ui/components";

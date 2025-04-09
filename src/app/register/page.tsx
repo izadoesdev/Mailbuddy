@@ -73,7 +73,7 @@ export default function RegisterPage() {
               variant: "success",
               message: "Registration successful!",
             });
-            router.push("/test");
+            router.push("/inbox");
           },
           onError: () => {
             addToast({

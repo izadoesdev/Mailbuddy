@@ -12,22 +12,32 @@ const GMAIL_USER_ID = 'me';
 const PAGE_SIZE = 20; // Default number of emails per page
 const FETCH_BATCH_SIZE = 20; // Number of emails to fetch from Gmail at once
 
+// A Map to track active fetches by user ID
+const activeUserFetches = new Map<string, { isActive: boolean }>();
+
 // Helper function to log messages
 const log = (message: string, ...args: any[]) => {
   console.log(`[Inbox API] ${message}`, ...args);
 };
 
 /**
+ * Check if a fetch is active for a user
+ */
+function isUserFetchActive(userId: string): boolean {
+  return activeUserFetches.get(userId)?.isActive || false;
+}
+
+/**
+ * Set user fetch status
+ */
+function setUserFetchStatus(userId: string, isActive: boolean): void {
+  activeUserFetches.set(userId, { isActive });
+}
+
+/**
  * GET handler for inbox API
  */
 export async function GET(request: NextRequest) {
-  // Get request parameters
-  const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get("page") || "1", 10);
-  const pageSize = parseInt(searchParams.get("pageSize") || PAGE_SIZE.toString(), 10);
-  const threadView = searchParams.get("threadView") === "true";
-  
-  // Authenticate user
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -35,7 +45,21 @@ export async function GET(request: NextRequest) {
   
   const userId = session.user.id;
   
+  // Check if fetch is already in progress
+  if (isUserFetchActive(userId)) {
+    return NextResponse.json({ error: "Fetch already in progress" }, { status: 409 });
+  }
+  
+  // Mark fetch as active
+  setUserFetchStatus(userId, true);
+  
   try {
+    // Get request parameters
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const pageSize = parseInt(searchParams.get("pageSize") || PAGE_SIZE.toString(), 10);
+    const threadView = searchParams.get("threadView") === "true";
+    
     // Calculate offset based on page
     const skip = (page - 1) * pageSize;
     
@@ -67,7 +91,9 @@ export async function GET(request: NextRequest) {
     const fetchedEmails = await fetchMissingEmails(
       missingMessageIds, 
       userId, 
-      session.user.accessToken ?? null
+      session.user.accessToken ?? null,
+      0,  // Initial retry count
+      userId // Pass the account user ID for token refresh
     );
     log(`Successfully fetched ${fetchedEmails.length} emails from Gmail API`);
     
@@ -89,9 +115,14 @@ export async function GET(request: NextRequest) {
     };
     
     log(`Request completed in ${Date.now() - startTime}ms`);
-    return NextResponse.json(result);
     
+    // Mark fetch as completed before returning
+    setUserFetchStatus(userId, false);
+    
+    return NextResponse.json(result);
   } catch (error) {
+    // Mark fetch as completed even on error
+    setUserFetchStatus(userId, false);
     log('Error in inbox retrieval:', error);
     return NextResponse.json({ 
       error: error instanceof Error ? error.message : 'An unexpected error occurred' 
@@ -253,94 +284,229 @@ async function getExistingEmails(messageIds: { id: string }[]): Promise<any[]> {
 async function fetchMissingEmails(
   missingIds: string[], 
   userId: string, 
-  accessToken: string | null
+  accessToken: string | null,
+  retryCount: number = 0,
+  accountUserId: string = userId // Default to userId if not provided
 ): Promise<any[]> {
-  if (missingIds.length === 0 || !accessToken) {
+  const MAX_RETRY_ATTEMPTS = 1;
+  
+  if (missingIds.length === 0) {
     return [];
   }
   
-  // Set up Gmail API client once
-  const oauth2Client = new google.auth.OAuth2();
-  oauth2Client.setCredentials({ access_token: accessToken });
-  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-  
-  // Fetch messages in batches to avoid overwhelming Gmail API
-  const fetchedEmails = [];
-  
-  for (let i = 0; i < missingIds.length; i += FETCH_BATCH_SIZE) {
-    const batch = missingIds.slice(i, i + FETCH_BATCH_SIZE);
-    
-    // Fetch messages in parallel
-    const messageBatchPromises = batch.map(async (messageId) => {
-      try {
-        // Get the message details from database first
-        const message = await prisma.message.findUnique({
-          where: { id: messageId },
-          select: { id: true, threadId: true, createdAt: true }
-        });
-        
-        if (!message) return null;
-        
-        // Fetch from Gmail API
-        const fullMessage = await gmail.users.messages.get({
-          userId: GMAIL_USER_ID,
-          id: messageId,
-          format: 'full'
-        });
-        
-        if (!fullMessage.data) return null;
-        
-        // Extract email details
-        const headers = fullMessage.data.payload?.headers || [];
-        const subject = headers.find((h: any) => h.name === 'Subject')?.value || '';
-        const from = headers.find((h: any) => h.name === 'From')?.value || '';
-        const to = headers.find((h: any) => h.name === 'To')?.value || '';
-        
-        // Get email content
-        const content = fullMessage.data.payload 
-          ? extractContentFromParts(fullMessage.data.payload) 
-          : { text: '', html: '' };
-        
-        // Create email object
-        const emailData = {
-          id: messageId,
-          threadId: message.threadId,
-          userId,
-          subject,
-          from,
-          to,
-          snippet: fullMessage.data.snippet || null,
-          body: content.html || content.text || fullMessage.data.snippet || 'No content available',
-          isRead: fullMessage.data.labelIds?.includes('UNREAD') ? false : true,
-          isStarred: fullMessage.data.labelIds?.includes('STARRED') || false,
-          labels: fullMessage.data.labelIds || [],
-          internalDate: fullMessage.data.internalDate || null,
-          createdAt: message.createdAt
-        };
-        
-        return emailData;
-      } catch (error) {
-        log(`Error fetching email for message ${messageId}:`, error);
-        return null;
-      }
-    });
-    
-    // Wait for all fetches to complete
-    const fetchedBatch = await Promise.all(messageBatchPromises);
-    const validEmails = fetchedBatch.filter(email => email !== null) as any[];
-    
-    // Batch store the emails in database
-    if (validEmails.length > 0) {
-      // Encrypt and store each email
-      const storePromises = validEmails.map(emailData => encryptAndStoreEmail(emailData));
-      await Promise.all(storePromises);
-      
-      // Add to results
-      fetchedEmails.push(...validEmails);
-    }
+  // Check if operation has been cancelled
+  if (!isUserFetchActive(userId)) {
+    log(`Fetch operation cancelled for user ${userId}`);
+    return [];
   }
   
-  return fetchedEmails;
+  if (!accessToken) {
+    // Try to refresh the token if we don't have one or it might be expired
+    if (retryCount < MAX_RETRY_ATTEMPTS) {
+      log(`No access token available, attempting to refresh token...`);
+      const newToken = await refreshAccessToken(accountUserId);
+      if (newToken) {
+        log(`Token refreshed successfully, retrying fetch with new token`);
+        return fetchMissingEmails(missingIds, userId, newToken, retryCount + 1, accountUserId);
+      }
+    }
+    log(`Unable to obtain access token after ${retryCount} attempts`);
+    return [];
+  }
+  
+  try {
+    // Set up Gmail API client
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: accessToken });
+    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+    
+    // Batch fetch message details from database to improve performance
+    const messageDetails = await prisma.message.findMany({
+      where: { id: { in: missingIds } },
+      select: { id: true, threadId: true, createdAt: true }
+    });
+    
+    // Create a map for faster lookups
+    const messageDetailsMap = new Map(
+      messageDetails.map(message => [message.id, message])
+    );
+    
+    // Fetch messages in batches to avoid overwhelming Gmail API
+    const fetchedEmails: any[] = [];
+    const STORAGE_BATCH_SIZE = 50; // Optimal batch size for database operations
+    
+    // Process in batches to avoid overwhelming Gmail API
+    for (let i = 0; i < missingIds.length; i += FETCH_BATCH_SIZE) {
+      // Check for cancellation before processing each batch
+      if (!isUserFetchActive(userId)) {
+        log(`Fetch operation cancelled for user ${userId} during batch processing`);
+        return fetchedEmails;
+      }
+      
+      const batch = missingIds.slice(i, i + FETCH_BATCH_SIZE);
+      let shouldRetryWithNewToken = false;
+      let batchResults: any[] = [];
+      
+      try {
+        // Fetch messages in parallel
+        const messageBatchPromises = batch.map(async (messageId) => {
+          try {
+            // Get the message details from our map
+            const message = messageDetailsMap.get(messageId);
+            if (!message) return null;
+            
+            // Fetch from Gmail API
+            const fullMessage = await gmail.users.messages.get({
+              userId: GMAIL_USER_ID,
+              id: messageId,
+              format: 'full'
+            });
+            
+            if (!fullMessage.data) return null;
+            
+            // Extract email details
+            const headers = fullMessage.data.payload?.headers || [];
+            const subject = headers.find((h: any) => h.name === 'Subject')?.value || '';
+            const from = headers.find((h: any) => h.name === 'From')?.value || '';
+            const to = headers.find((h: any) => h.name === 'To')?.value || '';
+            
+            // Get email content
+            const content = fullMessage.data.payload 
+              ? extractContentFromParts(fullMessage.data.payload) 
+              : { text: '', html: '' };
+            
+            // Create email object
+            return {
+              id: messageId,
+              threadId: message.threadId,
+              userId,
+              subject,
+              from,
+              to,
+              snippet: fullMessage.data.snippet || '',
+              body: content.html || content.text || fullMessage.data.snippet || 'No content available',
+              isRead: !fullMessage.data.labelIds?.includes('UNREAD'),
+              isStarred: fullMessage.data.labelIds?.includes('STARRED') || false,
+              labels: fullMessage.data.labelIds || [],
+              internalDate: fullMessage.data.internalDate || null,
+              createdAt: message.createdAt
+            };
+          } catch (error: any) {
+            // Handle auth errors specifically to refresh token
+            if (error.response?.status === 401) {
+              shouldRetryWithNewToken = true;
+            }
+            log(`Error fetching email for message ${messageId}:`, error);
+            return null;
+          }
+        });
+        
+        // Wait for all fetches to complete
+        batchResults = (await Promise.all(messageBatchPromises)).filter(Boolean) as any[];
+        fetchedEmails.push(...batchResults);
+      } catch (batchError: any) {
+        if (batchError.response?.status === 401) {
+          shouldRetryWithNewToken = true;
+        }
+        log(`Error in batch fetch:`, batchError);
+      }
+      
+      // Handle token refresh for this batch if needed
+      if (shouldRetryWithNewToken && retryCount < MAX_RETRY_ATTEMPTS) {
+        log(`Batch encountered 401 error, attempting to refresh token...`);
+        const newToken = await refreshAccessToken(accountUserId);
+        if (newToken) {
+          log(`Token refreshed successfully, retrying fetch with new token`);
+          // Use iteration instead of recursion to prevent stack overflow
+          const remainingIds = missingIds.slice(i);
+          const retriedResults = await fetchMissingEmails(
+            remainingIds, 
+            userId, 
+            newToken, 
+            retryCount + 1,
+            accountUserId
+          );
+          fetchedEmails.push(...retriedResults);
+          break; // Exit the loop as we're handling remaining items in the retry
+        }
+      }
+      
+      // Store batch results in database
+      if (batchResults.length > 0) {
+        await storeEmailBatch(batchResults);
+      }
+    }
+    
+    return fetchedEmails;
+  } catch (error: any) {
+    // Handle top-level errors, particularly token expiration
+    if (error.response?.status === 401 && retryCount < MAX_RETRY_ATTEMPTS) {
+      log(`API call failed with 401 error, attempting to refresh token...`);
+      const newToken = await refreshAccessToken(accountUserId);
+      if (newToken) {
+        log(`Token refreshed successfully, retrying fetch with new token`);
+        // Use iteration instead of recursion for the retry
+        return fetchMissingEmails(missingIds, userId, newToken, retryCount + 1, accountUserId);
+      }
+    }
+    log(`Error fetching emails from Gmail:`, error);
+    return [];
+  }
+}
+
+/**
+ * Store a batch of emails in the database with encryption
+ */
+async function storeEmailBatch(emails: any[]): Promise<void> {
+  if (emails.length === 0) return;
+  
+  try {
+    // Encrypt all emails
+    const encryptedEmails = emails.map(email => encryptEmailFields(email));
+    
+    // Store in batches of 50 for optimal performance
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < encryptedEmails.length; i += BATCH_SIZE) {
+      const batch = encryptedEmails.slice(i, i + BATCH_SIZE);
+      await prisma.email.createMany({
+        data: batch,
+        skipDuplicates: true
+      });
+    }
+    
+    log(`Successfully stored ${encryptedEmails.length} emails in database`);
+  } catch (error) {
+    log(`Error batch storing emails:`, error);
+    // Continue execution as we've already fetched the emails
+  }
+}
+
+/**
+ * Encrypt email fields for database storage
+ */
+function encryptEmailFields(emailData: any) {
+  // Encrypt body
+  const { encryptedData: encryptedBodyData, iv: bodyIv, authTag: bodyAuthTag } = encryptText(emailData.body);
+  const encryptedBody = encodeEncryptedData(encryptedBodyData, bodyIv, bodyAuthTag);
+  
+  // Encrypt subject
+  const { encryptedData: encryptedSubjectData, iv: subjectIv, authTag: subjectAuthTag } = encryptText(emailData.subject);
+  const encryptedSubject = encodeEncryptedData(encryptedSubjectData, subjectIv, subjectAuthTag);
+  
+  // Encrypt snippet if it exists
+  let encryptedSnippet = null;
+  if (emailData.snippet) {
+    const { encryptedData: encryptedSnippetData, iv: snippetIv, authTag: snippetAuthTag } = encryptText(emailData.snippet);
+    encryptedSnippet = encodeEncryptedData(encryptedSnippetData, snippetIv, snippetAuthTag);
+  }
+  
+  // Return encrypted email
+  return {
+    ...emailData,
+    body: encryptedBody,
+    subject: encryptedSubject,
+    snippet: encryptedSnippet
+  };
 }
 
 /**
@@ -394,42 +560,16 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   
-  return NextResponse.json({ success: true, message: "No active fetch to cancel" });
-}
-
-/**
- * Encrypts and stores an email in the database
- */
-async function encryptAndStoreEmail(emailData: any) {
-  // Encrypt body
-  const { encryptedData: encryptedBodyData, iv: bodyIv, authTag: bodyAuthTag } = encryptText(emailData.body);
-  const encryptedBody = encodeEncryptedData(encryptedBodyData, bodyIv, bodyAuthTag);
+  const userId = session.user.id;
   
-  // Encrypt subject
-  const { encryptedData: encryptedSubjectData, iv: subjectIv, authTag: subjectAuthTag } = encryptText(emailData.subject);
-  const encryptedSubject = encodeEncryptedData(encryptedSubjectData, subjectIv, subjectAuthTag);
-  
-  // Encrypt snippet if it exists
-  let encryptedSnippet = null;
-  if (emailData.snippet) {
-    const { encryptedData: encryptedSnippetData, iv: snippetIv, authTag: snippetAuthTag } = encryptText(emailData.snippet);
-    encryptedSnippet = encodeEncryptedData(encryptedSnippetData, snippetIv, snippetAuthTag);
+  // Check if there is an active fetch for this user
+  if (isUserFetchActive(userId)) {
+    // Set status to inactive to signal cancellation
+    setUserFetchStatus(userId, false);
+    return NextResponse.json({ success: true, message: "Fetch operation cancelled" });
   }
   
-  // Store the encrypted email, preserving all other fields including internalDate
-  const encryptedEmail = {
-    ...emailData,
-    body: encryptedBody,
-    subject: encryptedSubject,
-    snippet: encryptedSnippet
-  };
-  
-  // Store in database
-  await prisma.email.create({
-    data: encryptedEmail
-  });
-  
-  return encryptedEmail;
+  return NextResponse.json({ success: true, message: "No active fetch to cancel" });
 }
 
 /**
@@ -473,6 +613,7 @@ function decryptEmail(email: any) {
   
   return decryptedEmail;
 }
+
 /**
  * Refresh access token for a user
  */
