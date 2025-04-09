@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Row, Text, Input, Icon, Switch, Button, Select, Tooltip } from "@/once-ui/components";
 
 interface InboxControlsProps {
@@ -13,6 +13,11 @@ interface InboxControlsProps {
     isSyncing?: boolean;
     isLoading: boolean;
     isFetching: boolean;
+    // AI Search props
+    onAISearch?: (query: string) => void;
+    onClearAISearch?: () => void;
+    isAISearchActive?: boolean;
+    isAISearchLoading?: boolean;
 }
 
 export function InboxControls({
@@ -27,7 +32,40 @@ export function InboxControls({
     isSyncing = false,
     isLoading,
     isFetching,
+    onAISearch,
+    onClearAISearch,
+    isAISearchActive = false,
+    isAISearchLoading = false,
 }: InboxControlsProps) {
+    // Local search state to handle AI search button clicks
+    const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+
+    // Handle local search change and propagate to parent
+    const handleSearchChange = (value: string) => {
+        setLocalSearchQuery(value);
+        onSearchChange(value);
+        
+        // If AI search is active and the user is typing a new search query,
+        // automatically clear the AI search results
+        if (isAISearchActive && onClearAISearch) {
+            onClearAISearch();
+        }
+    };
+
+    // Handle AI search button click
+    const handleAISearchClick = () => {
+        if (onAISearch && localSearchQuery.trim()) {
+            onAISearch(localSearchQuery);
+        }
+    };
+
+    // Handle clear AI search
+    const handleClearAISearch = () => {
+        if (onClearAISearch) {
+            onClearAISearch();
+        }
+    };
+
     return (
         <>
             <Row
@@ -38,15 +76,15 @@ export function InboxControls({
                 paddingX="16"
             >
                 <Text variant="display-default-l" as="h1">
-                    Inbox
+                    {isAISearchActive ? "AI Search Results" : "Inbox"}
                 </Text>
                 <Row gap="16" vertical="center">
                     <Input
                         id="search-emails"
                         label="Search emails"
                         labelAsPlaceholder
-                        value={searchQuery}
-                        onChange={(e) => onSearchChange(e.target.value)}
+                        value={localSearchQuery}
+                        onChange={(e) => handleSearchChange(e.target.value)}
                         hasPrefix={<Icon name="search" size="s" />}
                     />
                     <Row gap="8" vertical="center">
@@ -61,31 +99,54 @@ export function InboxControls({
             </Row>
 
             <Row paddingX="16" marginBottom="16" gap="8">
-                <Button
-                    label="Refresh"
-                    prefixIcon="refresh"
-                    variant="secondary"
-                    onClick={onRefresh}
-                    disabled={isLoading || isFetching}
-                />
-
-                {onSync && (
+                {isAISearchActive && onClearAISearch ? (
                     <Button
-                        label="Sync with Gmail"
-                        prefixIcon="cloud-download"
-                        variant="secondary"
-                        onClick={onSync}
-                        disabled={isLoading || isFetching || isSyncing}
-                        loading={isSyncing}
+                        label="Return to Inbox"
+                        prefixIcon="arrow-left"
+                        variant="primary"
+                        onClick={handleClearAISearch}
+                    />
+                ) : (
+                    <>
+                        <Button
+                            label="Refresh"
+                            prefixIcon="refresh"
+                            variant="secondary"
+                            onClick={onRefresh}
+                            disabled={isLoading || isFetching}
+                        />
+
+                        {onSync && (
+                            <Button
+                                label="Sync with Gmail"
+                                prefixIcon="cloud-download"
+                                variant="secondary"
+                                onClick={onSync}
+                                disabled={isLoading || isFetching || isSyncing}
+                                loading={isSyncing}
+                            />
+                        )}
+
+                        <Button
+                            label="Star Selected"
+                            prefixIcon="star"
+                            variant="secondary"
+                            disabled={true}
+                        />
+                    </>
+                )}
+
+                {onAISearch && (
+                    <Button
+                        label={isAISearchLoading ? "Searching..." : "AI Search"}
+                        prefixIcon="sparkles"
+                        variant={isAISearchActive ? "secondary" : "primary"}
+                        onClick={handleAISearchClick}
+                        disabled={!localSearchQuery.trim() || isAISearchLoading}
+                        loading={isAISearchLoading}
                     />
                 )}
 
-                <Button
-                    label="Star Selected"
-                    prefixIcon="star"
-                    variant="secondary"
-                    disabled={true}
-                />
                 <Select
                     id="page-size-select"
                     label={`${pageSize} per page`}
