@@ -86,7 +86,7 @@ export async function POST(request: Request) {
         // Check if a batch size is specified in the request
         const url = new URL(request.url);
         const batchSize = url.searchParams.get("batchSize")
-            ? Number.parseInt(url.searchParams.get("batchSize")!)
+            ? Number.parseInt(url.searchParams.get("batchSize") || DEFAULT_BATCH_SIZE.toString(), 10)
             : DEFAULT_BATCH_SIZE;
 
         // Get user from session
@@ -193,7 +193,7 @@ export async function DELETE(request: Request) {
         }
 
         // Get the controller and abort the sync
-        const { controller } = ongoingSyncs.get(userId)!;
+        const { controller } = ongoingSyncs.get(userId) as { controller: AbortController };
         controller.abort();
 
         // Response will be sent when the stream is closed by the abort handler

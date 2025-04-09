@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/libs/db";
 import { auth } from "@/libs/auth";
 import { headers } from "next/headers";
@@ -50,7 +50,7 @@ async function withGmailApi<T>(
     userId: string,
     accessToken: string | null,
     apiCall: (gmail: any) => Promise<T>,
-    retryCount: number = 0,
+    retryCount = 0,
 ): Promise<T | null> {
     const MAX_RETRY_ATTEMPTS = 1;
 
@@ -79,7 +79,7 @@ async function withGmailApi<T>(
             const newToken = await refreshAccessToken(userId);
 
             if (newToken) {
-                log(`Token refreshed successfully, retrying API call...`);
+                log("Token refreshed successfully, retrying API call...");
                 return withGmailApi(userId, newToken, apiCall, retryCount + 1);
             }
 
@@ -115,8 +115,8 @@ export async function GET(request: NextRequest) {
     try {
         // Get request parameters
         const { searchParams } = new URL(request.url);
-        const page = parseInt(searchParams.get("page") || "1", 10);
-        const pageSize = parseInt(searchParams.get("pageSize") || PAGE_SIZE.toString(), 10);
+        const page = Number.parseInt(searchParams.get("page") || "1", 10);
+        const pageSize = Number.parseInt(searchParams.get("pageSize") || PAGE_SIZE.toString(), 10);
         const threadView = searchParams.get("threadView") === "true";
 
         // Calculate offset based on page
@@ -246,7 +246,7 @@ async function getMessageIds(
             }
 
             // Fallback: If no emails are found, try messages table
-            log(`No emails found in emails table, falling back to messages table`);
+            log("No emails found in emails table, falling back to messages table");
 
             // Get all thread IDs for this user with a reasonable limit
             const allThreads = await prisma.message.findMany({
@@ -345,8 +345,8 @@ async function fetchMissingEmails(
     missingIds: string[],
     userId: string,
     accessToken: string | null,
-    retryCount: number = 0,
-    accountUserId: string = userId, // Default to userId if not provided
+    retryCount = 0,
+    accountUserId = userId, // Default to userId if not provided
 ): Promise<any[]> {
     if (missingIds.length === 0) {
         return [];
@@ -452,7 +452,7 @@ async function fetchMissingEmails(
 
         return fetchedEmails;
     } catch (error) {
-        log(`Error in fetchMissingEmails:`, error);
+        log("Error in fetchMissingEmails:", error);
         return [];
     }
 }
@@ -479,7 +479,7 @@ async function storeEmailBatch(emails: any[]): Promise<void> {
 
         log(`Successfully stored ${encryptedEmails.length} emails in database`);
     } catch (error) {
-        log(`Error batch storing emails:`, error);
+        log("Error batch storing emails:", error);
         // Continue execution as we've already fetched the emails
     }
 }
@@ -534,8 +534,8 @@ function processEmails(existingEmails: any[], fetchedEmails: any[], threadView: 
     // Sort emails by date
     allEmails.sort((a, b) => {
         // Use internalDate if available, otherwise fall back to createdAt
-        const dateA = a.internalDate ? new Date(parseInt(a.internalDate)) : new Date(a.createdAt);
-        const dateB = b.internalDate ? new Date(parseInt(b.internalDate)) : new Date(b.createdAt);
+        const dateA = a.internalDate ? new Date(Number.parseInt(a.internalDate)) : new Date(a.createdAt);
+        const dateB = b.internalDate ? new Date(Number.parseInt(b.internalDate)) : new Date(b.createdAt);
         return dateB.getTime() - dateA.getTime();
     });
 
@@ -549,14 +549,14 @@ function processEmails(existingEmails: any[], fetchedEmails: any[], threadView: 
         allEmails.reduce(
             (threads, email) => {
                 const emailDate = email.internalDate
-                    ? new Date(parseInt(email.internalDate))
+                    ? new Date(Number.parseInt(email.internalDate))
                     : new Date(email.createdAt);
 
                 if (
                     !threads[email.threadId] ||
                     emailDate >
                         (threads[email.threadId].internalDate
-                            ? new Date(parseInt(threads[email.threadId].internalDate))
+                            ? new Date(Number.parseInt(threads[email.threadId].internalDate))
                             : new Date(threads[email.threadId].createdAt))
                 ) {
                     threads[email.threadId] = email;

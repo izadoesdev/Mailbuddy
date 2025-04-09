@@ -1,3 +1,5 @@
+"use server";
+
 import { Index } from "@upstash/vector";
 import env from "@/libs/env";
 
@@ -142,5 +144,3 @@ export async function checkVectorHealth() {
         return false;
     }
 }
-
-export default vectorIndex;
