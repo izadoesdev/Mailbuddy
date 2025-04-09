@@ -1,107 +1,26 @@
 "use client";
 
-import React, { useState } from "react";
-
+import React from "react";
 import {
   Heading,
   Text,
   Button,
   Icon,
-  InlineCode,
   Logo,
-  Input,
-  Avatar,
-  AvatarGroup,
-  Textarea,
-  PasswordInput,
-  SegmentedControl,
-  SmartLink,
-  Dialog,
-  Feedback,
+  Row,
+  Column,
+  Card,
+  Background,
   SmartImage,
   Line,
-  LogoCloud,
-  Background,
-  Select,
-  useToast,
-  Card,
-  Fade,
-  StatusIndicator,
-  DateRangePicker,
-  DateRange,
-  TiltFx,
-  HoloFx,
   IconButton,
-  TagInput,
-  Switch,
-  Column,
-  Row,
-  StyleOverlay,
-  CompareImage,
-  ThemeSwitcher,
+  Fade,
 } from "@/once-ui/components";
-import { CodeBlock, MediaUpload } from "@/once-ui/modules";
-import { ScrollToTop } from "@/once-ui/components/ScrollToTop";
 
 export default function Home() {
-  const [selectedValue, setSelectedValue] = useState("");
-  const [selectedRange, setSelectedRange] = useState<DateRange>();
-  const [isFirstDialogOpen, setIsFirstDialogOpen] = useState(false);
-  const [isSecondDialogOpen, setIsSecondDialogOpen] = useState(false);
-  const [firstDialogHeight, setFirstDialogHeight] = useState<number>();
-  const { addToast } = useToast();
-  const [intro, setIntro] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [tags, setTags] = useState<string[]>(["UX / UI", "Design systems", "AI / ML"]);
-  const [twoFA, setTwoFA] = useState(false);
-
-  const handleSelect = (value: string) => {
-    console.log("Selected option:", value);
-    setSelectedValue(value);
-  };
-
-  const links = [
-    {
-      href: "https://once-ui.com/docs/theming",
-      title: "Themes",
-      description: "Style your app in minutes",
-    },
-    {
-      href: "https://once-ui.com/docs/flexComponent",
-      title: "Layout",
-      description: "Build responsive layouts",
-    },
-    {
-      href: "https://once-ui.com/docs/typography",
-      title: "Typography",
-      description: "Scale text automatically",
-    },
-  ];
-
-  const validateIntro = (value: React.ReactNode) => {
-    if (typeof value === "string" && value.length < 10) {
-      return (
-        <Row horizontal="center" marginBottom="12" gap="8">
-          <Icon name="errorCircle" />
-          Intro must be at least 10 characters long.
-        </Row>
-      );
-    }
-    return null;
-  };
-
-  const validateLogin = () => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!regex.test(email)) {
-      return "Email and / or password is invalid.";
-    }
-    return null;
-  };
-
   return (
     <Column fillWidth paddingY="80" paddingX="s" horizontal="center" flex={1}>
-      <ScrollToTop><IconButton variant="secondary" icon="chevronUp"/></ScrollToTop>
+      {/* Top fade effect */}
       <Fade
         zIndex={3}
         pattern={{
@@ -116,6 +35,8 @@ export default function Home() {
         fillWidth
         blur={0.25}
       />
+      
+      {/* Navigation */}
       <Row position="fixed" top="0" fillWidth horizontal="center" zIndex={3}>
         <Row
           data-border="rounded"
@@ -124,40 +45,26 @@ export default function Home() {
           paddingRight="64"
           paddingLeft="32"
           paddingY="20"
+          fillWidth
         >
-          <Logo size="s" icon={false} href="https://once-ui.com" />
-          <Row gap="12" hide="s">
-            <Row position="fixed" top="20" right="20">
-              <StyleOverlay
-                position="fixed"
-                top="8"
-                right="8"
-                style={{ height: "calc(100vh - var(--static-space-16))" }}
-              />
-            </Row>
+          <Logo size="s" icon={true} href="/" />
+          <Row gap="24" hide="s">
+            <Button href="/features" label="Features" variant="tertiary" />
+            <Button href="/pricing" label="Pricing" variant="tertiary" />
+            <Button href="/login" label="Log in" variant="secondary" />
+            <Button href="/register" label="Sign up" arrowIcon />
           </Row>
-          <Row gap="16" show="s" horizontal="center" paddingRight="24">
+          <Row gap="16" show="s">
             <IconButton
-              href="https://discord.com/invite/5EyAQ4eNdS"
-              icon="discord"
+              icon="menu"
               variant="tertiary"
+              aria-label="Menu"
             />
-            <IconButton
-              href="https://github.com/once-ui-system/nextjs-starter"
-              icon="github"
-              variant="tertiary"
-            />
-            <Row position="fixed" top="20" right="20">
-              <StyleOverlay
-                position="fixed"
-                top="8"
-                right="8"
-                style={{ height: "calc(100vh - var(--static-space-16))" }}
-              />
-            </Row>
           </Row>
         </Row>
       </Row>
+      
+      {/* Main content */}
       <Column
         overflow="hidden"
         as="main"
@@ -165,15 +72,16 @@ export default function Home() {
         position="relative"
         radius="xl"
         horizontal="center"
-        border="neutral-alpha-weak"
         fillWidth
       >
+        {/* Hero section */}
         <Column
           fillWidth
           horizontal="center"
           gap="48"
           radius="xl"
           paddingTop="80"
+          paddingBottom="64"
           position="relative"
         >
           <Background
@@ -226,822 +134,229 @@ export default function Home() {
               colorEnd: "static-transparent",
             }}
           />
+          
           <Column fillWidth horizontal="center" gap="32" padding="32" position="relative">
-            <InlineCode radius="xl" shadow="m" fit paddingX="16" paddingY="8">
-              Start by editing
-              <Text onBackground="brand-medium" marginLeft="8">
-                app/page.tsx
-              </Text>
-            </InlineCode>
             <Heading wrap="balance" variant="display-strong-xl" align="center" marginBottom="16">
-              Code faster than AI
+              Secure Email Made Simple
             </Heading>
-            <Button
-              id="readDocs"
-              target="_blank"
-              label="Open docs"
-              href="https://once-ui.com/docs"
-              variant="secondary"
-              arrowIcon
-            />
-            <Column horizontal="center" paddingTop="64" fillWidth gap="24">
-              <Line maxWidth={4} marginBottom="16" background="neutral-alpha-medium" />
-              <AvatarGroup
-                marginBottom="8"
-                reverse
-                size="s"
-                avatars={[
-                  {
-                    src: "/images/l.jpg",
-                  },
-                  {
-                    src: "/images/z.jpg",
-                  },
-                ]}
-              />
-              <Heading marginBottom="12" as="h2" align="center" variant="heading-default-l">
-                Brought to you by indie creators
-                <br /> behind stellar projects:
-              </Heading>
-              <LogoCloud
-                paddingBottom="104"
-                columns="3"
-                mobileColumns="1"
-                limit={3}
-                fillWidth
-                logos={[
-                  {
-                    icon: false,
-                    wordmarkSrc: "/trademark/dopler-wordmark.svg",
-                    href: "https://dopler.app",
-                    size: "m",
-                  },
-                  {
-                    icon: false,
-                    wordmarkSrc: "/trademark/design-engineers-wordmark.svg",
-                    href: "https://club.dropler.io",
-                    size: "m",
-                  },
-                  {
-                    icon: false,
-                    wordmarkSrc: "/trademark/enroll-wordmark.svg",
-                    href: "https://enroll.dopler.app",
-                    size: "m",
-                  },
-                  {
-                    icon: false,
-                    wordmarkSrc: "/trademark/magic-portfolio-wordmark.svg",
-                    href: "https://magic-portfolio.com",
-                    size: "m",
-                  },
-                ]}
-              />
-            </Column>
-          </Column>
-          <Column fillWidth paddingX="32" gap="12" horizontal="center" position="relative">
-            <Heading as="h2" variant="display-default-m">
-              Showcase
-            </Heading>
-            <Text marginBottom="32" align="center" onBackground="neutral-weak">
-              Tiny snippets to inspire your next project
+            <Text variant="body-default-xl" align="center" marginBottom="32">
+              Mailbuddy is your secure, privacy-focused email companion that makes managing Gmail simple and efficient.
             </Text>
-
-            {/* COMPARE IMAGE */}
-            <CompareImage
-              radius="xl"
-              overflow="hidden"
-              border="neutral-alpha-weak"
-              leftContent={{ src: "/images/1.jpg", alt: "alt" }}
-              rightContent={{ src: "/images/2.jpg", alt: "alt" }}
-            />
-
-            {/* LOGIN */}
-            <Row
-              marginY="32"
-              background="overlay"
-              fillWidth
-              radius="xl"
-              border="neutral-alpha-weak"
-              overflow="hidden"
-            >
-              <Row fill hide="m">
-                <SmartImage src="/images/login.png" alt="Preview image" sizes="560px" />
-              </Row>
-              <Column fillWidth horizontal="center" gap="20" padding="32" position="relative">
-                <Background
-                  mask={{
-                    x: 100,
-                    y: 0,
-                    radius: 75,
-                  }}
-                  position="absolute"
-                  grid={{
-                    display: true,
-                    opacity: 50,
-                    width: "0.5rem",
-                    color: "neutral-alpha-medium",
-                    height: "1rem",
-                  }}
-                />
-                <Logo wordmark={false} size="l" />
-                <Heading as="h3" variant="display-default-s" align="center">
-                  Welcome to Once UI
-                </Heading>
-                <Text onBackground="neutral-medium" marginBottom="24">
-                  Log in or
-                  <SmartLink href="/">sign up</SmartLink>
-                </Text>
-                <Column fillWidth gap="8">
-                  <Button
-                    label="Continue with Google"
-                    fillWidth
-                    variant="secondary"
-                    weight="default"
-                    prefixIcon="google"
-                    size="l"
-                  />
-                  <Button
-                    label="Continue with GitHub"
-                    fillWidth
-                    variant="secondary"
-                    weight="default"
-                    prefixIcon="github"
-                    size="l"
-                  />
-                </Column>
-                <Row fillWidth paddingY="24">
-                  <Row onBackground="neutral-weak" fillWidth gap="24" vertical="center">
-                    <Line />/<Line />
-                  </Row>
-                </Row>
-                <Column gap="-1" fillWidth>
-                  <Input
-                    id="email"
-                    label="Email"
-                    labelAsPlaceholder
-                    onChange={(e) => setEmail(e.target.value)}
-                    value={email}
-                    validate={validateLogin}
-                    errorMessage={false}
-                    radius="top"
-                  />
-                  <PasswordInput
-                    autoComplete="new-password"
-                    id="password"
-                    label="Password"
-                    labelAsPlaceholder
-                    radius="bottom"
-                    onChange={(e) => setPassword(e.target.value)}
-                    value={password}
-                    validate={validateLogin}
-                  />
-                </Column>
-                <Button
-                  id="login"
-                  label="Log in"
-                  arrowIcon
-                  fillWidth
-                  onClick={() => {
-                    addToast({
-                      variant: "success",
-                      message: "Wohoo! It's a toast!",
-                    });
-                  }}
-                />
-              </Column>
+            <Row gap="16" horizontal="center">
+              <Button
+                label="Get Started"
+                href="/register"
+                variant="primary"
+                size="l"
+                arrowIcon
+              />
+              <Button
+                label="See Features"
+                href="/features"
+                variant="secondary"
+                size="l"
+              />
             </Row>
           </Column>
         </Column>
 
-        {/* PAYMENT */}
-        <Row
-          paddingX="32"
-          fillWidth
-          paddingY="160"
-          gap="64"
-          position="relative"
-          mobileDirection="column"
-          vertical="center"
-        >
-          <Background
-            style={{ left: "-1px" }}
-            borderTop="neutral-alpha-medium"
-            mask={{
-              x: 0,
-              y: 50,
-              radius: 100,
-            }}
-            position="absolute"
-            grid={{
-              display: true,
-              opacity: 100,
-              width: "10%",
-              color: "neutral-alpha-medium",
-              height: "1.25%",
-            }}
-          />
-          <Row
-            position="relative"
-            shadow="xl"
-            fillWidth
-            border="neutral-alpha-medium"
-            borderStyle="dashed"
-            background="page"
-            radius="xl"
-          >
-            <TiltFx
-              aspectRatio="16 / 9"
-              fillWidth
-              radius="xl"
-              border="accent-alpha-weak"
-              overflow="hidden"
-            >
-              <HoloFx fill>
-                <Background
-                  fill
-                  position="absolute"
-                  gradient={{
-                    display: true,
-                    tilt: -45,
-                    height: 150,
-                    width: 100,
-                    x: 75,
-                    y: -50,
-                    colorStart: "brand-solid-strong",
-                    colorEnd: "accent-solid-weak",
-                  }}
-                >
-                  <Column
-                    fill
-                    position="absolute"
-                    padding="24"
-                    vertical="end"
-                    gap="12"
-                    onSolid="neutral-strong"
-                  >
-                    <Text variant="body-default-xl">Lorant One</Text>
-                    <Row fillWidth horizontal="space-between" vertical="end" paddingRight="16">
-                      <Column gap="4">
-                        <Text variant="body-default-m">08 / 27</Text>
-                        <Text variant="body-default-m">1234 5678 1234 5678</Text>
-                      </Column>
-                      <Icon name="visa" size="xl" />
-                    </Row>
-                  </Column>
-                </Background>
-              </HoloFx>
-            </TiltFx>
-          </Row>
-          <Column position="relative" fillWidth gap="-1">
-            <Row fillWidth vertical="center" horizontal="space-between" marginBottom="32">
-              <Heading as="h3" variant="display-default-xs">
-                Fill in your card details
-              </Heading>
-              <IconButton
-                data-border="rounded"
-                variant="tertiary"
-                icon="chevronRight"
-                tooltip="Next"
-                tooltipPosition="left"
-              />
-            </Row>
-            <Input
-              id="cardnumber"
-              label="Card number"
-              labelAsPlaceholder
-              radius="top"
-              defaultValue="1234 5678 1234 5678"
-            />
-            <Row fillWidth gap="-1">
-              <Input
-                id="expiry"
-                label="Expiry date"
-                labelAsPlaceholder
-                radius="bottom-left"
-                defaultValue="08 / 27"
-              />
-              <Input
-                id="cvv"
-                label="CVV"
-                labelAsPlaceholder
-                radius="bottom-right"
-                defaultValue="123"
-              />
-            </Row>
-          </Column>
-        </Row>
-
-        {/* BOOKING */}
-        <Row
-          padding="32"
-          fillWidth
-          gap="64"
-          position="relative"
-          mobileDirection="column"
-          vertical="center"
-        >
-          <Background
-            fill
-            position="absolute"
-            gradient={{
-              display: true,
-              opacity: 60,
-              tilt: 0,
-              height: 100,
-              width: 100,
-              x: 50,
-              y: 0,
-              colorStart: "brand-solid-strong",
-              colorEnd: "static-transparent",
-            }}
-          />
-          <Column
-            fillWidth
-            background="surface"
-            radius="xl"
-            border="neutral-medium"
-            overflow="hidden"
-            padding="32"
-            gap="40"
-            position="relative"
-          >
-            <Row fillWidth horizontal="center" gap="-1">
-              <Column
-                maxWidth={12}
-                gap="4"
-                leftRadius="l"
-                paddingX="16"
-                paddingY="12"
-                background="surface"
-                border="neutral-medium"
-              >
-                <Text variant="label-default-s" onBackground="neutral-weak">
-                  Check in
-                </Text>
-                {selectedRange?.startDate ? (
-                  <>
-                    {selectedRange?.startDate.toLocaleDateString("default", {
-                      day: "numeric",
-                      month: "long",
-                    })}
-                  </>
-                ) : (
-                  "Add dates"
-                )}
-              </Column>
-              <Column
-                maxWidth={12}
-                gap="4"
-                rightRadius="l"
-                paddingX="16"
-                paddingY="12"
-                background="surface"
-                border="neutral-medium"
-              >
-                <Text variant="label-default-s" onBackground="neutral-weak">
-                  Check out
-                </Text>
-                {selectedRange?.endDate ? (
-                  <>
-                    {selectedRange?.endDate?.toLocaleDateString("default", {
-                      day: "numeric",
-                      month: "long",
-                    })}
-                  </>
-                ) : (
-                  "Add dates"
-                )}
-              </Column>
-            </Row>
-            <Row fillWidth horizontal="center">
-              <DateRangePicker
-                data-scaling="110"
-                size="l"
-                fitWidth
-                gap="40"
-                mobileDirection="column"
-                onChange={(range) => setSelectedRange(range)}
-                value={selectedRange}
-              />
-            </Row>
-          </Column>
-        </Row>
-
-        {/* PROFILE */}
-        <Row horizontal="center" paddingX="32" paddingY="64" fillWidth gap="32" position="relative">
-          <Background
-            mask={{
-              cursor: true,
-            }}
-            dots={{
-              display: true,
-              opacity: 50,
-              color: "neutral-solid-strong",
-              size: "48",
-            }}
-            fill
-            position="absolute"
-            gradient={{
-              display: true,
-              opacity: 100,
-              tilt: 0,
-              height: 100,
-              width: 200,
-              x: 50,
-              y: 0,
-              colorStart: "neutral-background-medium",
-              colorEnd: "static-transparent",
-            }}
-          />
-          <Column maxWidth={32} gap="-1">
-            <Feedback
-              icon
-              variant="success"
-              vertical="center"
-              radius={undefined}
-              topRadius="l"
-              zIndex={1}
-            >
-              Your profile is public.
-            </Feedback>
-            <Column
-              background="page"
-              radius={undefined}
-              bottomRadius="l"
-              overflow="hidden"
-              position="relative"
-              fillWidth
-              horizontal="center"
-              border="neutral-medium"
-            >
-              <MediaUpload
-                border={undefined}
-                emptyState={<Row paddingBottom="80">Drag and drop or click to browse</Row>}
-                position="absolute"
-                aspectRatio="16 / 9"
-                sizes="560px"
-                radius={undefined}
-                initialPreviewImage="/images/profile.jpg"
-              />
-              <Column
-                paddingTop="160"
-                paddingX="32"
-                paddingBottom="32"
-                fillWidth
-                position="relative"
-                horizontal="center"
-                gap="8"
-              >
-                <Avatar
-                  zIndex={1}
-                  style={{
-                    border: "8px solid var(--page-background)",
-                  }}
-                  size="xl"
-                  src="/images/l.jpg"
-                />
-                <Heading marginTop="24" as="h3" variant="display-default-m">
-                  Lorant One
+        {/* Features section */}
+        <Column fillWidth paddingX="32" paddingY="64" gap="64" horizontal="center" position="relative">
+          <Line maxWidth="l" background="neutral-alpha-medium" />
+          
+          <Column fillWidth gap="32" horizontal="center">
+            <Heading as="h2" variant="display-default-m" align="center">
+              Why Choose Mailbuddy
+            </Heading>
+            
+            <Row gap="24" fillWidth marginTop="32" mobileDirection="column">
+              <Card fillWidth padding="32" gap="16" radius="xl" border="neutral-alpha-weak">
+                <Icon name="shieldLock" size="xl" color="brand-medium" />
+                <Heading as="h3" variant="heading-default-m">
+                  Privacy First
                 </Heading>
-                <Text align="center" onBackground="neutral-weak" marginBottom="24">
-                  165 connections
-                </Text>
-                <SegmentedControl
-                  onToggle={(value) => console.log("SegmentedControl changed", value)}
-                  buttons={[
-                    {
-                      size: "l",
-                      value: "profile",
-                      label: "Profile",
-                    },
-                    {
-                      size: "l",
-                      value: "settings",
-                      label: "Settings",
-                    },
-                    {
-                      size: "l",
-                      value: "notifications",
-                      label: (
-                        <Row gap="8">
-                          Notifications
-                          <StatusIndicator size="s" color="cyan" />
-                        </Row>
-                      ),
-                    },
-                    {
-                      size: "l",
-                      value: "integrations",
-                      label: "Integrations",
-                    },
-                    {
-                      size: "l",
-                      value: "inbox",
-                      label: "Inbox",
-                    },
-                    {
-                      size: "l",
-                      value: "requests",
-                      label: "Requests",
-                    },
-                  ]}
-                />
-                <Column paddingY="32" fillWidth gap="-1">
-                  <Input
-                    radius="top"
-                    label="Name"
-                    labelAsPlaceholder
-                    defaultValue="Lorant One"
-                    id="name"
-                  />
-                  <Input
-                    radius="bottom"
-                    label="Email"
-                    labelAsPlaceholder
-                    defaultValue="lorant@once-ui.com"
-                    id="profileEmail"
-                  />
-                </Column>
-                <Textarea
-                  id="intro"
-                  label="Intro"
-                  lines="auto"
-                  value={intro}
-                  onChange={(e) => setIntro(e.target.value)}
-                  validate={validateIntro}
-                />
-                <TagInput
-                  id="interests"
-                  value={tags}
-                  onChange={(newTags: string[]) => {
-                    setTags(newTags);
-                  }}
-                  label="Interests"
-                />
-                <Select
-                  searchable
-                  labelAsPlaceholder
-                  id="select"
-                  label="Country"
-                  value={selectedValue}
-                  options={[
-                    {
-                      value: "Austria",
-                      label: "Austria",
-                      onClick: (value) => console.log("Visiblity set: ", value),
-                    },
-                    {
-                      value: "Finland",
-                      label: "Finland",
-                      onClick: (value) => console.log("Visiblity set: ", value),
-                    },
-                    {
-                      value: "New Zeland",
-                      label: "New Zeland",
-                      onClick: (value) => console.log("Visiblity set: ", value),
-                    },
-                    {
-                      value: "Norway",
-                      label: "Norway",
-                      onClick: (value) => console.log("Visiblity set: ", value),
-                    },
-                    {
-                      value: "United Kingdom",
-                      label: "United Kingdom",
-                      onClick: (value) => console.log("Visiblity set: ", value),
-                    },
-                    {
-                      value: "United States",
-                      label: "United States",
-                      onClick: (value) => console.log("Visiblity set: ", value),
-                    },
-                  ]}
-                  onSelect={handleSelect}
-                />
-                <Button
-                  className="mt-32"
-                  prefixIcon="security"
-                  variant="secondary"
-                  onClick={() => setIsFirstDialogOpen(true)}
-                >
-                  Password and security
-                </Button>
-              </Column>
-            </Column>
-          </Column>
-        </Row>
-
-        {/* CODE PREVIEW */}
-        <TiltFx fillWidth paddingX="32" paddingTop="64">
-          <Column
-            border="neutral-alpha-weak"
-            paddingX="32"
-            radius="xl"
-            overflow="hidden"
-            paddingY="160"
-            fillWidth
-            position="relative"
-          >
-            <Background
-              mask={{
-                x: 100,
-                y: 0,
-              }}
-              position="absolute"
-              grid={{
-                display: true,
-                color: "neutral-alpha-medium",
-                width: "2rem",
-                height: "2rem",
-              }}
-            />
-            <Background
-              mask={{
-                x: 0,
-                y: 100,
-                radius: 100,
-              }}
-              position="absolute"
-              grid={{
-                display: true,
-                color: "brand-alpha-strong",
-                width: "12",
-                height: "12",
-              }}
-              gradient={{
-                display: true,
-                opacity: 100,
-                height: 100,
-                width: 100,
-                tilt: 0,
-                x: 0,
-                y: 100,
-                colorStart: "brand-solid-strong",
-                colorEnd: "brand-background-medium",
-              }}
-            />
-            <Column horizontal="center" gap="48" fillWidth position="relative">
-              <Heading align="center" as="h2" variant="display-default-l">
-                Quick start
-              </Heading>
-              <CodeBlock
-                compact
-                maxWidth={40}
-                codeInstances={[
-                  {
-                    code: `git clone https://github.com/once-ui-system/nextjs-starter.git`,
-                    language: "tsx",
-                    label: "tsx",
-                  },
-                ]}
-              />
-            </Column>
-          </Column>
-        </TiltFx>
-
-        <Row
-          position="relative"
-          fillWidth
-          paddingX="32"
-          paddingTop="160"
-          minHeight={28}
-          paddingBottom="80"
-          horizontal="center"
-          vertical="end"
-        >
-          <Background
-            mask={{
-              x: 50,
-              y: 100,
-            }}
-            position="absolute"
-            grid={{
-              display: true,
-              width: "0.25rem",
-              color: "brand-alpha-strong",
-              height: "0.25rem",
-            }}
-          />
-          <Row position="relative" textVariant="display-default-m" align="center">
-            Learn more
-          </Row>
-        </Row>
-        <Row fillWidth overflow="hidden">
-          <Row maxWidth="32" borderTop="neutral-alpha-weak" borderBottom="neutral-medium"></Row>
-          <Row fillWidth border="neutral-alpha-weak" mobileDirection="column">
-            {links.map((link, index) => (
-              <Card
-                key={index}
-                fillWidth
-                href={link.href}
-                padding="40"
-                gap="8"
-                background="page"
-                direction="column"
-                borderRight={index < links.length - 1 ? "neutral-alpha-weak" : undefined}
-                border={undefined}
-              >
-                <Row fillWidth center gap="12">
-                  <Text variant="body-strong-m" onBackground="neutral-strong">
-                    {link.title}
-                  </Text>
-                  <Icon size="s" name="arrowUpRight" />
-                </Row>
-                <Text align="center" variant="body-default-s" onBackground="neutral-weak">
-                  {link.description}
+                <Text>
+                  End-to-end encryption keeps your emails secure and private, with zero access to your data.
                 </Text>
               </Card>
-            ))}
-          </Row>
-          <Row maxWidth="32" borderTop="neutral-alpha-weak" borderBottom="neutral-medium"></Row>
-        </Row>
-        <Row
-          position="relative"
-          as="footer"
-          fillWidth
-          paddingX="l"
-          paddingTop="128"
-          paddingBottom="80"
-        >
-          <Background
-            borderTop="brand-alpha-strong"
-            mask={{
-              x: 50,
-              y: 0,
-            }}
-            position="absolute"
-            grid={{
-              display: true,
-              width: "0.25rem",
-              color: "brand-alpha-strong",
-              height: "0.25rem",
-            }}
-          />
-          <Column
-            position="relative"
-            textVariant="body-default-xs"
-            onBackground="neutral-medium"
-            horizontal="center"
-            align="center"
-            fillWidth
-            gap="16"
-          >
-            <Logo wordmark={false} size="s" />
-            <Text size="m">
-              <Text onBackground="neutral-weak">2025 /</Text> Once UI
+              
+              <Card fillWidth padding="32" gap="16" radius="xl" border="neutral-alpha-weak">
+                <Icon name="bolt" size="xl" color="brand-medium" />
+                <Heading as="h3" variant="heading-default-m">
+                  Lightning Fast
+                </Heading>
+                <Text>
+                  Optimized performance for quick loading and responsiveness even with thousands of emails.
+                </Text>
+              </Card>
+              
+              <Card fillWidth padding="32" gap="16" radius="xl" border="neutral-alpha-weak">
+                <Icon name="layout" size="xl" color="brand-medium" />
+                <Heading as="h3" variant="heading-default-m">
+                  Intuitive Interface
+                </Heading>
+                <Text>
+                  Clean, modern design that makes email management feel effortless and enjoyable.
+                </Text>
+              </Card>
+            </Row>
+          </Column>
+        </Column>
+
+        {/* How it works section */}
+        <Column fillWidth paddingX="32" paddingY="64" gap="64" horizontal="center" position="relative" background="overlay">
+          <Column fillWidth gap="32" horizontal="center" maxWidth="l">
+            <Heading as="h2" variant="display-default-m" align="center">
+              How Mailbuddy Works
+            </Heading>
+            
+            <Row gap="64" fillWidth marginTop="32" mobileDirection="column" vertical="center">
+              <Column gap="24" fillWidth>
+                <Row gap="16" vertical="center">
+                  <Card radius="full" background="brand-medium" paddingX="16" paddingY="8">
+                    <Text onSolid="neutral-strong" variant="body-strong-m">1</Text>
+                  </Card>
+                  <Heading as="h3" variant="heading-default-m">
+                    Connect Your Gmail
+                  </Heading>
+                </Row>
+                <Text>
+                  Securely link your Gmail account with read-only access. We never store your password.
+                </Text>
+              </Column>
+              
+              <Column gap="24" fillWidth>
+                <Row gap="16" vertical="center">
+                  <Card radius="full" background="brand-medium" paddingX="16" paddingY="8">
+                    <Text onSolid="neutral-strong" variant="body-strong-m">2</Text>
+                  </Card>
+                  <Heading as="h3" variant="heading-default-m">
+                    Encrypt Your Data
+                  </Heading>
+                </Row>
+                <Text>
+                  Your emails are automatically encrypted with keys only you control.
+                </Text>
+              </Column>
+              
+              <Column gap="24" fillWidth>
+                <Row gap="16" vertical="center">
+                  <Card radius="full" background="brand-medium" paddingX="16" paddingY="8">
+                    <Text onSolid="neutral-strong" variant="body-strong-m">3</Text>
+                  </Card>
+                  <Heading as="h3" variant="heading-default-m">
+                    Enjoy Your Inbox
+                  </Heading>
+                </Row>
+                <Text>
+                  Browse, search, and manage your emails with confidence and peace of mind.
+                </Text>
+              </Column>
+            </Row>
+          </Column>
+        </Column>
+
+        {/* CTA section */}
+        <Column fillWidth paddingX="32" paddingY="80" gap="32" horizontal="center" position="relative">
+          <Column fillWidth horizontal="center" gap="32" maxWidth="m">
+            <Heading as="h2" variant="display-default-l" align="center">
+              Ready to Take Control of Your Email?
+            </Heading>
+            <Text variant="body-default-l" align="center" marginBottom="16">
+              Join thousands of users who have made email secure and simple again.
             </Text>
-            <SmartLink href="https://github.com/once-ui-system/nextjs-starter?tab=MIT-1-ov-file">
-              MIT License
-            </SmartLink>
-            <ThemeSwitcher marginTop="24"/>
+            <Button
+              label="Get Started for Free"
+              href="/register"
+              variant="primary"
+              size="l"
+              arrowIcon
+            />
+          </Column>
+        </Column>
+      </Column>
+      
+      {/* Footer */}
+      <Row 
+        as="footer"
+        fillWidth 
+        maxWidth="l" 
+        paddingX="32" 
+        paddingY="64" 
+        gap="64" 
+        mobileDirection="column"
+        borderTop="neutral-alpha-weak"
+        marginTop="64"
+      >
+        <Column gap="24" fillWidth>
+          <Logo size="m" />
+          <Text onBackground="neutral-medium">
+            Your secure email companion that makes managing Gmail simple and efficient.
+          </Text>
+        </Column>
+        
+        <Row gap="64" fillWidth mobileDirection="column">
+          <Column gap="16" fillWidth>
+            <Heading as="h3" variant="heading-default-s">
+              Product
+            </Heading>
+            <Button label="Features" href="/features" variant="tertiary" />
+            <Button label="Pricing" href="/pricing" variant="tertiary" />
+            <Button label="Security" href="/security" variant="tertiary" />
+          </Column>
+          
+          <Column gap="16" fillWidth>
+            <Heading as="h3" variant="heading-default-s">
+              Company
+            </Heading>
+            <Button label="About" href="/about" variant="tertiary" />
+            <Button label="Blog" href="/blog" variant="tertiary" />
+            <Button label="Contact" href="/contact" variant="tertiary" />
+          </Column>
+          
+          <Column gap="16" fillWidth>
+            <Heading as="h3" variant="heading-default-s">
+              Legal
+            </Heading>
+            <Button label="Terms" href="/terms" variant="tertiary" />
+            <Button label="Privacy" href="/privacy" variant="tertiary" />
           </Column>
         </Row>
-      </Column>
-
-      <Dialog
-        isOpen={isFirstDialogOpen}
-        onClose={() => setIsFirstDialogOpen(false)}
-        title="Account details"
-        description="Manage your security settings and password."
-        base={isSecondDialogOpen}
-        onHeightChange={(height) => setFirstDialogHeight(height)}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setIsFirstDialogOpen(false)}>
-              Close
-            </Button>
-          </>
-        }
+      </Row>
+      
+      <Row 
+        fillWidth 
+        maxWidth="l" 
+        paddingX="32" 
+        paddingY="24" 
+        horizontal="space-between"
+        mobileDirection="column"
+        gap="16"
       >
-        <Column paddingTop="24" fillWidth gap="24">
-          <Switch
-            reverse
-            isChecked={twoFA}
-            onToggle={() => setTwoFA(!twoFA)}
-            label="2FA"
-            description="Enable two factor authentication"
+        <Text variant="body-default-s" onBackground="neutral-medium">
+          © {new Date().getFullYear()} Mailbuddy. All rights reserved.
+        </Text>
+        <Row gap="16">
+          <IconButton
+            href="https://www.twitter.com/mailbuddy"
+            icon="twitter"
+            variant="tertiary"
+            aria-label="Twitter"
           />
-          <Button onClick={() => setIsSecondDialogOpen(true)}>Change password</Button>
-        </Column>
-      </Dialog>
-      <Dialog
-        isOpen={isSecondDialogOpen}
-        onClose={() => setIsSecondDialogOpen(false)}
-        title="Change password"
-        stack
-        description="Choose a new password for your account."
-        minHeight={firstDialogHeight}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setIsSecondDialogOpen(false)}>
-              Close
-            </Button>
-            <Button onClick={() => setIsSecondDialogOpen(false)}>Save</Button>
-          </>
-        }
-      >
-        <PasswordInput id="resetPassword" label="New password" />
-      </Dialog>
+          <IconButton
+            href="https://www.linkedin.com/company/mailbuddy/"
+            icon="linkedin"
+            variant="tertiary"
+            aria-label="LinkedIn"
+          />
+          <IconButton
+            href="https://github.com/mailbuddy"
+            icon="github"
+            variant="tertiary"
+            aria-label="GitHub"
+          />
+        </Row>
+      </Row>
     </Column>
   );
 }

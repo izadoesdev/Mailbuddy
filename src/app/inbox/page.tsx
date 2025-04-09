@@ -146,23 +146,8 @@ export default function InboxPage() {
   return (
     <Row fillWidth paddingY="20" gap="32" style={{ height: 'calc(100vh - 80px)' }}>
       <Column 
-        fillWidth 
-        style={{ 
-          maxWidth: selectedEmail ? '500px' : '',
-          transition: 'max-width 0.3s ease'
-        }}
+        fillWidth
       >
-        <InboxControls
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          threadView={threadView}
-          onThreadViewChange={setThreadView}
-          pageSize={pageSize}
-          onPageSizeChange={handlePageSizeChange}
-          onRefresh={() => fetchEmails(1)}
-          isLoading={isLoading}
-          isFetching={isFetchingRef.current}
-        />
         
         <Card fillWidth overflow="hidden" style={{ height: 'calc(100vh - 200px)' }}>
           <EmailList
@@ -189,7 +174,8 @@ export default function InboxPage() {
           style={{ 
             flexGrow: 1, 
             height: 'calc(100vh - 80px)',
-            overflow: 'auto'
+            overflow: 'auto',
+            width: '60vw'
           }}
         >
           <EmailDetail

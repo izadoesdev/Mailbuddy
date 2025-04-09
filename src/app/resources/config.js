@@ -1,4 +1,4 @@
-const baseURL = "demo.once-ui.com";
+const baseURL = "mailbuddy.app";
 
 // default customization applied to the HTML in the main layout.tsx
 const style = {
@@ -22,7 +22,7 @@ const effects = {
     radius: 100,
   },
   gradient: {
-    display: false,
+    display: true,
     x: 50,
     y: 0,
     width: 100,
@@ -54,32 +54,32 @@ const effects = {
 
 // default metadata
 const meta = {
-  title: "Once UI for Next.js",
+  title: "Mailbuddy - Your Secure AI Email Companion",
   description:
-    "An open-source design system and component library for Next.js that emphasizes easy styling and accessibility in UI development.",
+    "Mailbuddy is a secure, privacy-focused AI email client that makes managing your Gmail messages simple and efficient.",
 };
 
 // default open graph data
 const og = {
   title: meta.title,
   description: meta.description,
-  image: "/images/cover.jpg",
+  image: "/images/mailbuddy-cover.jpg",
 };
 
 // default schema data
 const schema = {
-  logo: "",
+  logo: "/images/mailbuddy-logo.png",
   type: "Organization",
-  name: "Once UI",
+  name: "Mailbuddy",
   description: meta.description,
-  email: "lorant@once-ui.com",
+  email: "hello@mailbuddy.app",
 };
 
 // social links
 const social = {
-  twitter: "https://www.twitter.com/_onceui",
-  linkedin: "https://www.linkedin.com/company/once-ui/",
-  discord: "https://discord.com/invite/5EyAQ4eNdS",
+  twitter: "https://www.twitter.com/mailbuddy",
+  linkedin: "https://www.linkedin.com/company/mailbuddy/",
+  github: "https://github.com/mailbuddy",
 };
 
 export { baseURL, style, meta, og, schema, social, effects };
