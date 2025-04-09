@@ -1,5 +1,5 @@
-import { useQuery, UseQueryOptions } from "@tanstack/react-query";
-import { InboxResponse, Email } from "../types";
+import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
+import type { InboxResponse, Email } from "../types";
 import { useToast } from "@/once-ui/components";
 
 interface FetchEmailsParams {
@@ -23,7 +23,7 @@ const fetchEmails = async ({
     `/api/inbox?page=${page}&pageSize=${pageSize}&threadView=${threadView}${searchParam}`,
   );
 
-  if (!response.ok) throw new Error(`Failed to fetch emails`);
+  if (!response.ok) throw new Error("Failed to fetch emails");
 
   const data = await response.json();
   if (!data || !Array.isArray(data.emails)) {
@@ -31,10 +31,10 @@ const fetchEmails = async ({
   }
 
   // Process emails to ensure dates are correctly formatted
-  data.emails = data.emails.map((email: any) => ({
+  data.emails = data.emails.map((email: Email) => ({
     ...email,
     createdAt: email.internalDate
-      ? new Date(parseInt(email.internalDate))
+      ? new Date(Number.parseInt(email.internalDate))
       : new Date(email.createdAt),
   }));
 

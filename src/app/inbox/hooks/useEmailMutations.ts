@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Email } from "../types";
+import type { Email } from "@/libs/types/email";
 
 interface ToggleStarParams {
   emailId: string;

@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import type { Email } from "./types";
 import { Row, Column, Card, useToast } from "@/once-ui/components";
-import { Email } from "./types";
 import { EmailList } from "./components/EmailList";
 import { EmailDetail } from "./components/EmailDetail";
 import { InboxControls } from "./components/InboxControls";
@@ -12,6 +11,7 @@ import { useDebounce } from "./hooks/useDebounce";
 import { useInboxData } from "./hooks/useInboxData";
 import { useEmailMutations } from "./hooks/useEmailMutations";
 import { useBackgroundSync } from "./hooks/useBackgroundSync";
+import { useState, useCallback, useEffect } from "react";
 
 export default function InboxPage() {
   // State
@@ -38,6 +38,8 @@ export default function InboxPage() {
   const { triggerSync, isSyncing } = useBackgroundSync();
 
   // Trigger a sync when the inbox is first loaded
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     // Only trigger on first render
     if (emails.length === 0 && !isLoading && !isFetching) {

@@ -66,3 +66,69 @@ Start designing: [once-ui.com/figma](https://once-ui.com/figma)
 Take your project further with Once UI Pro. Get access to complete templates, fully designed pages, and modular blocks that make building apps even faster.
 
 Explore Pro: [once-ui.com/pro](https://once-ui.com/pro)
+
+# Mailer - Secure Email Client
+
+A secure, privacy-focused email client built with Next.js, Shadcn UI, and Gmail API integration.
+
+## Key Features
+
+- **Seamless Gmail Integration**: Connect your Gmail account and access your emails through a clean, modern interface
+- **User-Specific Encryption**: All email content is encrypted with individual user keys for maximum privacy
+- **Background Sync**: Emails are automatically synchronized in the background using Gmail's History API
+- **Thread View**: View emails organized by thread or as individual messages
+- **Modern UI**: Clean and intuitive interface built with Next.js and Shadcn UI components
+
+## Security Features
+
+### User-Specific Encryption
+
+Each user gets their own unique encryption key that is used to encrypt and decrypt their email data. This ensures:
+
+- **Data Isolation**: Even in the event of a database breach, emails can only be decrypted by the original user
+- **End-to-End Security**: Email content is encrypted before being stored in the database
+- **Zero-Knowledge Architecture**: The system is designed so that the application itself cannot access the content of emails without the user's specific key
+
+### Encrypted Email Fields
+
+The following email fields are encrypted for maximum privacy:
+- Email body content
+- Email subject lines
+- Email snippets/previews
+
+### Compliance Ready
+
+This architecture helps maintain compliance with privacy regulations like GDPR and CCPA by ensuring strong data protection and user-specific access control.
+
+## Getting Started
+
+```bash
+# Clone the repository
+git clone https://github.com/your-username/mailer.git
+
+# Install dependencies
+cd mailer
+npm install
+
+# Set up environment variables
+cp .env.example .env.local
+# Fill in your environment variables in .env.local
+
+# Run the development server
+npm run dev
+```
+
+## Environment Variables
+
+Make sure to set the following environment variables:
+
+```
+DATABASE_URL=your_database_connection_string
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+ENCRYPTION_KEY=your_fallback_encryption_key
+```
+
+## License
+
+Distributed under the MIT License. See `LICENSE.txt` for more information.

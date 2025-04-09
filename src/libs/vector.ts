@@ -16,7 +16,7 @@ export async function upsertVectors(
   vectors: Array<{
     id: string;
     vector: number[];
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }>,
 ) {
   try {

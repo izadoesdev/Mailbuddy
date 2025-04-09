@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { signOut } from "@/libs/auth/client";
 import { useToast } from "@/once-ui/components";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { EmailResponse } from "@/libs/services";
-import { Email } from "@/libs/types/email";
+import type { EmailResponse } from "@/libs/types/email";
+import type { Email } from "@/libs/types/email";
 
-export function useEmails(pageSize: number = 50) {
+export function useEmails(pageSize = 50) {
   const router = useRouter();
   const { addToast } = useToast();
   const observerRef = useRef<IntersectionObserver | null>(null);
