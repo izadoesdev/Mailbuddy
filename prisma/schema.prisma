@@ -96,6 +96,7 @@ model Email {
 
   @@index([userId])
   @@index([threadId])
+  @@index([internalDate])
   @@map("emails")
 }
 

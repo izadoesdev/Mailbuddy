@@ -41,6 +41,9 @@ export async function GET(request: NextRequest) {
     
     log(`Fetching inbox for user: ${userId}, page: ${page}, pageSize: ${pageSize}, threadView: ${threadView}`);
     
+    // Add performance metrics
+    const startTime = Date.now();
+    
     // Get total thread count
     const totalCount = await getTotalThreadCount(userId);
     log(`Total thread count: ${totalCount}`);
@@ -77,13 +80,16 @@ export async function GET(request: NextRequest) {
     log(`Total emails to display: ${allEmails.length}`);
     
     // Return the results
-    return NextResponse.json({
+    const result = {
       emails: allEmails,
-      hasMore: totalCount > (skip + pageSize),
+      hasMore: skip + allEmails.length < totalCount,
       totalCount,
       page,
       pageSize
-    });
+    };
+    
+    log(`Request completed in ${Date.now() - startTime}ms`);
+    return NextResponse.json(result);
     
   } catch (error) {
     log('Error in inbox retrieval:', error);
@@ -136,25 +142,16 @@ async function getMessageIds(
           // Otherwise fall back to our database timestamp
           { createdAt: 'asc' }
         ],
-        take: 1000 // Reasonable limit to avoid processing too many threads
+        // Apply pagination at the database level
+        skip,
+        take: pageSize,
       });
       
       log(`Found ${threadsFromEmails.length} threads from emails table`);
       
       if (threadsFromEmails.length > 0) {
-        // Sort the threads by date (newest first)
-        const sortedEmails = threadsFromEmails.sort((a, b) => {
-          const dateA = a.internalDate ? parseInt(a.internalDate) : a.createdAt.getTime();
-          const dateB = b.internalDate ? parseInt(b.internalDate) : b.createdAt.getTime();
-          return dateB - dateA;
-        });
-        
-        // Apply pagination after sorting
-        const paginatedEmails = sortedEmails.slice(skip, skip + pageSize);
-        log(`After pagination: returning ${paginatedEmails.length} thread emails`);
-        
         // Return email IDs for the paginated threads
-        return paginatedEmails.map(email => ({ id: email.id }));
+        return threadsFromEmails.map(email => ({ id: email.id }));
       }
       
       // Fallback: If no emails are found, try messages table
@@ -168,38 +165,21 @@ async function getMessageIds(
           threadId: true, 
           createdAt: true 
         },
+        distinct: ['threadId'],
         orderBy: { createdAt: 'asc' },
-        take: 1000 // Limit to prevent performance issues
+        // Apply pagination at the database level
+        skip,
+        take: pageSize,
       });
       
-      log(`Fallback: Found ${allThreads.length} thread messages from messages table`);
+      log(`Found ${allThreads.length} thread messages from fallback messages table`);
       
       if (allThreads.length === 0) {
         return [];
       }
       
-      // Group messages by threadId and find the latest in each thread
-      const latestMessagesByThread = Object.values(
-        allThreads.reduce((threads, message) => {
-          if (!threads[message.threadId] || 
-              message.createdAt > threads[message.threadId].createdAt) {
-            threads[message.threadId] = message;
-          }
-          return threads;
-        }, {} as Record<string, typeof allThreads[0]>)
-      );
-      
-      // Sort by creation date (newest first)
-      latestMessagesByThread.sort((a, b) => 
-        b.createdAt.getTime() - a.createdAt.getTime()
-      );
-      
-      // Apply pagination
-      const paginatedMessages = latestMessagesByThread.slice(skip, skip + pageSize);
-      log(`After filtering and pagination: ${paginatedMessages.length} thread messages`);
-      
       // Return just the IDs
-      return paginatedMessages.map(msg => ({ id: msg.id }));
+      return allThreads.map(msg => ({ id: msg.id }));
     } catch (error) {
       log('Error fetching thread messages:', error);
       return [];
@@ -237,11 +217,27 @@ async function getExistingEmails(messageIds: { id: string }[]): Promise<any[]> {
   const ids = messageIds.map(m => m.id);
   log(`Looking for emails with IDs: ${ids.join(', ')}`);
   
+  // Only select the fields we need
   const emails = await prisma.email.findMany({
     where: {
       id: {
         in: ids
       }
+    },
+    select: {
+      id: true,
+      threadId: true,
+      userId: true,
+      subject: true,
+      from: true,
+      to: true,
+      snippet: true,
+      body: true,
+      isRead: true,
+      isStarred: true,
+      labels: true,
+      internalDate: true,
+      createdAt: true
     }
   });
   
