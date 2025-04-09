@@ -1,4 +1,5 @@
 import { vector } from './embedding';
+import { convert } from 'html-to-text';
 
 export type EmailData = {
   id: string
@@ -12,39 +13,96 @@ export type EmailData = {
 }
 
 // Maximum combined length to consider for embedding
-const MAX_CONTENT_LENGTH = 5000;
+const MAX_CONTENT_LENGTH = 8000;
 
 /**
- * Prepare email content for embedding by combining and trimming
+ * Clean email body text to remove signatures, quoted replies, etc.
  */
-function prepareEmailContent(email: EmailData): string {
-  const subject = email.subject?.trim() || '';
-  const body = email.body?.trim() || '';
+function cleanEmailBody(body: string): string {
+  if (!body) return '';
   
-  // Combine subject and body, prioritizing the subject
+  let cleanedText = body;
+  
+  // Remove email signatures (simple approach)
+  const signaturePatterns = [
+    /^--\s*$/m, // Standard signature separator
+    /^--[\s\S]*$/m, // Everything after signature separator
+    /Best regards,[\s\S]*$/i,
+    /Thanks,[\s\S]*$/i,
+    /Regards,[\s\S]*$/i,
+    /Sincerely,[\s\S]*$/i,
+    /Cheers,[\s\S]*$/i
+  ];
+  
+  for (const pattern of signaturePatterns) {
+    cleanedText = cleanedText.replace(pattern, '');
+  }
+  
+  // Remove email reply quotes
+  const replyPatterns = [
+    /On.*wrote:[\s\S]*$/m, // Standard reply pattern
+    /From:.*Sent:.*To:.*Subject:[\s\S]*$/m, // Outlook-style headers
+    /^>.*$/gm, // Lines starting with >
+    /^On\s+[\s\S]*?wrote:[\s\S]*$/m, // Reply intro line and everything after
+    /\s*------ Original Message ------[\s\S]*$/m, // Original message marker and everything after
+    /\s*-+ Forwarded message -+[\s\S]*$/m // Forwarded message marker and everything after
+  ];
+  
+  for (const pattern of replyPatterns) {
+    cleanedText = cleanedText.replace(pattern, '');
+  }
+  
+  // Remove unsubscribe links and footers
+  const footerPatterns = [
+    /\s*Unsubscribe:?\s+https?:\/\/[^\s]+/gi,
+    /\s*To unsubscribe,?\s+click here:?\s+https?:\/\/[^\s]+/gi,
+    /\s*View this email in your browser:?\s+https?:\/\/[^\s]+/gi,
+    /\s*This email was sent to[\s\S]*$/i
+  ];
+  
+  for (const pattern of footerPatterns) {
+    cleanedText = cleanedText.replace(pattern, '');
+  }
+  
+  // Clean up extra whitespace and normalize line endings
+  cleanedText = cleanedText
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  // Convert HTML to plain text
+  cleanedText = convert(cleanedText);
+  
+  return cleanedText;
+}
+
+/**
+ * Prepare email content for embedding by combining and cleaning
+ */
+export function prepareEmailContent(email: EmailData): string {
+  const subject = email.subject?.trim() || '';
+  const rawBody = email.body?.trim() || '';
+  
+  // Clean the body text to remove signatures, replies, etc.
+  const cleanedBody = cleanEmailBody(rawBody);
+  
+  // Combine subject and cleaned body
   let content = '';
   
   if (subject) {
     content += subject;
     
-    // Add the body, but ensure we don't exceed the maximum length
-    if (body) {
+    if (cleanedBody) {
       content += '\n\n';
-      
-      // Calculate remaining space
-      const remainingSpace = MAX_CONTENT_LENGTH - content.length;
-      
-      if (remainingSpace > 0 && body.length > remainingSpace) {
-        // If body is too long, truncate it
-        content += body.substring(0, remainingSpace);
-      } else if (remainingSpace > 0) {
-        content += body;
-      }
     }
-  } else if (body) {
-    // No subject, just use the body (truncated if needed)
-    content = body.length > MAX_CONTENT_LENGTH ? 
-      body.substring(0, MAX_CONTENT_LENGTH) : body;
+  }
+  
+  if (cleanedBody) {
+    // If the combined content would be too long, truncate as needed
+    const maxBodyLength = Math.max(0, MAX_CONTENT_LENGTH - content.length);
+    content += cleanedBody.length > maxBodyLength ? 
+      cleanedBody.substring(0, maxBodyLength) : 
+      cleanedBody;
   }
   
   return content;

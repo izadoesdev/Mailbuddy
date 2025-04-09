@@ -1,35 +1,7 @@
 'use server'
 
 import { generateEmbedding } from '../utils/embedding';
-import { storeEmail, type EmailData } from '../utils/email';
-
-// Maximum content length to process
-const MAX_CONTENT_LENGTH = 8000;
-
-/**
- * Process email content to prepare for embedding
- */
-function prepareEmailContent(email: EmailData): string {
-  const subject = email.subject?.trim() || '';
-  const body = email.body?.trim() || '';
-  
-  // Start with the subject which is usually most important
-  let content = subject;
-  
-  // Add the body with a separator if both exist
-  if (subject && body) {
-    content += '\n\n';
-  }
-  
-  // Add body (or just use body if no subject)
-  if (body) {
-    // If the combined content would be too long, truncate the body
-    const maxBodyLength = Math.max(0, MAX_CONTENT_LENGTH - content.length);
-    content += body.length > maxBodyLength ? body.substring(0, maxBodyLength) : body;
-  }
-  
-  return content;
-}
+import { storeEmail, type EmailData, prepareEmailContent } from '../utils/email';
 
 export async function storeEmailEmbedding(email: EmailData) {
   try {
@@ -38,10 +10,10 @@ export async function storeEmailEmbedding(email: EmailData) {
       return { success: false, error: "No content to embed" };
     }
     
-    // Process email content to a reasonable length
+    // Process email content using our improved cleaning function
     const content = prepareEmailContent(email);
     
-    // Generate embedding for the email content
+    // Generate embedding for the clean email content
     const embedding = await generateEmbedding(content);
 
     // Store email with the generated embedding

@@ -81,7 +81,7 @@ export function InboxControls({
                 <Row gap="16" vertical="center">
                     <Input
                         id="search-emails"
-                        label="Search emails"
+                        label={isAISearchActive ? "Type to search with AI..." : "Search emails"}
                         labelAsPlaceholder
                         value={localSearchQuery}
                         onChange={(e) => handleSearchChange(e.target.value)}
@@ -138,7 +138,7 @@ export function InboxControls({
 
                 {onAISearch && (
                     <Button
-                        label={isAISearchLoading ? "Searching..." : "AI Search"}
+                        label={isAISearchLoading ? "Searching..." : isAISearchActive ? "AI Search Active" : "Find Similar Emails (AI)"}
                         prefixIcon="sparkles"
                         variant={isAISearchActive ? "secondary" : "primary"}
                         onClick={handleAISearchClick}

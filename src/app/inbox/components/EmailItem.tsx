@@ -94,7 +94,13 @@ export function EmailItem({
                                     maxWidth: "70%",
                                 }}
                             >
-                                {email.snippet}
+                                {(email as any).aiScore ? (
+                                    <span style={{ color: '#0070f3' }}>
+                                        AI Score: {((email as any).aiScore).toFixed(4)} - {email.snippet}
+                                    </span>
+                                ) : (
+                                    email.snippet
+                                )}
                             </Text>
 
                             {email.labels?.length > 0 &&

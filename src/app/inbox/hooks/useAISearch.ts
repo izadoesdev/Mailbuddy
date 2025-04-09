@@ -37,11 +37,30 @@ export function useAISearch() {
       const emailDetailsPromises = emailIds.map(async (id) => {
         // Fetch single email details from the API
         try {
-          const response = await fetch(`/api/emails/${id}`);
+          // Use the API route that gets a specific email by ID
+          const response = await fetch(`/api/email/${id}`);
           if (!response.ok) {
-            console.warn(`Could not fetch details for email ${id}`);
-            return null;
+            console.warn(`Could not fetch details for email ${id}, status: ${response.status}`);
+            
+            // If the specific email route fails, try the inbox API with filters
+            try {
+              const fallbackResponse = await fetch(`/api/inbox?emailIds=${id}`);
+              if (!fallbackResponse.ok) {
+                return null;
+              }
+              
+              const data = await fallbackResponse.json();
+              if (data && Array.isArray(data.emails) && data.emails.length > 0) {
+                // Get the first matching email
+                return data.emails[0];
+              }
+              return null;
+            } catch (fallbackError) {
+              console.error(`Fallback fetch for email ${id} failed:`, fallbackError);
+              return null;
+            }
           }
+          
           const emailData = await response.json();
           return emailData;
         } catch (error) {
