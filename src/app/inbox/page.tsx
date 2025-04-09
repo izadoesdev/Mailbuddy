@@ -128,7 +128,7 @@ export default function InboxPage() {
       <Column 
         fillWidth 
         style={{ 
-          maxWidth: selectedEmail ? '400px' : '1200px',
+          maxWidth: selectedEmail ? '500px' : '',
           transition: 'max-width 0.3s ease'
         }}
       >

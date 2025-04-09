@@ -13,7 +13,7 @@ import {
 } from "@/once-ui/components";
 import { Email } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
-
+import DOMPurify from 'dompurify';
 interface EmailDetailProps {
   email: Email;
   onClose: () => void;
@@ -69,7 +69,7 @@ export function EmailDetail({ email, onClose }: EmailDetailProps) {
         <Line />
         
         <div 
-          dangerouslySetInnerHTML={{ __html: email.body || email.snippet || '' }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(email.body || email.snippet || '') }}
           style={{ maxWidth: '100%', overflow: 'auto' }}
         />
         
