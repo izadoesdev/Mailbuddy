@@ -24,63 +24,11 @@ import { signIn } from "@/libs/auth/client";
 export default function LoginPage() {
     const router = useRouter();
     const { addToast } = useToast();
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
-    const validateLogin = () => {
-        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!regex.test(email)) {
-            return "Email is invalid.";
-        }
-        if (password.length < 6) {
-            return "Password must be at least 6 characters.";
-        }
-        return null;
-    };
-
-    const handleLogin = async () => {
-        const validationError = validateLogin();
-        if (validationError) {
-            addToast({
-                variant: "danger",
-                message: validationError,
-            });
-            return;
-        }
-
-        setIsLoading(true);
-        try {
-            await signIn.email({
-                email,
-                password,
-                fetchOptions: {
-                    onSuccess: () => {
-                        addToast({
-                            variant: "success",
-                            message: "Login successful!",
-                        });
-                        router.push("/inbox");
-                    },
-                    onError: () => {
-                        addToast({
-                            variant: "danger",
-                            message: "Login failed. Please check your credentials.",
-                        });
-                    },
-                },
-            });
-        } catch (error) {
-            addToast({
-                variant: "danger",
-                message: "An unexpected error occurred.",
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const handleGoogleLogin = () => {
+        setIsLoading(true);
         signIn.social({
             provider: "google",
             fetchOptions: {
@@ -92,6 +40,7 @@ export default function LoginPage() {
                     router.push("/inbox");
                 },
                 onError: () => {
+                    setIsLoading(false)
                     addToast({
                         variant: "danger",
                         message: "Google login failed. Please try again.",
@@ -101,26 +50,6 @@ export default function LoginPage() {
         });
     };
 
-    const handleGithubLogin = () => {
-        signIn.social({
-            provider: "github",
-            fetchOptions: {
-                onSuccess: () => {
-                    addToast({
-                        variant: "success",
-                        message: "Login successful!",
-                    });
-                    router.push("/inbox");
-                },
-                onError: () => {
-                    addToast({
-                        variant: "danger",
-                        message: "GitHub login failed. Please try again.",
-                    });
-                },
-            },
-        });
-    };
 
     return (
         <Column fillWidth paddingY="80" paddingX="s" horizontal="center" flex={1}>
@@ -274,68 +203,8 @@ export default function LoginPage() {
                                     onClick={handleGoogleLogin}
                                     disabled={isLoading}
                                 />
-                                <Button
-                                    label="Continue with GitHub"
-                                    fillWidth
-                                    variant="secondary"
-                                    weight="default"
-                                    prefixIcon="github"
-                                    size="l"
-                                    onClick={handleGithubLogin}
-                                    disabled={isLoading}
-                                />
+                               
                             </Column>
-                            <Row fillWidth paddingY="24">
-                                <Row
-                                    onBackground="neutral-weak"
-                                    fillWidth
-                                    gap="24"
-                                    vertical="center"
-                                >
-                                    <Line />/<Line />
-                                </Row>
-                            </Row>
-                            <Column gap="-1" fillWidth>
-                                <Input
-                                    id="email"
-                                    label="Email"
-                                    labelAsPlaceholder
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    value={email}
-                                    validate={validateLogin}
-                                    errorMessage={false}
-                                    radius="top"
-                                    disabled={isLoading}
-                                />
-                                <PasswordInput
-                                    autoComplete="current-password"
-                                    id="password"
-                                    label="Password"
-                                    labelAsPlaceholder
-                                    radius="bottom"
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    value={password}
-                                    validate={validateLogin}
-                                    disabled={isLoading}
-                                />
-                            </Column>
-                            <Button
-                                id="login"
-                                label={isLoading ? "Logging in..." : "Log in"}
-                                arrowIcon
-                                fillWidth
-                                onClick={handleLogin}
-                                disabled={isLoading}
-                            />
-                            <Row fillWidth horizontal="center" paddingTop="16">
-                                <Text onBackground="neutral-medium">
-                                    Don't have an account?{" "}
-                                    <SmartLink href="/register">Sign up</SmartLink>
-                                </Text>
-                            </Row>
-                            <Row fillWidth horizontal="center">
-                                <SmartLink href="/forgot-password">Forgot your password?</SmartLink>
-                            </Row>
                         </Column>
                     </Row>
                 </Column>
