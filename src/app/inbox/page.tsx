@@ -19,14 +19,29 @@ export default function InboxPage() {
   const [pageSize, setPageSize] = useState(20);
   const { addToast } = useToast();
   const isFetchingRef = useRef(false);
+  const [apiError, setApiError] = useState(false);
+  const lastRequestTimeRef = useRef<number>(0);
 
   // Fetch emails from the API
   const fetchEmails = useCallback(async (pageToFetch = 1) => {
     if (isFetchingRef.current) return;
     
+    // Prevent rapid successive API calls (throttle to 3 seconds)
+    const now = Date.now();
+    if (apiError && now - lastRequestTimeRef.current < 3000) {
+      addToast({
+        variant: 'danger',
+        message: "Please wait a moment before trying again."
+      });
+      return;
+    }
+    
+    lastRequestTimeRef.current = now;
+    
     try {
       setIsLoading(true);
       isFetchingRef.current = true;
+      setApiError(false);
       
       const response = await fetch(
         `/api/inbox?page=${pageToFetch}&pageSize=${pageSize}&threadView=${threadView}`
@@ -36,20 +51,25 @@ export default function InboxPage() {
       
       const data: InboxResponse = await response.json();
       
+      if (!data || !Array.isArray(data.emails)) {
+        throw new Error("Invalid response format");
+      }
+      
       setEmails(processEmails(data.emails));
       setPage(pageToFetch);
       setTotalPages(Math.ceil(data.totalCount / data.pageSize) || 1);
     } catch (error) {
       console.error("Error fetching emails:", error);
+      setApiError(true);
       addToast({
         variant: 'danger',
-        message: "Failed to load emails. Please try again."
+        message: "Failed to load emails. Please try again later."
       });
     } finally {
       setIsLoading(false);
       isFetchingRef.current = false;
     }
-  }, [addToast, pageSize, threadView]);
+  }, [addToast, pageSize, threadView, apiError]);
 
   // Process emails to ensure dates are correctly formatted
   const processEmails = (emailsData: any[]): Email[] => {
@@ -175,6 +195,7 @@ export default function InboxPage() {
           <EmailDetail
             email={selectedEmail}
             onClose={() => setSelectedEmail(null)}
+            onToggleStar={toggleStar}
           />
         </Column>
       )}

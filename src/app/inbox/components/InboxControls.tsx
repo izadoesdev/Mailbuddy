@@ -70,6 +70,12 @@ export function InboxControls({
           onClick={onRefresh}
           disabled={isLoading || isFetching}
         />
+        <Button
+          label="Star Selected"
+          prefixIcon="star"
+          variant="secondary"
+          disabled={true}
+        />
         <Select
           id="page-size-select"
           label={`${pageSize} per page`}

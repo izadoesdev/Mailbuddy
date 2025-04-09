@@ -14,19 +14,38 @@ import {
 import { Email } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
 import DOMPurify from 'dompurify';
+
 interface EmailDetailProps {
   email: Email;
   onClose: () => void;
+  onToggleStar?: (email: Email, e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
-export function EmailDetail({ email, onClose }: EmailDetailProps) {
+export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) {
   const senderName = extractName(email.from);
+  
+  const handleStarClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (onToggleStar) {
+      onToggleStar(email, e);
+    }
+  };
   
   return (
     <Card fillWidth padding="24">
       <Column gap="24">
         <Row horizontal="space-between" vertical="center">
-          <Heading>{email.subject}</Heading>
+          <Row gap="8" vertical="center">
+            <Heading>{email.subject}</Heading>
+            <IconButton
+              variant="ghost"
+              size="s"
+              icon={email.isStarred ? "starFill" : "star"}
+              color={email.isStarred ? "warning" : "neutral"}
+              aria-label={email.isStarred ? "Unstar email" : "Star email"}
+              onClick={handleStarClick}
+            />
+          </Row>
           <IconButton
             variant="ghost"
             icon="close"
