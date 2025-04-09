@@ -1,44 +1,44 @@
 .email-content {
-  color: var(--color-neutral-strong);
+    color: var(--color-neutral-strong);
 }
 
 .email-content a {
-  color: var(--color-brand-medium);
-  text-decoration: none;
+    color: var(--color-brand-medium);
+    text-decoration: none;
 }
 
 .email-content a:hover {
-  text-decoration: underline;
+    text-decoration: underline;
 }
 
 .email-content p {
-  margin: 0.75rem 0;
+    margin: 0.75rem 0;
 }
 
 .email-content p:first-child {
-  margin-top: 0;
+    margin-top: 0;
 }
 
 .email-content p:last-child {
-  margin-bottom: 0;
+    margin-bottom: 0;
 }
 
 .email-content blockquote {
-  margin: 1rem 0;
-  padding-left: 1rem;
-  border-left: 3px solid var(--color-neutral-medium);
-  color: var(--color-neutral-medium);
+    margin: 1rem 0;
+    padding-left: 1rem;
+    border-left: 3px solid var(--color-neutral-medium);
+    color: var(--color-neutral-medium);
 }
 
 .email-content pre {
-  background: var(--color-neutral-weak);
-  padding: 1rem;
-  border-radius: 0.5rem;
-  overflow-x: auto;
+    background: var(--color-neutral-weak);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
 }
 
 .email-content img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 0.5rem;
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
 }

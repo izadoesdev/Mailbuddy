@@ -3,32 +3,32 @@ import type { auth } from "./auth";
 import { customSessionClient } from "better-auth/client/plugins";
 
 export type AuthClientConfig = {
-  baseURL?: string;
-  debug?: boolean;
+    baseURL?: string;
+    debug?: boolean;
 };
 
 // Default configuration that can be overridden
 const defaultConfig: AuthClientConfig = {
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL as string,
-  debug: process.env.NODE_ENV !== "production",
+    baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL as string,
+    debug: process.env.NODE_ENV !== "production",
 };
 
 // Create a singleton instance with the default configuration
 let _authClient = createAuthClient({
-  baseURL: defaultConfig.baseURL,
-  plugins: [customSessionClient<typeof auth>()],
+    baseURL: defaultConfig.baseURL,
+    plugins: [customSessionClient<typeof auth>()],
 });
 
 // Function to initialize or reconfigure the auth client
 export function initAuthClient(config: AuthClientConfig = {}) {
-  const mergedConfig = { ...defaultConfig, ...config };
+    const mergedConfig = { ...defaultConfig, ...config };
 
-  _authClient = createAuthClient({
-    baseURL: mergedConfig.baseURL,
-    plugins: [customSessionClient<typeof auth>()],
-  });
+    _authClient = createAuthClient({
+        baseURL: mergedConfig.baseURL,
+        plugins: [customSessionClient<typeof auth>()],
+    });
 
-  return _authClient;
+    return _authClient;
 }
 
 // Export the auth client instance
@@ -43,11 +43,11 @@ export const useSession = _authClient.useSession;
 export const getSession = _authClient.getSession;
 
 export function useUser() {
-  const { data, isPending, error } = useSession();
+    const { data, isPending, error } = useSession();
 
-  return {
-    user: data?.user,
-    isLoading: isPending,
-    error,
-  };
+    return {
+        user: data?.user,
+        isLoading: isPending,
+        error,
+    };
 }

@@ -4,7 +4,7 @@
  * @returns Decoded string
  */
 export function decodeBase64(data: string): string {
-    return Buffer.from(data, 'base64').toString();
+    return Buffer.from(data, "base64").toString();
 }
 
 /**
@@ -13,26 +13,26 @@ export function decodeBase64(data: string): string {
  * @returns Object containing text and HTML content
  */
 export function extractContentFromParts(payload: any): { text: string; html: string } {
-    const result = { text: '', html: '' };
-    
+    const result = { text: "", html: "" };
+
     if (!payload.parts) {
         // Handle single part messages
         if (payload.body && payload.body.data) {
             const content = decodeBase64(payload.body.data);
-            if (payload.mimeType === 'text/plain') {
+            if (payload.mimeType === "text/plain") {
                 result.text = content;
-            } else if (payload.mimeType === 'text/html') {
+            } else if (payload.mimeType === "text/html") {
                 result.html = content;
             }
         }
         return result;
     }
-     
+
     // Process all parts recursively
     for (const part of payload.parts) {
-        if (part.mimeType === 'text/plain' && part.body && part.body.data) {
+        if (part.mimeType === "text/plain" && part.body && part.body.data) {
             result.text = decodeBase64(part.body.data);
-        } else if (part.mimeType === 'text/html' && part.body && part.body.data) {
+        } else if (part.mimeType === "text/html" && part.body && part.body.data) {
             result.html = decodeBase64(part.body.data);
         } else if (part.parts) {
             // Recursively process nested parts
@@ -41,6 +41,6 @@ export function extractContentFromParts(payload: any): { text: string; html: str
             if (nestedContent.html) result.html = nestedContent.html;
         }
     }
-    
+
     return result;
-} 
+}
