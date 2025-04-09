@@ -1,4 +1,4 @@
-import { betterAuth } from "better-auth";
+import { type Account, betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./src/libs/db";
 import { customSession } from "better-auth/plugins";
@@ -17,12 +17,6 @@ export const auth = betterAuth({
                 "https://www.googleapis.com/auth/gmail.readonly",
             ],
         },
-    },
-    emailAndPassword: {
-        enabled: true,
-        minPasswordLength: 8,
-        maxPasswordLength: 32,
-        autoSignIn: true,
     },
     session: {
         expiresIn: 60 * 60 * 24 * 30, // 30 days
@@ -62,3 +56,5 @@ export const auth = betterAuth({
         }),
     ],
 });
+
+export type User = (typeof auth)["$Infer"]["Session"]["user"] & { accounts: Account[] };
