@@ -9,7 +9,7 @@ export * from '@prisma/client';
  */
 const getPrismaClient = () => {
   const client = new PrismaClient({
-    log: ['query', 'error', 'warn'],
+    log: ['error', 'warn'],
     datasources: {
       db: {
         url: env.DATABASE_URL,

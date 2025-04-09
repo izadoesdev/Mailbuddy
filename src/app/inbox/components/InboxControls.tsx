@@ -7,6 +7,7 @@ import {
   Switch,
   Button,
   Select,
+  Tooltip,
 } from "@/once-ui/components";
 
 interface InboxControlsProps {
@@ -17,6 +18,8 @@ interface InboxControlsProps {
   pageSize: number;
   onPageSizeChange: (value: number) => void;
   onRefresh: () => void;
+  onSync?: () => void;
+  isSyncing?: boolean;
   isLoading: boolean;
   isFetching: boolean;
 }
@@ -29,6 +32,8 @@ export function InboxControls({
   pageSize,
   onPageSizeChange,
   onRefresh,
+  onSync,
+  isSyncing = false,
   isLoading,
   isFetching,
 }: InboxControlsProps) {
@@ -70,6 +75,18 @@ export function InboxControls({
           onClick={onRefresh}
           disabled={isLoading || isFetching}
         />
+        
+        {onSync && (
+          <Button 
+            label="Sync with Gmail" 
+            prefixIcon="cloud-download" 
+            variant="secondary"
+            onClick={onSync}
+            disabled={isLoading || isFetching || isSyncing}
+            loading={isSyncing}
+          />
+        )}
+        
         <Button
           label="Star Selected"
           prefixIcon="star"

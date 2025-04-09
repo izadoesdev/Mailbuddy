@@ -11,7 +11,6 @@ import { Email } from "@/libs/types/email";
 export function useEmails(pageSize: number = 50) {
   const router = useRouter();
   const { addToast } = useToast();
-  const [hasMore, setHasMore] = useState(true);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   
@@ -29,7 +28,8 @@ export function useEmails(pageSize: number = 50) {
     initialPageParam: 1,
     queryFn: async ({ pageParam = 1 }) => {
       try {
-        const result = await getEmails(pageParam as number, pageSize);
+        // Fetch emails from the server using the API route
+        const result = await fetch(`/api/inbox?page=${pageParam}&pageSize=${pageSize}`).then(res => res.json());
         
         // If there's an authentication error, redirect to login
         if (result.error && (

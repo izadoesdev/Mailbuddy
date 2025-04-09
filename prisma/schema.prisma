@@ -26,6 +26,7 @@ model User {
   accounts      Account[]
   emails        Email[]
   messages      Message[]
+  syncState     SyncState?
 
   @@map("users")
 }
@@ -97,6 +98,8 @@ model Email {
   @@index([userId])
   @@index([threadId])
   @@index([internalDate])
+  @@index([userId, threadId])
+  @@index([userId, internalDate])
   @@map("emails")
 }
 
@@ -111,5 +114,18 @@ model Message {
 
   @@index([userId])
   @@index([threadId])
+  @@index([userId, threadId])
+  @@index([userId, createdAt])
   @@map("messages")
+}
+
+model SyncState {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  historyId        String?
+  lastSyncTime     DateTime @default(now())
+  syncInProgress   Boolean  @default(false)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sync_states")
 }

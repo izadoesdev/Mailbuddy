@@ -35,6 +35,60 @@ function setUserFetchStatus(userId: string, isActive: boolean): void {
 }
 
 /**
+ * Gmail API helper that automatically handles token refreshes
+ * @param userId The user ID to perform the operation for
+ * @param accessToken The initial access token
+ * @param apiCall Function that performs the actual Gmail API call
+ * @returns The result of the API call
+ */
+async function withGmailApi<T>(
+  userId: string,
+  accessToken: string | null,
+  apiCall: (gmail: any) => Promise<T>,
+  retryCount: number = 0
+): Promise<T | null> {
+  const MAX_RETRY_ATTEMPTS = 1;
+  
+  if (!accessToken) {
+    log(`No access token available for user ${userId}, attempting to refresh...`);
+    const newToken = await refreshAccessToken(userId);
+    if (!newToken) {
+      log(`Failed to refresh token for user ${userId}`);
+      return null;
+    }
+    accessToken = newToken;
+  }
+  
+  try {
+    // Set up Gmail API client
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: accessToken });
+    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+    
+    // Execute the API call
+    return await apiCall(gmail);
+  } catch (error: any) {
+    // Handle token refresh on 401 Unauthorized errors
+    if (error?.response?.status === 401 && retryCount < MAX_RETRY_ATTEMPTS) {
+      log(`Received 401 error, refreshing token for user ${userId}...`);
+      const newToken = await refreshAccessToken(userId);
+      
+      if (newToken) {
+        log(`Token refreshed successfully, retrying API call...`);
+        return withGmailApi(userId, newToken, apiCall, retryCount + 1);
+      }
+      
+      log(`Failed to refresh token for user ${userId} after 401 error`);
+      return null;
+    }
+    
+    // Log and rethrow other errors
+    log(`Gmail API error for user ${userId}:`, error);
+    throw error;
+  }
+}
+
+/**
  * GET handler for inbox API
  */
 export async function GET(request: NextRequest) {
@@ -288,8 +342,6 @@ async function fetchMissingEmails(
   retryCount: number = 0,
   accountUserId: string = userId // Default to userId if not provided
 ): Promise<any[]> {
-  const MAX_RETRY_ATTEMPTS = 1;
-  
   if (missingIds.length === 0) {
     return [];
   }
@@ -300,26 +352,7 @@ async function fetchMissingEmails(
     return [];
   }
   
-  if (!accessToken) {
-    // Try to refresh the token if we don't have one or it might be expired
-    if (retryCount < MAX_RETRY_ATTEMPTS) {
-      log(`No access token available, attempting to refresh token...`);
-      const newToken = await refreshAccessToken(accountUserId);
-      if (newToken) {
-        log(`Token refreshed successfully, retrying fetch with new token`);
-        return fetchMissingEmails(missingIds, userId, newToken, retryCount + 1, accountUserId);
-      }
-    }
-    log(`Unable to obtain access token after ${retryCount} attempts`);
-    return [];
-  }
-  
   try {
-    // Set up Gmail API client
-    const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({ access_token: accessToken });
-    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-    
     // Batch fetch message details from database to improve performance
     const messageDetails = await prisma.message.findMany({
       where: { id: { in: missingIds } },
@@ -333,7 +366,6 @@ async function fetchMissingEmails(
     
     // Fetch messages in batches to avoid overwhelming Gmail API
     const fetchedEmails: any[] = [];
-    const STORAGE_BATCH_SIZE = 50; // Optimal batch size for database operations
     
     // Process in batches to avoid overwhelming Gmail API
     for (let i = 0; i < missingIds.length; i += FETCH_BATCH_SIZE) {
@@ -344,112 +376,71 @@ async function fetchMissingEmails(
       }
       
       const batch = missingIds.slice(i, i + FETCH_BATCH_SIZE);
-      let shouldRetryWithNewToken = false;
       let batchResults: any[] = [];
       
       try {
-        // Fetch messages in parallel
+        // Use a map to get batch messages with automatic token refresh
         const messageBatchPromises = batch.map(async (messageId) => {
-          try {
-            // Get the message details from our map
-            const message = messageDetailsMap.get(messageId);
-            if (!message) return null;
-            
-            // Fetch from Gmail API
-            const fullMessage = await gmail.users.messages.get({
+          const message = messageDetailsMap.get(messageId);
+          if (!message) return null;
+          
+          // Use the withGmailApi helper to handle token refresh
+          const fullMessage = await withGmailApi(accountUserId, accessToken, async (gmail) => {
+            return gmail.users.messages.get({
               userId: GMAIL_USER_ID,
               id: messageId,
               format: 'full'
             });
-            
-            if (!fullMessage.data) return null;
-            
-            // Extract email details
-            const headers = fullMessage.data.payload?.headers || [];
-            const subject = headers.find((h: any) => h.name === 'Subject')?.value || '';
-            const from = headers.find((h: any) => h.name === 'From')?.value || '';
-            const to = headers.find((h: any) => h.name === 'To')?.value || '';
-            
-            // Get email content
-            const content = fullMessage.data.payload 
-              ? extractContentFromParts(fullMessage.data.payload) 
-              : { text: '', html: '' };
-            
-            // Create email object
-            return {
-              id: messageId,
-              threadId: message.threadId,
-              userId,
-              subject,
-              from,
-              to,
-              snippet: fullMessage.data.snippet || '',
-              body: content.html || content.text || fullMessage.data.snippet || 'No content available',
-              isRead: !fullMessage.data.labelIds?.includes('UNREAD'),
-              isStarred: fullMessage.data.labelIds?.includes('STARRED') || false,
-              labels: fullMessage.data.labelIds || [],
-              internalDate: fullMessage.data.internalDate || null,
-              createdAt: message.createdAt
-            };
-          } catch (error: any) {
-            // Handle auth errors specifically to refresh token
-            if (error.response?.status === 401) {
-              shouldRetryWithNewToken = true;
-            }
-            log(`Error fetching email for message ${messageId}:`, error);
-            return null;
-          }
+          });
+          
+          if (!fullMessage?.data) return null;
+          
+          // Extract email details
+          const headers = fullMessage.data.payload?.headers || [];
+          const subject = headers.find((h: any) => h.name === 'Subject')?.value || '';
+          const from = headers.find((h: any) => h.name === 'From')?.value || '';
+          const to = headers.find((h: any) => h.name === 'To')?.value || '';
+          
+          // Get email content
+          const content = fullMessage.data.payload 
+            ? extractContentFromParts(fullMessage.data.payload) 
+            : { text: '', html: '' };
+          
+          // Create email object
+          return {
+            id: messageId,
+            threadId: message.threadId,
+            userId,
+            subject,
+            from,
+            to,
+            snippet: fullMessage.data.snippet || '',
+            body: content.html || content.text || fullMessage.data.snippet || 'No content available',
+            isRead: !fullMessage.data.labelIds?.includes('UNREAD'),
+            isStarred: fullMessage.data.labelIds?.includes('STARRED') || false,
+            labels: fullMessage.data.labelIds || [],
+            internalDate: fullMessage.data.internalDate || null,
+            createdAt: message.createdAt
+          };
         });
         
         // Wait for all fetches to complete
         batchResults = (await Promise.all(messageBatchPromises)).filter(Boolean) as any[];
         fetchedEmails.push(...batchResults);
-      } catch (batchError: any) {
-        if (batchError.response?.status === 401) {
-          shouldRetryWithNewToken = true;
+        
+        // Store batch results in database
+        if (batchResults.length > 0) {
+          await storeEmailBatch(batchResults);
         }
-        log(`Error in batch fetch:`, batchError);
-      }
-      
-      // Handle token refresh for this batch if needed
-      if (shouldRetryWithNewToken && retryCount < MAX_RETRY_ATTEMPTS) {
-        log(`Batch encountered 401 error, attempting to refresh token...`);
-        const newToken = await refreshAccessToken(accountUserId);
-        if (newToken) {
-          log(`Token refreshed successfully, retrying fetch with new token`);
-          // Use iteration instead of recursion to prevent stack overflow
-          const remainingIds = missingIds.slice(i);
-          const retriedResults = await fetchMissingEmails(
-            remainingIds, 
-            userId, 
-            newToken, 
-            retryCount + 1,
-            accountUserId
-          );
-          fetchedEmails.push(...retriedResults);
-          break; // Exit the loop as we're handling remaining items in the retry
-        }
-      }
-      
-      // Store batch results in database
-      if (batchResults.length > 0) {
-        await storeEmailBatch(batchResults);
+      } catch (error) {
+        log(`Error processing batch ${i / FETCH_BATCH_SIZE + 1}:`, error);
+        // Continue with next batch
       }
     }
     
     return fetchedEmails;
-  } catch (error: any) {
-    // Handle top-level errors, particularly token expiration
-    if (error.response?.status === 401 && retryCount < MAX_RETRY_ATTEMPTS) {
-      log(`API call failed with 401 error, attempting to refresh token...`);
-      const newToken = await refreshAccessToken(accountUserId);
-      if (newToken) {
-        log(`Token refreshed successfully, retrying fetch with new token`);
-        // Use iteration instead of recursion for the retry
-        return fetchMissingEmails(missingIds, userId, newToken, retryCount + 1, accountUserId);
-      }
-    }
-    log(`Error fetching emails from Gmail:`, error);
+  } catch (error) {
+    log(`Error in fetchMissingEmails:`, error);
     return [];
   }
 }
@@ -550,28 +541,6 @@ function processEmails(
     }, {} as Record<string, any>)
   );
 }
-
-/**
- * Cancel an ongoing inbox fetch
- */
-export async function DELETE(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  
-  const userId = session.user.id;
-  
-  // Check if there is an active fetch for this user
-  if (isUserFetchActive(userId)) {
-    // Set status to inactive to signal cancellation
-    setUserFetchStatus(userId, false);
-    return NextResponse.json({ success: true, message: "Fetch operation cancelled" });
-  }
-  
-  return NextResponse.json({ success: true, message: "No active fetch to cancel" });
-}
-
 /**
  * Decrypts an email from the database
  */

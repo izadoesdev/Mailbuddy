@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Row, Column, Card, useToast } from "@/once-ui/components";
 import { Email } from "./types";
 import { EmailList } from "./components/EmailList";
@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useDebounce } from "./hooks/useDebounce";
 import { useInboxData } from "./hooks/useInboxData";
 import { useEmailMutations } from "./hooks/useEmailMutations";
+import { useBackgroundSync } from "./hooks/useBackgroundSync";
 
 export default function InboxPage() {
   // State
@@ -40,6 +41,15 @@ export default function InboxPage() {
   });
   
   const { markAsRead, toggleStar } = useEmailMutations();
+  const { triggerSync, isSyncing } = useBackgroundSync();
+
+  // Trigger a sync when the inbox is first loaded
+  useEffect(() => {
+    // Only trigger on first render
+    if (emails.length === 0 && !isLoading && !isFetching) {
+      triggerSync();
+    }
+  }, []);
 
   // Handle email selection
   const handleEmailSelect = useCallback((email: Email) => {
@@ -86,6 +96,11 @@ export default function InboxPage() {
     queryClient.invalidateQueries({ queryKey: ['emails'] });
   }, [queryClient]);
 
+  // Handle sync
+  const handleSync = useCallback(() => {
+    triggerSync();
+  }, [triggerSync]);
+
   // Calculate width for main content
   const mainContentWidth = selectedEmail ? '40%' : '100%';
   
@@ -106,6 +121,8 @@ export default function InboxPage() {
           isLoading={isLoading}
           isFetching={isFetching}
           onRefresh={handleRefresh}
+          onSync={handleSync}
+          isSyncing={isSyncing}
           pageSize={pageSize}
           onPageSizeChange={handlePageSizeChange}
         />
