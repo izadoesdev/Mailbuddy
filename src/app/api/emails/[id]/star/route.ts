@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/libs/db";
 import { auth } from "@/libs/auth";
 import { headers } from "next/headers";
@@ -89,7 +89,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         // Continue with database update even if Gmail sync fails
       }
     } else {
-      log(`No access token available for Gmail sync`);
+      log("No access token available for Gmail sync");
     }
 
     // Update the star status in the database

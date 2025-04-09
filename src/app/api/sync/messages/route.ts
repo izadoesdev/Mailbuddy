@@ -54,11 +54,11 @@ function sendMessage(
   const encoder = new TextEncoder();
   controller.enqueue(
     encoder.encode(
-      JSON.stringify({
+      `${JSON.stringify({
         type,
         message,
         ...additionalData,
-      }) + "\n",
+      })}\n`,
     ),
   );
 }
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
     // Check if a batch size is specified in the request
     const url = new URL(request.url);
     const batchSize = url.searchParams.get("batchSize")
-      ? parseInt(url.searchParams.get("batchSize")!)
+      ? Number.parseInt(url.searchParams.get("batchSize")!)
       : DEFAULT_BATCH_SIZE;
 
     // Get user from session
@@ -288,7 +288,7 @@ async function refreshAccessToken(userId: string): Promise<string | null> {
       const credentials = response.credentials;
 
       if (!credentials || !credentials.access_token) {
-        log(`OAuth refresh response did not contain access token`);
+        log("OAuth refresh response did not contain access token");
         return null;
       }
 
@@ -502,7 +502,6 @@ function createSyncStream(
                 // Don't increment batchNumber, we'll retry the same batch
                 // Add a short delay before retrying to avoid rate limiting
                 await new Promise((resolve) => setTimeout(resolve, 1000));
-                continue;
               } else {
                 // If refresh failed, propagate the error
                 log("Failed to refresh token, aborting sync");
@@ -568,8 +567,8 @@ async function processMessageChunk(
 ): Promise<TransactionResult> {
   // Create message data for upserting
   const messageDataToUpsert: MessageData[] = chunk.map((msg) => ({
-    id: msg.id!,
-    threadId: msg.threadId!,
+    id: msg.id,
+    threadId: msg.threadId,
     userId,
   }));
 

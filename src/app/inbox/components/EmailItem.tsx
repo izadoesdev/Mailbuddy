@@ -1,6 +1,6 @@
 import React from "react";
 import { Text, Row, Column, Chip, Line, IconButton, Avatar, Badge } from "@/once-ui/components";
-import { Email } from "../types";
+import type { Email } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
 
 interface EmailItemProps {
@@ -24,7 +24,15 @@ export function EmailItem({
 
   return (
     <React.Fragment>
-      <div onClick={() => onSelect(email)} style={{ cursor: "pointer" }}>
+      <div
+        onClick={() => onSelect(email)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            onSelect(email);
+          }
+        }}
+        style={{ cursor: "pointer" }}
+      >
         <Row
           fillWidth
           padding="16"

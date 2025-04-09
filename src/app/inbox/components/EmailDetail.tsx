@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import {
   Text,
   Row,
@@ -11,7 +11,7 @@ import {
   Button,
   Heading,
 } from "@/once-ui/components";
-import { Email } from "../types";
+import type { Email } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
 import DOMPurify from "dompurify";
 
