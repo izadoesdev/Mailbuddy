@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { EmailData } from "./gmail";
+import type { EmailData } from "./gmail";
 import {
     encryptText,
     encodeEncryptedData,
@@ -37,8 +37,8 @@ export interface EmailResponse {
  */
 export async function getExistingEmails(
     userId: string,
-    limit: number = 20,
-    skip: number = 0,
+    limit = 20,
+    skip = 0,
 ): Promise<any[]> {
     return prisma.email.findMany({
         where: {

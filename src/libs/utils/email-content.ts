@@ -17,7 +17,7 @@ export function extractContentFromParts(payload: any): { text: string; html: str
 
     if (!payload.parts) {
         // Handle single part messages
-        if (payload.body && payload.body.data) {
+        if (payload.body?.data) {
             const content = decodeBase64(payload.body.data);
             if (payload.mimeType === "text/plain") {
                 result.text = content;

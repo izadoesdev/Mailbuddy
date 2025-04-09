@@ -80,7 +80,7 @@ export async function refreshAccessToken(userId: string): Promise<string | null>
         console.log(`[Gmail Service] Successfully refreshed access token for user ${userId}`);
         return credentials.access_token;
     } catch (error) {
-        console.error(`[Gmail Service] Error refreshing access token:`, error);
+        console.error("[Gmail Service] Error refreshing access token:", error);
         return null;
     }
 }
@@ -110,7 +110,7 @@ export async function getFullMessageContent(
 
         return extractContentFromParts(fullMessage.data.payload);
     } catch (error) {
-        console.error(`[Gmail Service] Error getting full message content:`, error);
+        console.error("[Gmail Service] Error getting full message content:", error);
         return { text: "", html: "" };
     }
 }
@@ -126,7 +126,7 @@ export async function getFullMessageContent(
 export async function fetchEmailsFromGmail(
     accessToken: string,
     userId: string,
-    maxResults: number = 50,
+    maxResults = 50,
     pageToken?: string,
 ): Promise<{ messages: any[]; nextPageToken?: string }> {
     try {
@@ -151,12 +151,12 @@ export async function fetchEmailsFromGmail(
             nextPageToken: listResponse.data.nextPageToken || undefined,
         };
     } catch (error: any) {
-        console.error(`[Gmail Service] Error fetching emails:`, error);
+        console.error("[Gmail Service] Error fetching emails:", error);
 
         // Check if the error is due to invalid credentials
-        if (error.message && error.message.includes("Invalid Credentials")) {
+        if (error.message?.includes("Invalid Credentials")) {
             console.log(
-                `[Gmail Service] Invalid credentials detected, attempting to refresh token`,
+                "[Gmail Service] Invalid credentials detected, attempting to refresh token",
             );
 
             // Extract the actual user ID from the userId parameter (which might be 'me')
@@ -166,11 +166,9 @@ export async function fetchEmailsFromGmail(
             const newAccessToken = await refreshAccessToken(dbUserId);
 
             if (newAccessToken) {
-                console.log(`[Gmail Service] Token refreshed successfully, retrying request`);
+                console.log("[Gmail Service] Token refreshed successfully, retrying request");
                 // Retry the request with the new token
                 return fetchEmailsFromGmail(newAccessToken, userId, maxResults, pageToken);
-            } else {
-                console.error(`[Gmail Service] Failed to refresh token, cannot retry request`);
             }
         }
 
@@ -226,7 +224,7 @@ export async function fetchEmailFromGmail(
             snippet: fullMessage.data.snippet || null,
             body:
                 content.html || content.text || fullMessage.data.snippet || "No content available",
-            isRead: fullMessage.data.labelIds?.includes("UNREAD") ? false : true,
+            isRead: !fullMessage.data.labelIds?.includes("UNREAD"),
             isStarred: fullMessage.data.labelIds?.includes("STARRED") || false,
             labels: fullMessage.data.labelIds || [],
             internalDate: fullMessage.data.internalDate || undefined,
@@ -235,10 +233,8 @@ export async function fetchEmailFromGmail(
         console.error(`[Gmail Service] Error fetching email ${messageId}:`, error);
 
         // Check if the error is due to invalid credentials
-        if (error.message && error.message.includes("Invalid Credentials")) {
-            console.log(
-                `[Gmail Service] Invalid credentials detected, attempting to refresh token`,
-            );
+        if (error.message?.includes("Invalid Credentials")) {
+            console.log("[Gmail Service] Invalid credentials detected, attempting to refresh token");
 
             // Extract the actual user ID from the userId parameter (which might be 'me')
             const dbUserId = userId === "me" ? accessToken.split(".")[0] : userId;
@@ -247,11 +243,9 @@ export async function fetchEmailFromGmail(
             const newAccessToken = await refreshAccessToken(dbUserId);
 
             if (newAccessToken) {
-                console.log(`[Gmail Service] Token refreshed successfully, retrying request`);
+                console.log("[Gmail Service] Token refreshed successfully, retrying request");
                 // Retry the request with the new token
                 return fetchEmailFromGmail(newAccessToken, userId, messageId);
-            } else {
-                console.error(`[Gmail Service] Failed to refresh token, cannot retry request`);
             }
         }
 
