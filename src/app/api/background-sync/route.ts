@@ -500,7 +500,7 @@ export async function GET() {
             results,
         });
     } catch (error) {
-        log(`Error in background sync:`, error);
+        log("Error in background sync:", error);
         return NextResponse.json(
             {
                 success: false,
@@ -609,7 +609,7 @@ export async function POST(request: Request) {
             message: "Background sync initiated",
         });
     } catch (error) {
-        log(`Error in user-triggered sync:`, error);
+        log("Error in user-triggered sync:", error);
         return NextResponse.json(
             { success: false, error: error instanceof Error ? error.message : "Unknown error" },
             { status: 500 },
