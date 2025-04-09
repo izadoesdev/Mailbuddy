@@ -11,6 +11,7 @@ import {
 import { google } from "googleapis";
 import { extractContentFromParts } from "@/libs/utils/email-content";
 import env from "@/libs/env";
+import { storeEmailEmbedding } from "@/app/ai/actions/storeEmailEmbedding";
 
 // For API requests
 const GMAIL_USER_ID = "me";
@@ -48,11 +49,13 @@ function setUserFetchStatus(userId: string, isActive: boolean): void {
  */
 async function withGmailApi<T>(
     userId: string,
-    accessToken: string | null,
+    initialAccessToken: string | null,
     apiCall: (gmail: any) => Promise<T>,
     retryCount = 0,
 ): Promise<T | null> {
     const MAX_RETRY_ATTEMPTS = 1;
+    
+    let accessToken = initialAccessToken;
 
     if (!accessToken) {
         log(`No access token available for user ${userId}, attempting to refresh...`);
@@ -478,9 +481,59 @@ async function storeEmailBatch(emails: any[]): Promise<void> {
         }
 
         log(`Successfully stored ${encryptedEmails.length} emails in database`);
+        
+        // Store emails in vector database for AI search
+        // Run this asynchronously without awaiting - don't block the API response
+        setTimeout(() => {
+            processEmailsForVectorStorage(emails).catch(error => {
+                log("Background vector processing error:", error);
+            });
+        }, 100);
     } catch (error) {
         log("Error batch storing emails:", error);
         // Continue execution as we've already fetched the emails
+    }
+}
+
+/**
+ * Process emails for vector storage in the background
+ * This runs asynchronously after the API has already sent its response
+ */
+async function processEmailsForVectorStorage(emails: any[]): Promise<void> {
+    try {
+        log(`Starting background vector processing for ${emails.length} emails`);
+        
+        // Process emails in batches to avoid overwhelming the system
+        const VECTOR_BATCH_SIZE = 5; // Smaller batch size to reduce memory pressure
+        
+        for (let i = 0; i < emails.length; i += VECTOR_BATCH_SIZE) {
+            const batch = emails.slice(i, i + VECTOR_BATCH_SIZE);
+            
+            // Process emails in batch sequentially to avoid memory spikes
+            for (const email of batch) {
+                try {
+                    await storeEmailEmbedding({
+                        id: email.id,
+                        subject: email.subject,
+                        body: email.body,
+                        userId: email.userId,
+                    });
+                    
+                    // Add a small delay between emails to reduce CPU contention
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                } catch (vectorError) {
+                    log(`Error storing email in vector database: ${email.id}`, vectorError);
+                    // Continue with other emails
+                }
+            }
+            
+            // Add a small delay between batches
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        log(`Successfully completed background vector processing for ${emails.length} emails`);
+    } catch (error) {
+        log("Error in background vector processing:", error);
     }
 }
 

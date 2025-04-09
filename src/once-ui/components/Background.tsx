@@ -1,9 +1,9 @@
 "use client";
 
 import React, { CSSProperties, forwardRef, useEffect, useRef, useState } from "react";
-import { SpacingToken } from "../types";
+import type { SpacingToken } from "../types";
 import { Flex } from "./Flex";
-import { DisplayProps } from "../interfaces";
+import type { DisplayProps } from "../interfaces";
 import styles from "./Background.module.scss";
 import classNames from "classnames";
 
@@ -85,7 +85,7 @@ const Background = forwardRef<HTMLDivElement, BackgroundProps>(
         forwardedRef,
     ) => {
         const dotsColor = dots.color ?? "brand-on-background-weak";
-        const dotsSize = "var(--static-space-" + (dots.size ?? "24") + ")";
+        const dotsSize = `var(--static-space-${dots.size ?? "24"})`;
 
         const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
         const [smoothPosition, setSmoothPosition] = useState({ x: 0, y: 0 });
@@ -180,7 +180,7 @@ const Background = forwardRef<HTMLDivElement, BackgroundProps>(
             <Flex
                 ref={backgroundRef}
                 fill
-                className={classNames(mask && styles.mask, className)}
+                className={classNames(mask && styles.mask, className, "pointer-events-none")}
                 top="0"
                 left="0"
                 zIndex={0}
