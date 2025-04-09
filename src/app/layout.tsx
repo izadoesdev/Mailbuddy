@@ -43,7 +43,7 @@ export async function generateMetadata() {
     description: meta.description,
     baseURL,
     path: "/",
-    image: og.image
+    image: og.image,
   });
 }
 
@@ -134,9 +134,7 @@ export default function RootLayout({
                 height: "0.25rem",
               }}
             />
-            <QueryProvider>
-              {children}
-            </QueryProvider>
+            <QueryProvider>{children}</QueryProvider>
           </Column>
         </ToastProvider>
       </ThemeProvider>

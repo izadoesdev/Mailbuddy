@@ -1,21 +1,21 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/once-ui/components';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/once-ui/components";
 
 /**
  * Trigger a background sync for the current user
  */
 const triggerBackgroundSync = async () => {
-  const response = await fetch('/api/background-sync', {
-    method: 'POST',
+  const response = await fetch("/api/background-sync", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify({ syncType: 'user' })
+    body: JSON.stringify({ syncType: "user" }),
   });
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.error || 'Failed to trigger sync');
+    throw new Error(errorData.error || "Failed to trigger sync");
   }
 
   return response.json();
@@ -32,22 +32,21 @@ export function useBackgroundSync() {
     mutationFn: triggerBackgroundSync,
     onSuccess: (data) => {
       addToast({
-        variant: 'success',
-        message: 'Sync successful. New messages will appear shortly.',
+        variant: "success",
+        message: "Sync successful. New messages will appear shortly.",
       });
-      
+
       // Invalidate the email queries to refresh data
       setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['emails'] });
+        queryClient.invalidateQueries({ queryKey: ["emails"] });
       }, 2000); // Give a little time for the sync to complete
     },
     onError: (error) => {
-      console.error('Background sync error:', error);
+      console.error("Background sync error:", error);
       addToast({
-        variant: 'danger',
-        message: error instanceof Error 
-          ? error.message 
-          : 'Failed to sync emails. Please try again later.',
+        variant: "danger",
+        message:
+          error instanceof Error ? error.message : "Failed to sync emails. Please try again later.",
       });
     },
   });
@@ -58,4 +57,4 @@ export function useBackgroundSync() {
     syncError: syncMutation.error,
     syncStatus: syncMutation.status,
   };
-} 
+}

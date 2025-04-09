@@ -1,6 +1,6 @@
-import { useQuery, UseQueryOptions } from '@tanstack/react-query';
-import { InboxResponse, Email } from '../types';
-import { useToast } from '@/once-ui/components';
+import { useQuery, UseQueryOptions } from "@tanstack/react-query";
+import { InboxResponse, Email } from "../types";
+import { useToast } from "@/once-ui/components";
 
 interface FetchEmailsParams {
   page: number;
@@ -18,16 +18,16 @@ const fetchEmails = async ({
   threadView,
   searchQuery,
 }: FetchEmailsParams): Promise<InboxResponse> => {
-  const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
+  const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : "";
   const response = await fetch(
-    `/api/inbox?page=${page}&pageSize=${pageSize}&threadView=${threadView}${searchParam}`
+    `/api/inbox?page=${page}&pageSize=${pageSize}&threadView=${threadView}${searchParam}`,
   );
 
   if (!response.ok) throw new Error(`Failed to fetch emails`);
 
   const data = await response.json();
   if (!data || !Array.isArray(data.emails)) {
-    throw new Error('Invalid response format');
+    throw new Error("Invalid response format");
   }
 
   // Process emails to ensure dates are correctly formatted
@@ -44,17 +44,12 @@ const fetchEmails = async ({
 /**
  * Hook for fetching and managing inbox data
  */
-export function useInboxData({
-  page,
-  pageSize,
-  threadView,
-  searchQuery,
-}: FetchEmailsParams) {
+export function useInboxData({ page, pageSize, threadView, searchQuery }: FetchEmailsParams) {
   const { addToast } = useToast();
 
   // Define the query options
   const queryOptions: UseQueryOptions<InboxResponse, Error> = {
-    queryKey: ['emails', page, pageSize, threadView, searchQuery],
+    queryKey: ["emails", page, pageSize, threadView, searchQuery],
     queryFn: () => fetchEmails({ page, pageSize, threadView, searchQuery }),
     staleTime: 60 * 1000, // 1 minute
   };
@@ -63,10 +58,10 @@ export function useInboxData({
 
   // Handle errors outside the query definition
   if (queryResult.error) {
-    console.error('Error fetching emails:', queryResult.error);
+    console.error("Error fetching emails:", queryResult.error);
     addToast({
-      variant: 'danger',
-      message: 'Failed to load emails. Please try again later.',
+      variant: "danger",
+      message: "Failed to load emails. Please try again later.",
     });
   }
 
@@ -83,4 +78,4 @@ export function useInboxData({
     error,
     queryResult, // Allow access to the full query result if needed
   };
-} 
+}

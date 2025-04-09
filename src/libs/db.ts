@@ -1,15 +1,15 @@
 import { PrismaClient } from "@prisma/client";
 import env from "./env";
-import { Redis } from 'ioredis';
+import { Redis } from "ioredis";
 
-export * from '@prisma/client';
+export * from "@prisma/client";
 
 /**
  * Get a properly configured PrismaClient instance
  */
 const getPrismaClient = () => {
   const client = new PrismaClient({
-    log: ['error', 'warn'],
+    log: ["error", "warn"],
     datasources: {
       db: {
         url: env.DATABASE_URL,
@@ -30,12 +30,12 @@ const getPrismaClient = () => {
       },
     },
   });
-  
+
   return client;
 };
 
 // Upstash Redis client for caching and sync state management
-export const redis = new Redis(process.env.REDIS_URL || '');
+export const redis = new Redis(process.env.REDIS_URL || "");
 
 // Add prisma to the global type
 const globalForPrisma = globalThis as unknown as {

@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  Column,
-  Text,
-  Skeleton,
-  Icon,
-} from "@/once-ui/components";
+import { Column, Text, Skeleton, Icon } from "@/once-ui/components";
 import { Email } from "../types";
 import { EmailItem } from "./EmailItem";
 
@@ -29,8 +24,8 @@ export function EmailList({
   if (isLoading) {
     return (
       <Column padding="16" gap="16">
-        {[1, 2, 3, 4, 5].map(i => (
-          <Skeleton key={i} shape="block" style={{ height: '80px' }} />
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Skeleton key={i} shape="block" style={{ height: "80px" }} />
         ))}
       </Column>
     );
@@ -51,12 +46,7 @@ export function EmailList({
 
   // Render list of emails
   return (
-    <Column 
-      fillWidth 
-      gap="1" 
-      overflow="auto" 
-      style={{ maxHeight: 'calc(100vh - 200px)' }}
-    >
+    <Column fillWidth gap="1" overflow="auto" style={{ maxHeight: "calc(100vh - 200px)" }}>
       {emails.map((email, index) => (
         <EmailItem
           key={email.id}
@@ -70,4 +60,4 @@ export function EmailList({
       ))}
     </Column>
   );
-} 
+}

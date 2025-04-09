@@ -47,8 +47,8 @@ export default function ForgotPasswordPage() {
     try {
       // This is a placeholder for the actual password reset functionality
       // In a real application, you would call an API to send a reset email
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       setIsSubmitted(true);
       addToast({
         variant: "success",
@@ -199,7 +199,7 @@ export default function ForgotPasswordPage() {
                   height: "1rem",
                 }}
               />
-              
+
               {isSubmitted ? (
                 <Column fillWidth horizontal="center" gap="24">
                   <Icon name="checkCircle" size="xl" />
@@ -239,8 +239,7 @@ export default function ForgotPasswordPage() {
                   />
                   <Row fillWidth horizontal="center" paddingTop="16">
                     <Text onBackground="neutral-medium">
-                      Remember your password?{" "}
-                      <SmartLink href="/login">Log in</SmartLink>
+                      Remember your password? <SmartLink href="/login">Log in</SmartLink>
                     </Text>
                   </Row>
                 </>
@@ -251,4 +250,4 @@ export default function ForgotPasswordPage() {
       </Column>
     </Column>
   );
-} 
+}

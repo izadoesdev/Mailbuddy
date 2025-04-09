@@ -1,2 +1,2 @@
-export * from './encryption';
-export * from './email-content'; 
+export * from "./encryption";
+export * from "./email-content";

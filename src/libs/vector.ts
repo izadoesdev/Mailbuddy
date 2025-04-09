@@ -17,7 +17,7 @@ export async function upsertVectors(
     id: string;
     vector: number[];
     metadata?: Record<string, any>;
-  }>
+  }>,
 ) {
   try {
     return await vectorIndex.upsert(vectors);
@@ -39,17 +39,17 @@ export async function queryVector(
     topK?: number;
     includeMetadata?: boolean;
     includeVectors?: boolean;
-  } = {}
+  } = {},
 ) {
   try {
     const { topK = 10, includeMetadata = true, includeVectors = false } = options;
-    
+
     // Use the actual API parameters
     return await vectorIndex.query({
       vector,
       topK,
       includeMetadata,
-      includeVectors
+      includeVectors,
     });
   } catch (error) {
     console.error("Error querying vector index:", error);
@@ -69,16 +69,16 @@ export async function filterVectors(
     topK?: number;
     includeMetadata?: boolean;
     includeVectors?: boolean;
-  } = {}
+  } = {},
 ) {
   try {
     const { topK = 100, includeMetadata = true, includeVectors = false } = options;
-    
+
     return await vectorIndex.query({
       data: filter,
       topK,
       includeMetadata,
-      includeVectors
+      includeVectors,
     });
   } catch (error) {
     console.error("Error filtering vectors:", error);
@@ -143,4 +143,4 @@ export async function checkVectorHealth() {
   }
 }
 
-export default vectorIndex; 
+export default vectorIndex;

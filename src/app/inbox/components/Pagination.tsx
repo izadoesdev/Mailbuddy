@@ -26,7 +26,7 @@ export function Pagination({
   }
 
   // Calculate current range of items being displayed
-  const startItem = ((page - 1) * pageSize) + 1;
+  const startItem = (page - 1) * pageSize + 1;
   const endItem = Math.min(page * pageSize, totalCount || page * pageSize);
   const showCount = totalCount !== undefined;
 
@@ -41,11 +41,11 @@ export function Pagination({
           disabled={page === 1 || isLoading || isFetching}
           aria-label="Previous page"
         />
-        
+
         <Text variant="body-default-m" paddingX="8">
           {isLoading ? "Loading..." : `Page ${page} of ${totalPages}`}
         </Text>
-        
+
         <Button
           variant="secondary"
           label="Next"
@@ -55,7 +55,7 @@ export function Pagination({
           aria-label="Next page"
         />
       </Row>
-      
+
       {showCount && !isLoading && (
         <Row horizontal="center" paddingBottom="8">
           <Text variant="body-default-s" color="text.subtle">
@@ -65,4 +65,4 @@ export function Pagination({
       )}
     </Column>
   );
-} 
+}

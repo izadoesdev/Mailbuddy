@@ -72,7 +72,7 @@ export const iconLibrary: Record<string, IconType> = {
   security: HiOutlineShieldCheck,
   sparkle: HiOutlineSparkles,
   computer: HiOutlineComputerDesktop,
-  inbox: HiOutlineInboxStack
+  inbox: HiOutlineInboxStack,
 };
 
 export type IconLibrary = typeof iconLibrary;

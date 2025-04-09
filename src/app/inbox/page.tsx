@@ -21,25 +21,19 @@ export default function InboxPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  
+
   // Hooks
   const queryClient = useQueryClient();
   const { addToast } = useToast();
-  
+
   // Use our custom hooks
-  const { 
-    emails, 
-    totalPages, 
-    totalCount, 
-    isLoading, 
-    isFetching 
-  } = useInboxData({
+  const { emails, totalPages, totalCount, isLoading, isFetching } = useInboxData({
     page,
     pageSize,
     threadView,
-    searchQuery: debouncedSearchQuery
+    searchQuery: debouncedSearchQuery,
   });
-  
+
   const { markAsRead, toggleStar } = useEmailMutations();
   const { triggerSync, isSyncing } = useBackgroundSync();
 
@@ -52,21 +46,27 @@ export default function InboxPage() {
   }, []);
 
   // Handle email selection
-  const handleEmailSelect = useCallback((email: Email) => {
-    setSelectedEmail(prev => prev?.id === email.id ? null : email);
-    if (!email.isRead) {
-      markAsRead.mutate(email.id);
-    }
-  }, [markAsRead]);
+  const handleEmailSelect = useCallback(
+    (email: Email) => {
+      setSelectedEmail((prev) => (prev?.id === email.id ? null : email));
+      if (!email.isRead) {
+        markAsRead.mutate(email.id);
+      }
+    },
+    [markAsRead],
+  );
 
   // Toggle star status
-  const handleToggleStar = useCallback((email: Email, e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    toggleStar.mutate({ 
-      emailId: email.id, 
-      isStarred: !email.isStarred 
-    });
-  }, [toggleStar]);
+  const handleToggleStar = useCallback(
+    (email: Email, e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      toggleStar.mutate({
+        emailId: email.id,
+        isStarred: !email.isStarred,
+      });
+    },
+    [toggleStar],
+  );
 
   // Handle search
   const handleSearchChange = useCallback((query: string) => {
@@ -87,13 +87,13 @@ export default function InboxPage() {
 
   // Toggle thread view
   const handleThreadViewChange = useCallback(() => {
-    setThreadView(prev => !prev);
+    setThreadView((prev) => !prev);
     setPage(1);
   }, []);
 
   // Handle refresh
   const handleRefresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['emails'] });
+    queryClient.invalidateQueries({ queryKey: ["emails"] });
   }, [queryClient]);
 
   // Handle sync
@@ -102,18 +102,18 @@ export default function InboxPage() {
   }, [triggerSync]);
 
   // Calculate width for main content
-  const mainContentWidth = selectedEmail ? '40%' : '100%';
-  
+  const mainContentWidth = selectedEmail ? "40%" : "100%";
+
   return (
-    <Row fillWidth paddingY="20" gap="32" style={{ height: 'calc(100vh - 80px)' }}>
-      <Column 
-        fillWidth 
-        style={{ 
+    <Row fillWidth paddingY="20" gap="32" style={{ height: "calc(100vh - 80px)" }}>
+      <Column
+        fillWidth
+        style={{
           width: mainContentWidth,
-          transition: 'width 0.3s ease'
+          transition: "width 0.3s ease",
         }}
       >
-        <InboxControls 
+        <InboxControls
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
           threadView={threadView}
@@ -126,8 +126,8 @@ export default function InboxPage() {
           pageSize={pageSize}
           onPageSizeChange={handlePageSizeChange}
         />
-        
-        <Card fillWidth overflow="hidden" style={{ height: 'calc(100vh - 200px)' }}>
+
+        <Card fillWidth overflow="hidden" style={{ height: "calc(100vh - 200px)" }}>
           <EmailList
             emails={emails}
             isLoading={isLoading}
@@ -137,7 +137,7 @@ export default function InboxPage() {
             onToggleStar={handleToggleStar}
           />
         </Card>
-        
+
         <Pagination
           page={page}
           totalPages={totalPages}
@@ -148,15 +148,15 @@ export default function InboxPage() {
           totalCount={totalCount}
         />
       </Column>
-      
+
       {selectedEmail && (
-        <Column 
-          style={{ 
-            flexGrow: 1, 
-            height: 'calc(100vh - 80px)',
-            overflow: 'auto',
-            width: '60%',
-            transition: 'width 0.3s ease'
+        <Column
+          style={{
+            flexGrow: 1,
+            height: "calc(100vh - 80px)",
+            overflow: "auto",
+            width: "60%",
+            transition: "width 0.3s ease",
           }}
         >
           <EmailDetail
@@ -168,4 +168,4 @@ export default function InboxPage() {
       )}
     </Row>
   );
-} 
+}

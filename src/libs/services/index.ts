@@ -1,2 +1,2 @@
-export * from './email-db';
-export * from './gmail'; 
+export * from "./email-db";
+export * from "./gmail";

@@ -13,7 +13,7 @@ export function useEmails(pageSize: number = 50) {
   const { addToast } = useToast();
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  
+
   const {
     data,
     fetchNextPage,
@@ -22,37 +22,40 @@ export function useEmails(pageSize: number = 50) {
     isLoading,
     isError,
     error,
-    refetch
+    refetch,
   } = useInfiniteQuery<EmailResponse>({
     queryKey: ["emails", "infinite"],
     initialPageParam: 1,
     queryFn: async ({ pageParam = 1 }) => {
       try {
         // Fetch emails from the server using the API route
-        const result = await fetch(`/api/inbox?page=${pageParam}&pageSize=${pageSize}`).then(res => res.json());
-        
+        const result = await fetch(`/api/inbox?page=${pageParam}&pageSize=${pageSize}`).then(
+          (res) => res.json(),
+        );
+
         // If there's an authentication error, redirect to login
-        if (result.error && (
-          result.error.includes("Authentication failed") || 
-          result.error.includes("Access token not available") ||
-          result.error.includes("User not found")
-        )) {
+        if (
+          result.error &&
+          (result.error.includes("Authentication failed") ||
+            result.error.includes("Access token not available") ||
+            result.error.includes("User not found"))
+        ) {
           // Show a toast message
           addToast({
             variant: "danger",
             message: "Your session has expired. Please log in again.",
           });
-          
+
           // Sign out the user and redirect to login
           await signOut();
           router.push("/login");
         }
-        
+
         return result;
       } catch (error) {
         console.error("Error fetching emails:", error);
         return {
-          error: "Failed to fetch emails. Please try again later."
+          error: "Failed to fetch emails. Please try again later.",
         };
       }
     },
@@ -61,15 +64,17 @@ export function useEmails(pageSize: number = 50) {
       if (lastPage.error || !lastPage.messages || lastPage.messages.length === 0) {
         return undefined;
       }
-      
+
       // If we have stats and we're on the last page, don't fetch more
-      if (lastPage.stats && 
-          lastPage.stats.currentPage !== undefined && 
-          lastPage.stats.totalPages !== undefined && 
-          lastPage.stats.currentPage >= lastPage.stats.totalPages) {
+      if (
+        lastPage.stats &&
+        lastPage.stats.currentPage !== undefined &&
+        lastPage.stats.totalPages !== undefined &&
+        lastPage.stats.currentPage >= lastPage.stats.totalPages
+      ) {
         return undefined;
       }
-      
+
       // Otherwise, fetch the next page
       return pages.length + 1;
     },
@@ -78,37 +83,40 @@ export function useEmails(pageSize: number = 50) {
     refetchOnMount: true,
     refetchOnReconnect: true,
   });
-  
+
   // Set up intersection observer for infinite scrolling
-  const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
-    const [target] = entries;
-    if (target.isIntersecting && hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-  
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const [target] = entries;
+      if (target.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    [fetchNextPage, hasNextPage, isFetchingNextPage],
+  );
+
   useEffect(() => {
     const element = loadMoreRef.current;
     if (!element) return;
-    
+
     observerRef.current = new IntersectionObserver(handleObserver, {
       root: null,
       rootMargin: "0px",
       threshold: 0.1,
     });
-    
+
     observerRef.current.observe(element);
-    
+
     return () => {
       if (observerRef.current) {
         observerRef.current.disconnect();
       }
     };
   }, [handleObserver]);
-  
+
   // Flatten the pages data for easier consumption
-  const allEmails = data?.pages.flatMap(page => page.messages || []) as Email[] || [];
-  
+  const allEmails = (data?.pages.flatMap((page) => page.messages || []) as Email[]) || [];
+
   return {
     emails: allEmails,
     isLoading,
@@ -117,6 +125,6 @@ export function useEmails(pageSize: number = 50) {
     error,
     refetch,
     loadMoreRef,
-    hasNextPage
+    hasNextPage,
   };
-} 
+}

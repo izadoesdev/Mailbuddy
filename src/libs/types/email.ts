@@ -23,4 +23,4 @@ export interface EmailResponse {
     totalPages?: number;
   };
   isComplete?: boolean;
-} 
+}

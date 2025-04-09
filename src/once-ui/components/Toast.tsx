@@ -52,13 +52,7 @@ const Toast = forwardRef<HTMLDivElement, ToastProps>(
         })}
       >
         <Flex fillWidth vertical="center" gap="8">
-          {icon && (
-            <Icon
-              size="s"
-              onBackground={`${variant}-medium`}
-              name={iconMap[variant]}
-            />
-          )}
+          {icon && <Icon size="s" onBackground={`${variant}-medium`} name={iconMap[variant]} />}
           <Text variant="body-default-s" style={{ width: "100%" }} as="div">
             {children}
           </Text>
@@ -76,7 +70,7 @@ const Toast = forwardRef<HTMLDivElement, ToastProps>(
         </Flex>
       </Flex>
     );
-  }
+  },
 );
 
 Toast.displayName = "Toast";

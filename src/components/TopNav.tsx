@@ -4,15 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import {
-  Row,
-  Column,
-  UserMenu,
-  Button,
-  Text,
-  SmartLink,
-  useToast,
-} from "@/once-ui/components";
+import { Row, Column, UserMenu, Button, Text, SmartLink, useToast } from "@/once-ui/components";
 import { signOut } from "@/libs/auth/client";
 import { useSession } from "@/libs/auth/client";
 
@@ -21,12 +13,10 @@ export default function TopNav() {
   const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-
   const handleLogout = async () => {
     setIsLoading(true);
     try {
       await signOut();
-      
     } catch (error) {
       addToast({
         variant: "danger",
@@ -49,22 +39,10 @@ export default function TopNav() {
       </Column>
       <Column gap="1">
         <SmartLink href="/profile">
-          <Button
-            label="Profile"
-            variant="secondary"
-            fillWidth
-            size="s"
-            radius="top"
-          />
+          <Button label="Profile" variant="secondary" fillWidth size="s" radius="top" />
         </SmartLink>
         <SmartLink href="/settings">
-          <Button
-            label="Settings"
-            variant="secondary"
-            fillWidth
-            size="s"
-            radius="none"
-          />
+          <Button label="Settings" variant="secondary" fillWidth size="s" radius="none" />
         </SmartLink>
         <Button
           label={isLoading ? "Logging out..." : "Log out"}
@@ -106,11 +84,11 @@ export default function TopNav() {
           subline={session?.user?.email}
           avatarProps={{
             src: session?.user?.image || undefined,
-            value: session?.user?.image ? undefined : (session?.user?.name?.charAt(0) || ""),
+            value: session?.user?.image ? undefined : session?.user?.name?.charAt(0) || "",
           }}
           dropdown={userDropdown}
         />
       </Row>
     </Row>
   );
-} 
+}

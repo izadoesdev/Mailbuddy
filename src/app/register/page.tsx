@@ -34,20 +34,20 @@ export default function RegisterPage() {
     if (name.length < 2) {
       return "Name must be at least 2 characters long.";
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return "Email is invalid.";
     }
-    
+
     if (password.length < 6) {
       return "Password must be at least 6 characters.";
     }
-    
+
     if (password !== confirmPassword) {
       return "Passwords do not match.";
     }
-    
+
     return null;
   };
 
@@ -81,7 +81,7 @@ export default function RegisterPage() {
               message: "Registration failed. Please try again.",
             });
           },
-        }
+        },
       });
     } catch (error) {
       addToast({
@@ -278,8 +278,7 @@ export default function RegisterPage() {
               />
               <Row fillWidth horizontal="center" paddingTop="16">
                 <Text onBackground="neutral-medium">
-                  Already have an account?{" "}
-                  <SmartLink href="/login">Log in</SmartLink>
+                  Already have an account? <SmartLink href="/login">Log in</SmartLink>
                 </Text>
               </Row>
             </Column>
@@ -288,4 +287,4 @@ export default function RegisterPage() {
       </Column>
     </Column>
   );
-} 
+}

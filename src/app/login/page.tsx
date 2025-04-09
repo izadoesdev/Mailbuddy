@@ -318,8 +318,7 @@ export default function LoginPage() {
               />
               <Row fillWidth horizontal="center" paddingTop="16">
                 <Text onBackground="neutral-medium">
-                  Don't have an account?{" "}
-                  <SmartLink href="/register">Sign up</SmartLink>
+                  Don't have an account? <SmartLink href="/register">Sign up</SmartLink>
                 </Text>
               </Row>
               <Row fillWidth horizontal="center">
@@ -331,4 +330,4 @@ export default function LoginPage() {
       </Column>
     </Column>
   );
-} 
+}

@@ -19,4 +19,4 @@ export interface InboxResponse {
   hasMore: boolean;
   page: number;
   pageSize: number;
-} 
+}

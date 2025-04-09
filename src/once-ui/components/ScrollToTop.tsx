@@ -7,12 +7,7 @@ interface ScrollToTopProps extends React.ComponentProps<typeof Flex> {
   offset?: number;
 }
 
-export const ScrollToTop = ({
-  children,
-  offset = 300,
-  className,
-  ...rest
-}: ScrollToTopProps) => {
+export const ScrollToTop = ({ children, offset = 300, className, ...rest }: ScrollToTopProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
   const handleScroll = () => {

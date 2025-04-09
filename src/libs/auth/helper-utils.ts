@@ -16,8 +16,8 @@
 //  * Helper function to sign in with email and password with simplified redirect handling
 //  */
 // export async function loginWithEmail(
-//   email: string, 
-//   password: string, 
+//   email: string,
+//   password: string,
 //   options?: AuthOptions
 // ) {
 //   try {
@@ -33,7 +33,7 @@
 //         }
 //       }
 //     });
-    
+
 //     return { success: !result?.error, data: result };
 //   } catch (error) {
 //     if (options?.onError) {
@@ -66,7 +66,7 @@
 //         }
 //       }
 //     });
-    
+
 //     return { success: !result?.error, data: result };
 //   } catch (error) {
 //     if (options?.onError) {
@@ -82,11 +82,11 @@
 // export async function logout(options?: AuthOptions) {
 //   try {
 //     await signOut();
-    
+
 //     if (options?.router) {
 //       options.router.push(options.redirectUrl || "/login");
 //     }
-    
+
 //     return { success: true };
 //   } catch (error) {
 //     if (options?.onError) {

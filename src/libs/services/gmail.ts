@@ -35,26 +35,23 @@ export async function refreshAccessToken(userId: string): Promise<string | null>
   try {
     // Get the current session which includes the refresh token
     const session = await auth.api.getSession({ headers: await headers() });
-    
+
     if (!session || !session.user.refreshToken) {
       console.error(`[Gmail Service] No refresh token found for user ${userId}`);
       return null;
     }
 
     // Set up OAuth2 client
-    const oauth2Client = new google.auth.OAuth2(
-      env.GOOGLE_CLIENT_ID,
-      env.GOOGLE_CLIENT_SECRET
-    );
+    const oauth2Client = new google.auth.OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
 
     // Set refresh token
     oauth2Client.setCredentials({
-      refresh_token: session.user.refreshToken
+      refresh_token: session.user.refreshToken,
     });
 
     // Get new access token
     const { credentials } = await oauth2Client.refreshAccessToken();
-    
+
     if (!credentials.access_token) {
       console.error(`[Gmail Service] Failed to refresh access token for user ${userId}`);
       return null;
@@ -64,8 +61,8 @@ export async function refreshAccessToken(userId: string): Promise<string | null>
     const account = await prisma.account.findFirst({
       where: {
         userId,
-        providerId: 'google'
-      }
+        providerId: "google",
+      },
     });
 
     if (account) {
@@ -73,8 +70,8 @@ export async function refreshAccessToken(userId: string): Promise<string | null>
         where: { id: account.id },
         data: {
           accessToken: credentials.access_token,
-          accessTokenExpiresAt: credentials.expiry_date ? new Date(credentials.expiry_date) : null
-        }
+          accessTokenExpiresAt: credentials.expiry_date ? new Date(credentials.expiry_date) : null,
+        },
       });
     }
 
@@ -93,23 +90,27 @@ export async function refreshAccessToken(userId: string): Promise<string | null>
  * @param messageId Message ID
  * @returns Object containing text and HTML content
  */
-export async function getFullMessageContent(gmail: any, userId: string, messageId: string): Promise<{ text: string; html: string }> {
-    try {
-        const fullMessage = await gmail.users.messages.get({
-            userId,
-            id: messageId,
-            format: 'full'
-        });
+export async function getFullMessageContent(
+  gmail: any,
+  userId: string,
+  messageId: string,
+): Promise<{ text: string; html: string }> {
+  try {
+    const fullMessage = await gmail.users.messages.get({
+      userId,
+      id: messageId,
+      format: "full",
+    });
 
-        if (!fullMessage.data || !fullMessage.data.payload) {
-            return { text: '', html: '' };
-        }
-
-        return extractContentFromParts(fullMessage.data.payload);
-    } catch (error) {
-        console.error(`[Gmail Service] Error getting full message content:`, error);
-        return { text: '', html: '' };
+    if (!fullMessage.data || !fullMessage.data.payload) {
+      return { text: "", html: "" };
     }
+
+    return extractContentFromParts(fullMessage.data.payload);
+  } catch (error) {
+    console.error(`[Gmail Service] Error getting full message content:`, error);
+    return { text: "", html: "" };
+  }
 }
 
 /**
@@ -121,45 +122,45 @@ export async function getFullMessageContent(gmail: any, userId: string, messageI
  * @returns Object containing messages and nextPageToken
  */
 export async function fetchEmailsFromGmail(
-  accessToken: string, 
-  userId: string, 
+  accessToken: string,
+  userId: string,
   maxResults: number = 50,
-  pageToken?: string
-): Promise<{ messages: any[], nextPageToken?: string }> {
+  pageToken?: string,
+): Promise<{ messages: any[]; nextPageToken?: string }> {
   try {
     // Set up Gmail API client
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({ access_token: accessToken });
     const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-    
+
     // Get list of email IDs
-    const listResponse = await gmail.users.messages.list({ 
-      userId, 
+    const listResponse = await gmail.users.messages.list({
+      userId,
       maxResults,
-      pageToken
+      pageToken,
     });
-    
+
     if (!listResponse.data.messages || listResponse.data.messages.length === 0) {
       return { messages: [] };
     }
-    
-    return { 
+
+    return {
       messages: listResponse.data.messages,
-      nextPageToken: listResponse.data.nextPageToken || undefined
+      nextPageToken: listResponse.data.nextPageToken || undefined,
     };
   } catch (error: any) {
     console.error(`[Gmail Service] Error fetching emails:`, error);
-    
+
     // Check if the error is due to invalid credentials
-    if (error.message && error.message.includes('Invalid Credentials')) {
+    if (error.message && error.message.includes("Invalid Credentials")) {
       console.log(`[Gmail Service] Invalid credentials detected, attempting to refresh token`);
-      
+
       // Extract the actual user ID from the userId parameter (which might be 'me')
-      const dbUserId = userId === 'me' ? accessToken.split('.')[0] : userId;
-      
+      const dbUserId = userId === "me" ? accessToken.split(".")[0] : userId;
+
       // Try to refresh the token
       const newAccessToken = await refreshAccessToken(dbUserId);
-      
+
       if (newAccessToken) {
         console.log(`[Gmail Service] Token refreshed successfully, retrying request`);
         // Retry the request with the new token
@@ -168,7 +169,7 @@ export async function fetchEmailsFromGmail(
         console.error(`[Gmail Service] Failed to refresh token, cannot retry request`);
       }
     }
-    
+
     return { messages: [] };
   }
 }
@@ -180,69 +181,73 @@ export async function fetchEmailsFromGmail(
  * @param messageId Message ID
  * @returns Email data
  */
-export async function fetchEmailFromGmail(accessToken: string, userId: string, messageId: string): Promise<EmailData | null> {
-    try {
-        // Set up Gmail API client
-        const oauth2Client = new google.auth.OAuth2();
-        oauth2Client.setCredentials({ access_token: accessToken });
-        const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-        
-        const fullMessage = await gmail.users.messages.get({
-            userId,
-            id: messageId,
-            format: 'full'
-        });
-        
-        if (!fullMessage.data) {
-            return null;
-        }
-        
-        // Extract email details
-        const headers = fullMessage.data.payload?.headers || [];
-        const subject = headers.find((h: any) => h.name === 'Subject')?.value || '';
-        const from = headers.find((h: any) => h.name === 'From')?.value || '';
-        const to = headers.find((h: any) => h.name === 'To')?.value || '';
-        
-        // Get the email content
-        const content = await getFullMessageContent(gmail, userId, messageId);
-        
-        // Create email object
-        return {
-            id: messageId,
-            threadId: fullMessage.data.threadId || '',
-            userId, // This will be updated in the actions file to use the correct database user ID
-            subject,
-            from,
-            to,
-            snippet: fullMessage.data.snippet || null,
-            body: content.html || content.text || fullMessage.data.snippet || 'No content available',
-            isRead: fullMessage.data.labelIds?.includes('UNREAD') ? false : true,
-            isStarred: fullMessage.data.labelIds?.includes('STARRED') || false,
-            labels: fullMessage.data.labelIds || [],
-            internalDate: fullMessage.data.internalDate || undefined
-        };
-    } catch (error: any) {
-        console.error(`[Gmail Service] Error fetching email ${messageId}:`, error);
-        
-        // Check if the error is due to invalid credentials
-        if (error.message && error.message.includes('Invalid Credentials')) {
-            console.log(`[Gmail Service] Invalid credentials detected, attempting to refresh token`);
-            
-            // Extract the actual user ID from the userId parameter (which might be 'me')
-            const dbUserId = userId === 'me' ? accessToken.split('.')[0] : userId;
-            
-            // Try to refresh the token
-            const newAccessToken = await refreshAccessToken(dbUserId);
-            
-            if (newAccessToken) {
-                console.log(`[Gmail Service] Token refreshed successfully, retrying request`);
-                // Retry the request with the new token
-                return fetchEmailFromGmail(newAccessToken, userId, messageId);
-            } else {
-                console.error(`[Gmail Service] Failed to refresh token, cannot retry request`);
-            }
-        }
-        
-        return null;
+export async function fetchEmailFromGmail(
+  accessToken: string,
+  userId: string,
+  messageId: string,
+): Promise<EmailData | null> {
+  try {
+    // Set up Gmail API client
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: accessToken });
+    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+    const fullMessage = await gmail.users.messages.get({
+      userId,
+      id: messageId,
+      format: "full",
+    });
+
+    if (!fullMessage.data) {
+      return null;
     }
-} 
+
+    // Extract email details
+    const headers = fullMessage.data.payload?.headers || [];
+    const subject = headers.find((h: any) => h.name === "Subject")?.value || "";
+    const from = headers.find((h: any) => h.name === "From")?.value || "";
+    const to = headers.find((h: any) => h.name === "To")?.value || "";
+
+    // Get the email content
+    const content = await getFullMessageContent(gmail, userId, messageId);
+
+    // Create email object
+    return {
+      id: messageId,
+      threadId: fullMessage.data.threadId || "",
+      userId, // This will be updated in the actions file to use the correct database user ID
+      subject,
+      from,
+      to,
+      snippet: fullMessage.data.snippet || null,
+      body: content.html || content.text || fullMessage.data.snippet || "No content available",
+      isRead: fullMessage.data.labelIds?.includes("UNREAD") ? false : true,
+      isStarred: fullMessage.data.labelIds?.includes("STARRED") || false,
+      labels: fullMessage.data.labelIds || [],
+      internalDate: fullMessage.data.internalDate || undefined,
+    };
+  } catch (error: any) {
+    console.error(`[Gmail Service] Error fetching email ${messageId}:`, error);
+
+    // Check if the error is due to invalid credentials
+    if (error.message && error.message.includes("Invalid Credentials")) {
+      console.log(`[Gmail Service] Invalid credentials detected, attempting to refresh token`);
+
+      // Extract the actual user ID from the userId parameter (which might be 'me')
+      const dbUserId = userId === "me" ? accessToken.split(".")[0] : userId;
+
+      // Try to refresh the token
+      const newAccessToken = await refreshAccessToken(dbUserId);
+
+      if (newAccessToken) {
+        console.log(`[Gmail Service] Token refreshed successfully, retrying request`);
+        // Retry the request with the new token
+        return fetchEmailFromGmail(newAccessToken, userId, messageId);
+      } else {
+        console.error(`[Gmail Service] Failed to refresh token, cannot retry request`);
+      }
+    }
+
+    return null;
+  }
+}
