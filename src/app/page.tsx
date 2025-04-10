@@ -11,7 +11,6 @@ import {
     Column,
     Card,
     Background,
-    SmartImage,
     Line,
     IconButton,
     Fade,
@@ -19,7 +18,7 @@ import {
 
 export default function Home() {
     return (
-        <Column fillWidth paddingY="80" paddingX="s" horizontal="center" flex={1}>
+        <Column fillWidth paddingTop="80" paddingBottom="48" paddingX="s" horizontal="center" flex={1}>
             {/* Top fade effect */}
             <Fade
                 zIndex={3}
@@ -42,17 +41,20 @@ export default function Home() {
                     data-border="rounded"
                     horizontal="space-between"
                     maxWidth="l"
-                    paddingRight="64"
-                    paddingLeft="32"
+                    paddingX="24"
                     paddingY="20"
                     fillWidth
                 >
-                    <Logo size="s" icon={true} href="/" />
-                    <Row gap="24" hide="s">
-                        <Button href="/features" label="Features" variant="tertiary" />
-                        <Button href="/pricing" label="Pricing" variant="tertiary" />
-                        <Button href="/login" label="Log in" variant="secondary" />
-                        <Button href="/register" label="Sign up" arrowIcon />
+                    <Row gap="8" vertical="center">
+                        <Logo size="s" icon={true} href="/" />
+                        <Row paddingLeft="24" gap="8">
+                            <Button weight="default" size="s" href="/features" label="Features" variant="tertiary" />
+                            <Button weight="default" size="s" href="/pricing" label="Pricing" variant="tertiary" />
+                        </Row>
+                    </Row>
+                    <Row gap="8" hide="s">
+                        <Button size="s" href="/login" label="Log in" variant="secondary" />
+                        <Button size="s" href="/register" label="Sign up" arrowIcon />
                     </Row>
                     <Row gap="16" show="s">
                         <IconButton icon="menu" variant="tertiary" aria-label="Menu" />
@@ -66,7 +68,6 @@ export default function Home() {
                 as="main"
                 maxWidth="l"
                 position="relative"
-                radius="xl"
                 horizontal="center"
                 fillWidth
             >
@@ -75,6 +76,7 @@ export default function Home() {
                     fillWidth
                     horizontal="center"
                     gap="48"
+                    overflow="hidden"
                     radius="xl"
                     paddingTop="80"
                     paddingBottom="64"
@@ -103,8 +105,8 @@ export default function Home() {
                         gradient={{
                             display: true,
                             tilt: -35,
-                            height: 50,
-                            width: 75,
+                            height: 100,
+                            width: 100,
                             x: 100,
                             y: 40,
                             colorStart: "accent-solid-medium",
@@ -122,8 +124,8 @@ export default function Home() {
                             display: true,
                             opacity: 100,
                             tilt: -35,
-                            height: 20,
-                            width: 120,
+                            height: 70,
+                            width: 160,
                             x: 120,
                             y: 35,
                             colorStart: "brand-solid-strong",
@@ -131,20 +133,20 @@ export default function Home() {
                         }}
                     />
 
-                    <Column fillWidth horizontal="center" gap="32" padding="32" position="relative">
+                    <Column maxWidth={64} horizontal="center" gap="32" padding="32" position="relative">
                         <Heading
                             wrap="balance"
                             variant="display-strong-xl"
                             align="center"
                             marginBottom="16"
                         >
-                            Secure Email Made Simple
+                            Your AI-powered email companion
                         </Heading>
-                        <Text variant="body-default-xl" align="center" marginBottom="32">
+                        <Text wrap="balance" variant="body-default-xl" align="center" marginBottom="32">
                             Mailbuddy is your secure, privacy-focused email companion that makes
-                            managing Gmail simple and efficient.
+                            managing Gmail simple and efficient
                         </Text>
-                        <Row gap="16" horizontal="center">
+                        <Row gap="16" horizontal="center" data-border="rounded">
                             <Button
                                 label="Get Started"
                                 href="/register"
@@ -171,60 +173,64 @@ export default function Home() {
                     horizontal="center"
                     position="relative"
                 >
-                    <Line maxWidth="l" background="neutral-alpha-medium" />
+                    <Background mask={{x:50, y:0, radius:50}}>
+                        <Line maxWidth="l" background="neutral-alpha-medium" />
+                    </Background>
 
                     <Column fillWidth gap="32" horizontal="center">
-                        <Heading as="h2" variant="display-default-m" align="center">
+                        <Heading as="h2" variant="display-strong-m" align="center">
                             Why Choose Mailbuddy
                         </Heading>
 
                         <Row gap="24" fillWidth marginTop="32" mobileDirection="column">
                             <Card
+                                direction="column"
                                 fillWidth
                                 padding="32"
                                 gap="16"
                                 radius="xl"
                                 border="neutral-alpha-weak"
                             >
-                                <Icon name="shieldLock" size="xl" color="brand-medium" />
-                                <Heading as="h3" variant="heading-default-m">
+                                <Icon name="shield" size="s" color="brand-medium" />
+                                <Heading as="h3" variant="heading-strong-m">
                                     Privacy First
                                 </Heading>
-                                <Text>
+                                <Text variant="body-default-s" onBackground="neutral-weak" wrap="balance">
                                     End-to-end encryption keeps your emails secure and private, with
                                     zero access to your data.
                                 </Text>
                             </Card>
 
                             <Card
+                                direction="column"
                                 fillWidth
                                 padding="32"
                                 gap="16"
                                 radius="xl"
                                 border="neutral-alpha-weak"
                             >
-                                <Icon name="bolt" size="xl" color="brand-medium" />
-                                <Heading as="h3" variant="heading-default-m">
+                                <Icon name="bolt" size="s" color="brand-medium" />
+                                <Heading as="h3" variant="heading-strong-m">
                                     Lightning Fast
                                 </Heading>
-                                <Text>
-                                    Optimized performance for quick loading and responsiveness even
-                                    with thousands of emails.
+                                <Text variant="body-default-s" onBackground="neutral-weak" wrap="balance">
+                                    Optimized performance for quick loading and responsiveness even with thousands of emails.
                                 </Text>
                             </Card>
 
                             <Card
+                                direction="column"
                                 fillWidth
                                 padding="32"
                                 gap="16"
                                 radius="xl"
                                 border="neutral-alpha-weak"
                             >
-                                <Icon name="layout" size="xl" color="brand-medium" />
-                                <Heading as="h3" variant="heading-default-m">
+                                <Icon name="layout" size="s" color="brand-medium" />
+                                <Heading as="h3" variant="heading-strong-m">
                                     Intuitive Interface
                                 </Heading>
-                                <Text>
+                                <Text variant="body-default-s" onBackground="neutral-weak" wrap="balance">
                                     Clean, modern design that makes email management feel effortless
                                     and enjoyable.
                                 </Text>
@@ -243,8 +249,11 @@ export default function Home() {
                     position="relative"
                     background="overlay"
                 >
+                    <Background mask={{x:50, y:0, radius:50}}>
+                        <Line maxWidth="l" background="neutral-alpha-medium" />
+                    </Background>
                     <Column fillWidth gap="32" horizontal="center" maxWidth="l">
-                        <Heading as="h2" variant="display-default-m" align="center">
+                        <Heading as="h2" variant="display-strong-m" align="center">
                             How Mailbuddy Works
                         </Heading>
 
@@ -256,66 +265,72 @@ export default function Home() {
                             vertical="center"
                         >
                             <Column gap="24" fillWidth>
-                                <Row gap="16" vertical="center">
-                                    <Card
+                                <Row gap="24" vertical="center">
+                                    <Row
                                         radius="full"
-                                        background="brand-medium"
-                                        paddingX="16"
-                                        paddingY="8"
+                                        background="neutral-medium"
+                                        border="neutral-alpha-weak"
+                                        minWidth="40"
+                                        height="40"
+                                        center
                                     >
-                                        <Text onSolid="neutral-strong" variant="body-strong-m">
+                                        <Text onSolid="neutral-strong" variant="body-default-m">
                                             1
                                         </Text>
-                                    </Card>
-                                    <Heading as="h3" variant="heading-default-m">
+                                    </Row>
+                                    <Heading as="h3" variant="heading-strong-m">
                                         Connect Your Gmail
                                     </Heading>
                                 </Row>
-                                <Text>
+                                <Text variant="body-default-s" marginLeft="64" onBackground="neutral-weak" wrap="balance">
                                     Securely link your Gmail account with read-only access. We never
                                     store your password.
                                 </Text>
                             </Column>
 
                             <Column gap="24" fillWidth>
-                                <Row gap="16" vertical="center">
-                                    <Card
+                                <Row gap="24" vertical="center">
+                                    <Row
                                         radius="full"
-                                        background="brand-medium"
-                                        paddingX="16"
-                                        paddingY="8"
+                                        background="neutral-medium"
+                                        border="neutral-alpha-weak"
+                                        minWidth="40"
+                                        height="40"
+                                        center
                                     >
                                         <Text onSolid="neutral-strong" variant="body-strong-m">
                                             2
                                         </Text>
-                                    </Card>
-                                    <Heading as="h3" variant="heading-default-m">
+                                    </Row>
+                                    <Heading as="h3" variant="heading-strong-m">
                                         Encrypt Your Data
                                     </Heading>
                                 </Row>
-                                <Text>
+                                <Text variant="body-default-s" marginLeft="64" onBackground="neutral-weak" wrap="balance">
                                     Your emails are automatically encrypted with keys only you
                                     control.
                                 </Text>
                             </Column>
 
                             <Column gap="24" fillWidth>
-                                <Row gap="16" vertical="center">
-                                    <Card
+                                <Row gap="24" vertical="center">
+                                    <Row
                                         radius="full"
-                                        background="brand-medium"
-                                        paddingX="16"
-                                        paddingY="8"
+                                        background="neutral-medium"
+                                        border="neutral-alpha-weak"
+                                        minWidth="40"
+                                        height="40"
+                                        center
                                     >
                                         <Text onSolid="neutral-strong" variant="body-strong-m">
                                             3
                                         </Text>
-                                    </Card>
-                                    <Heading as="h3" variant="heading-default-m">
+                                    </Row>
+                                    <Heading as="h3" variant="heading-strong-m">
                                         Enjoy Your Inbox
                                     </Heading>
                                 </Row>
-                                <Text>
+                                <Text variant="body-default-s" marginLeft="64" onBackground="neutral-weak" wrap="balance">
                                     Browse, search, and manage your emails with confidence and peace
                                     of mind.
                                 </Text>
@@ -333,14 +348,15 @@ export default function Home() {
                     horizontal="center"
                     position="relative"
                 >
-                    <Column fillWidth horizontal="center" gap="32" maxWidth="m">
-                        <Heading as="h2" variant="display-default-l" align="center">
+                    <Column maxWidth={48} horizontal="center" gap="32">
+                        <Heading as="h2" variant="display-strong-l" align="center">
                             Ready to Take Control of Your Email?
                         </Heading>
-                        <Text variant="body-default-l" align="center" marginBottom="16">
+                        <Text variant="heading-default-xl" align="center" marginBottom="16" onBackground="neutral-weak" wrap="balance">
                             Join thousands of users who have made email secure and simple again.
                         </Text>
                         <Button
+                            data-border="rounded"
                             label="Get Started for Free"
                             href="/register"
                             variant="primary"
@@ -351,67 +367,26 @@ export default function Home() {
                 </Column>
             </Column>
 
+            <Background mask={{x:50, y:0, radius:50}} maxWidth="l" height="1">
+                <Line background="neutral-alpha-medium" />
+            </Background>
+
             {/* Footer */}
             <Row
                 as="footer"
-                fillWidth
                 maxWidth="l"
                 paddingX="32"
                 paddingY="64"
                 gap="64"
                 mobileDirection="column"
-                borderTop="neutral-alpha-weak"
                 marginTop="64"
             >
-                <Column gap="24" fillWidth>
+                <Column gap="24" maxWidth={24}>
                     <Logo size="m" />
-                    <Text onBackground="neutral-medium">
+                    <Text variant="label-default-s" onBackground="neutral-medium" wrap="balance">
                         Your secure email companion that makes managing Gmail simple and efficient.
                     </Text>
-                </Column>
-
-                <Row gap="64" fillWidth mobileDirection="column">
-                    <Column gap="16" fillWidth>
-                        <Heading as="h3" variant="heading-default-s">
-                            Product
-                        </Heading>
-                        <Button label="Features" href="/features" variant="tertiary" />
-                        <Button label="Pricing" href="/pricing" variant="tertiary" />
-                        <Button label="Security" href="/security" variant="tertiary" />
-                    </Column>
-
-                    <Column gap="16" fillWidth>
-                        <Heading as="h3" variant="heading-default-s">
-                            Company
-                        </Heading>
-                        <Button label="About" href="/about" variant="tertiary" />
-                        <Button label="Blog" href="/blog" variant="tertiary" />
-                        <Button label="Contact" href="/contact" variant="tertiary" />
-                    </Column>
-
-                    <Column gap="16" fillWidth>
-                        <Heading as="h3" variant="heading-default-s">
-                            Legal
-                        </Heading>
-                        <Button label="Terms" href="/terms" variant="tertiary" />
-                        <Button label="Privacy" href="/privacy" variant="tertiary" />
-                    </Column>
-                </Row>
-            </Row>
-
-            <Row
-                fillWidth
-                maxWidth="l"
-                paddingX="32"
-                paddingY="24"
-                horizontal="space-between"
-                mobileDirection="column"
-                gap="16"
-            >
-                <Text variant="body-default-s" onBackground="neutral-medium">
-                    © {new Date().getFullYear()} Mailbuddy. All rights reserved.
-                </Text>
-                <Row gap="16">
+                    <Row gap="8" data-border="rounded">
                     <IconButton
                         href="https://www.twitter.com/mailbuddy"
                         icon="twitter"
@@ -431,6 +406,49 @@ export default function Home() {
                         aria-label="GitHub"
                     />
                 </Row>
+                </Column>
+
+                <Row gap="64" fillWidth mobileDirection="column" data-border="rounded">
+                    <Column gap="8" fillWidth>
+                        <Heading as="h3" variant="heading-strong-s" marginLeft="12" marginBottom="24">
+                            Product
+                        </Heading>
+                        <Button size="s" weight="default" label="Features" href="/features" variant="tertiary" />
+                        <Button size="s" weight="default" label="Pricing" href="/pricing" variant="tertiary" />
+                        <Button size="s" weight="default" label="Security" href="/security" variant="tertiary" />
+                    </Column>
+
+                    <Column gap="8" fillWidth>
+                        <Heading as="h3" variant="heading-strong-s" marginLeft="12" marginBottom="24">
+                            Company
+                        </Heading>
+                        <Button size="s" weight="default" label="About" href="/about" variant="tertiary" />
+                        <Button size="s" weight="default" label="Blog" href="/blog" variant="tertiary" />
+                        <Button size="s" weight="default" label="Contact" href="/contact" variant="tertiary" />
+                    </Column>
+
+                    <Column gap="8" fillWidth>
+                        <Heading as="h3" variant="heading-strong-s" marginLeft="12" marginBottom="24">
+                            Legal
+                        </Heading>
+                        <Button size="s" weight="default" label="Terms" href="/terms" variant="tertiary" />
+                        <Button size="s" weight="default" label="Privacy" href="/privacy" variant="tertiary" />
+                    </Column>
+                </Row>
+            </Row>
+
+            <Row
+                fillWidth
+                maxWidth="l"
+                paddingX="32"
+                paddingY="24"
+                horizontal="space-between"
+                mobileDirection="column"
+                gap="16"
+            >
+                <Text variant="label-default-s" onBackground="neutral-weak">
+                    © {new Date().getFullYear()} Mailbuddy. All rights reserved.
+                </Text>
             </Row>
         </Column>
     );

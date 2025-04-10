@@ -30,11 +30,13 @@ import {
     HiOutlineSparkles,
     HiOutlineComputerDesktop,
     HiOutlineInboxStack,
+    HiOutlineBars3,
+    HiOutlineBolt,
 } from "react-icons/hi2";
 
 import { RiVisaLine } from "react-icons/ri";
 
-import { FaDiscord, FaGithub, FaGoogle } from "react-icons/fa6";
+import { FaDiscord, FaGithub, FaGoogle, FaLinkedin, FaTwitter } from "react-icons/fa6";
 
 import { LuChevronsLeftRight } from "react-icons/lu";
 
@@ -73,6 +75,11 @@ export const iconLibrary: Record<string, IconType> = {
     sparkle: HiOutlineSparkles,
     computer: HiOutlineComputerDesktop,
     inbox: HiOutlineInboxStack,
+    layout: HiOutlineBars3,
+    bolt: HiOutlineBolt,
+    shield: HiOutlineShieldCheck,
+    twitter: FaTwitter,
+    linkedin: FaLinkedin,
 };
 
 export type IconLibrary = typeof iconLibrary;
