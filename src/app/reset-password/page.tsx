@@ -16,31 +16,21 @@ import {
     Background,
     SmartLink,
     useToast,
+    PasswordInput,
 } from "@/once-ui/components";
 import { authClient } from "../../../auth-client";
 
-export default function ForgotPasswordPage() {
+export default function ResetPasswordPage() {
     const router = useRouter();
     const { addToast } = useToast();
-    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
 
-    const validateEmail = () => {
-        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!regex.test(email)) {
-            return "Email is invalid.";
-        }
-        return null;
-    };
-
     const handleSubmit = async () => {
-        const validationError = validateEmail();
-        if (validationError) {
-            addToast({
-                variant: "danger",
-                message: validationError,
-            });
+        const token = new URLSearchParams(window.location.search).get("token");
+        if (!token) {
+            addToast({ variant: "danger", message: "Invalid token" });
             return;
         }
 
@@ -48,15 +38,21 @@ export default function ForgotPasswordPage() {
         try {
             // This is a placeholder for the actual password reset functionality
             // In a real application, you would call an API to send a reset email
-            await authClient.forgetPassword({
-                email,
-                redirectTo: '/reset-password'
+            const { data, error } = await authClient.resetPassword({
+                token,
+                newPassword: password,
             });
+
+            if (error || data.status === false) {
+                console.log(error);
+                addToast({ variant: "danger", message: error?.statusText || "An unexpected error occurred" });
+                return;
+            }
 
             setIsSubmitted(true);
             addToast({
                 variant: "success",
-                message: "Password reset instructions sent to your email.",
+                message: "Password reset successful!",
             });
         } catch (error) {
             addToast({
@@ -159,7 +155,7 @@ export default function ForgotPasswordPage() {
                             Reset your password
                         </Heading>
                         <Text onBackground="neutral-medium" marginBottom="24" align="center">
-                            Enter your email to receive reset instructions
+                            Enter your new password
                         </Text>
                     </Column>
 
@@ -214,13 +210,13 @@ export default function ForgotPasswordPage() {
                                 <Column fillWidth horizontal="center" gap="24">
                                     <Icon name="checkCircle" size="xl" />
                                     <Heading as="h2" variant="display-default-s" align="center">
-                                        Check your email
+                                        Password reset complete
                                     </Heading>
                                     <Text onBackground="neutral-medium" align="center">
-                                        We've sent password reset instructions to {email}
+                                        You can now log in to your account
                                     </Text>
                                     <Button
-                                        label="Back to login"
+                                        label="Go to login"
                                         arrowIcon
                                         fillWidth
                                         onClick={() => router.push("/login")}
@@ -228,20 +224,20 @@ export default function ForgotPasswordPage() {
                                 </Column>
                             ) : (
                                 <>
-                                    <Input
-                                        id="email"
-                                        label="Email"
+                                    <PasswordInput
+                                        id="password"
+                                        label="Password"
                                         labelAsPlaceholder
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        value={email}
-                                        validate={validateEmail}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        value={password}
                                         errorMessage={false}
+                                        type="password"
                                         radius="top"
                                         disabled={isLoading}
                                     />
                                     <Button
                                         id="submit"
-                                        label={isLoading ? "Sending..." : "Send reset instructions"}
+                                        label={isLoading ? "Resetting..." : "Reset password"}
                                         arrowIcon
                                         fillWidth
                                         onClick={handleSubmit}

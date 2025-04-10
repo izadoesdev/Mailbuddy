@@ -3,7 +3,10 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./src/libs/db";
 import { customSession, multiSession } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
+import { Resend } from "resend";
+import { ResetPasswordEmail } from "./src/email-templates/reset-password";
 
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
@@ -25,6 +28,19 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true,
         autoSignIn: true,
+        async sendResetPassword({ token, url, user }) {
+            console.log(`[sendResetPassword] token: ${token}, url: ${url}, user:`, user);
+            const { error } = await resend.emails.send({
+                from: process.env.EMAIL_SENDER as string,
+                to: [user.email],
+                subject: "Reset Password",
+                react: ResetPasswordEmail({ resetPasswordLink: url, userFirstname: user.name }),
+            });
+
+            if (error) {
+                console.log("[sendResetPassword] error:", error);
+            }
+        },
     },
     session: {
         expiresIn: 60 * 60 * 24 * 30, // 30 days
