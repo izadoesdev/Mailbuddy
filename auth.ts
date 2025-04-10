@@ -16,7 +16,7 @@ export const auth = betterAuth({
                 "https://www.googleapis.com/auth/gmail.modify",
                 "https://www.googleapis.com/auth/gmail.readonly",
             ],
-            prompt: "select_account+consent"
+            prompt: "consent",
         },
     },
     session: {
