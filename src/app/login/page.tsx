@@ -8,16 +8,11 @@ import {
     Heading,
     Text,
     Button,
-    Icon,
     Logo,
-    Input,
-    PasswordInput,
     Row,
     Column,
     Background,
-    SmartLink,
     useToast,
-    Line,
 } from "@/once-ui/components";
 import { signIn } from "@/libs/auth/client";
 
@@ -53,21 +48,6 @@ export default function LoginPage() {
 
     return (
         <Column fillWidth paddingY="80" paddingX="s" horizontal="center" flex={1}>
-            <Row position="fixed" top="0" fillWidth horizontal="center" zIndex={3}>
-                <Row
-                    data-border="rounded"
-                    horizontal="space-between"
-                    maxWidth="l"
-                    paddingRight="64"
-                    paddingLeft="32"
-                    paddingY="20"
-                >
-                    <Link href="/">
-                        <Logo size="s" icon={false} />
-                    </Link>
-                </Row>
-            </Row>
-
             <Column
                 overflow="hidden"
                 as="main"
@@ -86,66 +66,6 @@ export default function LoginPage() {
                     paddingTop="80"
                     position="relative"
                 >
-                    <Background
-                        mask={{
-                            x: 0,
-                            y: 48,
-                        }}
-                        position="absolute"
-                        grid={{
-                            display: true,
-                            width: "0.25rem",
-                            color: "neutral-alpha-medium",
-                            height: "0.25rem",
-                        }}
-                    />
-                    <Background
-                        mask={{
-                            x: 80,
-                            y: 0,
-                            radius: 100,
-                        }}
-                        position="absolute"
-                        gradient={{
-                            display: true,
-                            tilt: -35,
-                            height: 50,
-                            width: 75,
-                            x: 100,
-                            y: 40,
-                            colorStart: "accent-solid-medium",
-                            colorEnd: "static-transparent",
-                        }}
-                    />
-                    <Background
-                        mask={{
-                            x: 100,
-                            y: 0,
-                            radius: 100,
-                        }}
-                        position="absolute"
-                        gradient={{
-                            display: true,
-                            opacity: 100,
-                            tilt: -35,
-                            height: 20,
-                            width: 120,
-                            x: 120,
-                            y: 35,
-                            colorStart: "brand-solid-strong",
-                            colorEnd: "static-transparent",
-                        }}
-                    />
-                    <Column fillWidth horizontal="center" gap="32" padding="32" position="relative">
-                        <Logo wordmark={false} size="l" />
-                        <Heading as="h1" variant="display-default-l" align="center">
-                            Welcome back
-                        </Heading>
-                        <Text onBackground="neutral-medium" marginBottom="24" align="center">
-                            Log in to your account
-                        </Text>
-                    </Column>
-
                     <Row
                         marginY="32"
                         background="overlay"
@@ -174,25 +94,17 @@ export default function LoginPage() {
                             fillWidth
                             horizontal="center"
                             gap="20"
-                            padding="32"
+                            padding="xl"
                             position="relative"
                         >
-                            <Background
-                                mask={{
-                                    x: 100,
-                                    y: 0,
-                                    radius: 75,
-                                }}
-                                position="absolute"
-                                grid={{
-                                    display: true,
-                                    opacity: 50,
-                                    width: "0.5rem",
-                                    color: "neutral-alpha-medium",
-                                    height: "1rem",
-                                }}
-                            />
-                            <Column fillWidth gap="8">
+                            <Column fillWidth gap="8" horizontal="center">
+                                <Logo size="s" icon={false} href="/" />
+                                <Heading as="h1" variant="display-strong-xs" align="center" marginTop="24">
+                                    Welcome back
+                                </Heading>
+                                <Text onBackground="neutral-medium" marginBottom="24" align="center">
+                                    Log in to your account
+                                </Text>
                                 <Button
                                     label="Continue with Google"
                                     fillWidth

@@ -142,23 +142,17 @@ export default function Home() {
                         >
                             Your AI-powered email companion
                         </Heading>
-                        <Text wrap="balance" variant="body-default-xl" align="center" marginBottom="32">
+                        <Text wrap="balance" variant="heading-default-xl" align="center" marginBottom="32">
                             Mailbuddy is your secure, privacy-focused email companion that makes
                             managing Gmail simple and efficient
                         </Text>
                         <Row gap="16" horizontal="center" data-border="rounded">
                             <Button
-                                label="Get Started"
+                                label="Start for free"
                                 href="/register"
                                 variant="primary"
                                 size="l"
                                 arrowIcon
-                            />
-                            <Button
-                                label="See Features"
-                                href="/features"
-                                variant="secondary"
-                                size="l"
                             />
                         </Row>
                     </Column>
