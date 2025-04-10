@@ -11,8 +11,7 @@ import {
 import { google } from "googleapis";
 import { extractContentFromParts } from "@/libs/utils/email-content";
 import env from "@/libs/env";
-import { storeEmailEmbedding } from "@/app/ai/actions/storeEmailEmbedding";
-import { getEmailCategories } from "@/app/ai/actions/getEmailCategory";
+import { storeEmail } from "@/app/ai/new/ai";
 
 // For API requests
 const GMAIL_USER_ID = "me";
@@ -507,12 +506,7 @@ async function processEmailsForVectorStorage(emails: any[]): Promise<void> {
             // Process emails in batch sequentially to avoid memory spikes
             for (const email of batch) {
                 try {
-                    await storeEmailEmbedding({
-                        id: email.id,
-                        subject: email.subject,
-                        body: email.body,
-                        userId: email.userId,
-                    });
+                    await storeEmail(email);
                     
                     // Add a small delay between emails to reduce CPU contention
                     await new Promise(resolve => setTimeout(resolve, 50));

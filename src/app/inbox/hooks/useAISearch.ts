@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { searchSimilarEmails } from '@/app/ai/actions/searchSimilarEmails';
+import { searchSimilarEmails } from '@/app/ai/new/utils/search';
 import type { Email, InboxResponse } from '../types';
 
 type SimilarEmailResult = {
@@ -37,7 +37,7 @@ export function useAISearch() {
   const aiSearchMutation = useMutation({
     mutationFn: async (query: string) => {
       // First get the semantic search results
-      const results = await searchSimilarEmails(query);
+      const results = await searchSimilarEmails(query); // Use the new search utility
       
       if (!results || !Array.isArray(results)) {
         throw new Error((results as any)?.error || 'Failed to perform AI search');

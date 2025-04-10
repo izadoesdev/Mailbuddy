@@ -5,9 +5,10 @@ import type { Email } from '@/app/inbox/types';
 import { storeEmail } from './vectors';
 import { processEmail } from './groq';
 import { cleanEmail } from './clean';
+import { saveEmailAIMetadata } from './database';
 
 /**
- * Process a batch of emails using AI and save them to the vector database
+ * Process a batch of emails with AI and store them in the vector database
  */
 export async function processBatchEmails(emails: Email[]) {
   if (!Array.isArray(emails) || emails.length === 0) {
@@ -45,20 +46,42 @@ export async function processBatchEmails(emails: Email[]) {
           };
         }
         
-        // Process the email with AI
+        // Get AI metadata
         const aiData = await processEmail(email);
         
         // Store in vector database
-        const vectorResult = await storeEmail(email);
+        await storeEmail(email);
         
-        if (!vectorResult.success) {
-          return {
-            emailId: email.id,
-            success: false,
-            error: `Vector storage failed: ${vectorResult.error}`,
-            aiData
-          };
+        // Save to SQL database
+        interface EmailMetadata {
+          emailId: string;
+          category?: string;
+          priority?: string;
+          summary?: string;
+          modelUsed?: string;
+          priorityExplanation?: string;
+          keywords?: string[];
         }
+        
+        const dbMetadata: EmailMetadata = {
+          emailId: email.id,
+          category: aiData.category || "Uncategorized",
+          priority: aiData.priority || "Medium",
+          summary: aiData.summary || "No summary available",
+          modelUsed: 'groq'
+        };
+        
+        // Add priorityExplanation if available
+        if ('priorityExplanation' in aiData && typeof aiData.priorityExplanation === 'string') {
+          dbMetadata.priorityExplanation = aiData.priorityExplanation;
+        }
+        
+        // Add action items if available
+        if ('actionItems' in aiData && Array.isArray(aiData.actionItems)) {
+          dbMetadata.keywords = aiData.actionItems;
+        }
+        
+        await saveEmailAIMetadata(dbMetadata);
         
         processedCount++;
         

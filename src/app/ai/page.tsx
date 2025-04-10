@@ -21,7 +21,7 @@ import {
   SegmentedControl,
   Flex,
 } from "@/once-ui/components";
-import { searchSimilarEmails } from "./new/utils/search";
+import { searchEmailsByQuery } from "./new/utils/search";
 import { processEmail } from "./new/utils/groq";
 import type { Email, InboxResponse } from "../inbox/types";
 import { formatDate } from "../inbox/utils";
@@ -34,6 +34,9 @@ type SimilarEmailResult = {
   metadata?: {
     subject?: string;
     userId?: string;
+    from?: string;
+    to?: string;
+    createdAt?: string;
   };
 }
 
@@ -43,10 +46,18 @@ type AIProcessedEmail = {
   summary?: string;
   priority?: string;
   priorityExplanation?: string;
+  actionItems?: string[];
+  contactInfo?: Record<string, string>;
   processed: boolean;
   fromCache?: boolean;
   processingTime?: number;
   error?: string;
+}
+
+type AIResponse = {
+  success: boolean;
+  error?: string;
+  results?: SimilarEmailResult[];
 }
 
 export default function AIPage() {
@@ -102,16 +113,22 @@ export default function AIPage() {
     setError(null);
     setSuccessMessage(null);
     try {
-      const results = await searchSimilarEmails(searchQuery);
+      // Make sure we have a valid user ID
+      if (!emails.length || !emails[0].userId) {
+        throw new Error('No valid user ID found for search');
+      }
+
+      // Use the new search utility
+      const response = await searchEmailsByQuery(searchQuery, emails[0].userId);
       
-      if (results && Array.isArray(results)) {
-        setSimilarEmails(results as SimilarEmailResult[]);
+      if (response.success && response.results) {
+        setSimilarEmails(response.results as SimilarEmailResult[]);
         
         // Switch to search results tab
         setActiveTab('search');
       } else {
         // Handle error case
-        const errorMessage = (results as any).error || 'Error searching for similar emails';
+        const errorMessage = response.error || 'Error searching for similar emails';
         console.error('Error searching similar emails:', errorMessage);
         setError(`Search failed: ${errorMessage}`);
         setSimilarEmails([]);
@@ -132,23 +149,34 @@ export default function AIPage() {
     setError(null);
     
     try {
-      const result = await processEmail(email);
+      // Process the email with our Groq utility
+      const aiResult = await processEmail(email);
       
-      if (result.processed) {
-        // Update the processed emails state
-        // Add to processed emails map
-        setProcessedEmails(prev => ({
-          ...prev,
-          [email.id]: result as AIProcessedEmail
-        }));
-        
-        setSuccessMessage(`Email "${email.subject}" analyzed successfully!`);
-        
-        // Switch to AI insights tab
-        setActiveTab('ai_insights');
-      } else {
-        setError(`Failed to analyze email: ${result.error || 'Unknown error'}`);
+      if (!aiResult) {
+        throw new Error("Failed to process email - no result returned");
       }
+      
+      const processedEmail: AIProcessedEmail = {
+        id: email.id,
+        category: aiResult.category,
+        priority: aiResult.priority,
+        summary: aiResult.summary,
+        actionItems: aiResult.actionItems,
+        contactInfo: aiResult.contactInfo,
+        processed: true,
+        processingTime: 0 // We don't track this anymore
+      };
+      
+      // Add to processed emails map
+      setProcessedEmails(prev => ({
+        ...prev,
+        [email.id]: processedEmail
+      }));
+      
+      setSuccessMessage(`Email "${email.subject}" analyzed successfully!`);
+      
+      // Switch to AI insights tab
+      setActiveTab('ai_insights');
     } catch (error) {
       console.error('Error analyzing email:', error);
       setError('Failed to analyze email. Please try again.');
@@ -296,8 +324,8 @@ export default function AIPage() {
                 {emails.map((email, index) => {
                   // Check if this email has AI metadata
                   const hasAiMetadata = email.aiMetadata !== null && email.aiMetadata !== undefined;
-                  const aiCategory = hasAiMetadata ? email.aiMetadata.category : null;
-                  const aiPriority = hasAiMetadata ? email.aiMetadata.priority : null;
+                  const aiCategory = hasAiMetadata && email.aiMetadata ? email.aiMetadata.category : null;
+                  const aiPriority = hasAiMetadata && email.aiMetadata ? email.aiMetadata.priority : null;
                   
                   // Determine priority color if available
                   const priorityColor = aiPriority ? getPriorityColor(aiPriority) : undefined;
@@ -367,7 +395,7 @@ export default function AIPage() {
                               }}
                             >
                               {/* Show summary if available, otherwise snippet */}
-                              {hasAiMetadata && email.aiMetadata.summary 
+                              {hasAiMetadata && email.aiMetadata?.summary 
                                 ? email.aiMetadata.summary 
                                 : email.snippet}
                             </Text>
@@ -389,15 +417,15 @@ export default function AIPage() {
                                 // If we already have metadata in email object or in processed state, go to insights tab
                                 if (processedEmails[email.id] || hasAiMetadata) {
                                   // If metadata is in the email object but not in our state, add it
-                                  if (hasAiMetadata && !processedEmails[email.id]) {
+                                  if (hasAiMetadata && !processedEmails[email.id] && email.aiMetadata) {
                                     setProcessedEmails(prev => ({
                                       ...prev,
                                       [email.id]: {
                                         id: email.id,
-                                        category: email.aiMetadata.category ?? undefined,
-                                        summary: email.aiMetadata.summary ?? undefined,
-                                        priority: email.aiMetadata.priority ?? undefined,
-                                        priorityExplanation: email.aiMetadata.priorityExplanation ?? undefined,
+                                        category: email.aiMetadata?.category ?? undefined,
+                                        summary: email.aiMetadata?.summary ?? undefined,
+                                        priority: email.aiMetadata?.priority ?? undefined,
+                                        priorityExplanation: email.aiMetadata?.priorityExplanation ?? undefined,
                                         processed: true,
                                         fromCache: true
                                       }
@@ -450,7 +478,7 @@ export default function AIPage() {
                     <Column gap="8" flex={1}>
                       <Text variant="body-strong-m">{result.metadata?.subject || 'No Subject'}</Text>
                       <Text variant="body-default-s" onBackground="neutral-weak">
-                        ID: {result.id}
+                        {result.metadata?.from ? `From: ${result.metadata.from}` : `ID: ${result.id}`}
                       </Text>
                       
                       <Row horizontal="end">
@@ -461,7 +489,6 @@ export default function AIPage() {
                           label="View Email"
                           onClick={() => {
                             // This would typically navigate to the email or show a modal
-                            // For now, we'll just log
                             console.log("View email:", result.id);
                           }}
                         />
@@ -562,11 +589,11 @@ export default function AIPage() {
                                 minWidth: '250px'
                               }}
                             >
-                              <Text variant="label-strong-s">Processing</Text>
+                              <Text variant="label-strong-s">Action Items</Text>
                               <Text variant="body-default-xs">
-                                {processedEmail.processingTime 
-                                  ? `${processedEmail.processingTime} ms` 
-                                  : 'N/A'}
+                                {processedEmail.actionItems && processedEmail.actionItems.length > 0
+                                  ? processedEmail.actionItems.join(", ")
+                                  : 'No action items found'}
                               </Text>
                             </Card>
                           </Flex>

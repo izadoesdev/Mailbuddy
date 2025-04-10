@@ -1,7 +1,18 @@
+'use server'
+
 import index from "../index";
 import { cleanEmail, cleanMetadata } from "./clean";
 import { EMAIL_CLEANING, VECTOR_CONFIG } from "../constants";
 import type { Email } from "@/app/inbox/types";
+
+/**
+ * Get a namespace for a user
+ * This ensures each user's data is isolated in its own namespace
+ */
+function getUserNamespace(userId: string): string {
+    if (!userId) return ""; // Default namespace is empty string in Upstash
+    return `${VECTOR_CONFIG.NAMESPACE_PREFIX}${userId}`;
+}
 
 /**
  * Stores an email in the vector database with security filtering
@@ -12,6 +23,9 @@ export async function storeEmail(email: Email) {
         if (!email.userId || typeof email.userId !== 'string') {
             throw new Error('Invalid userId for vector storage');
         }
+
+        // Get the user's namespace
+        const namespace = getUserNamespace(email.userId);
 
         // Clean and prepare the email content
         const content = cleanEmail(email);
@@ -31,13 +45,15 @@ export async function storeEmail(email: Email) {
 
         while (attempts < VECTOR_CONFIG.RETRY_ATTEMPTS && !success) {
             try {
-                await index.index.upsert([
-                    {
+                // Using namespace parameter for Upstash Vector
+                await index.index.upsert(
+                    [{
                         id: email.id,
                         data: content,
-                        metadata,
-                    }
-                ]);
+                        metadata
+                    }],
+                    { namespace } // Pass as object property
+                );
                 success = true;
             } catch (error) {
                 lastError = error;
@@ -79,6 +95,9 @@ export async function storeVector(id: string, content: string, metadata: Record<
             throw new Error('Missing or invalid userId in vector metadata');
         }
         
+        // Get the user's namespace
+        const namespace = getUserNamespace(metadata.userId);
+        
         // Sanitize and limit metadata size
         const sanitizedMetadata: Record<string, any> = {};
         let totalSize = 0;
@@ -109,13 +128,15 @@ export async function storeVector(id: string, content: string, metadata: Record<
 
         while (attempts < VECTOR_CONFIG.RETRY_ATTEMPTS && !success) {
             try {
-                await index.index.upsert([
-                    {
+                // Using namespace parameter for Upstash Vector
+                await index.index.upsert(
+                    [{
                         id,
                         data: content,
-                        metadata: sanitizedMetadata,
-                    }
-                ]);
+                        metadata: sanitizedMetadata
+                    }],
+                    { namespace } // Pass as object property
+                );
                 success = true;
             } catch (error) {
                 lastError = error;
@@ -153,17 +174,44 @@ export async function queryVector(query: string, userId: string, options: { topK
         
         const { topK = 10, includeMetadata = true } = options;
         
-        // Create filter to only search user's documents (critical security measure)
-        const filter = { userId: { $eq: userId } };
+        // Get the user's namespace for isolation
+        const namespace = getUserNamespace(userId);
         
-        const results = await index.index.query({
-            data: query,
-            topK,
-            includeMetadata,
-            filter: JSON.stringify(filter) // Convert filter to string as required by Upstash
-        });
+        // Perform search with retry logic
+        let attempts = 0;
+        let success = false;
+        let lastError = null;
+        let results = null;
+        
+        while (attempts < VECTOR_CONFIG.RETRY_ATTEMPTS && !success) {
+            try {
+                // Query using namespace parameter instead of filter
+                results = await index.index.query({
+                    data: query,
+                    topK,
+                    includeMetadata
+                }, { namespace }); // Pass as object property
+                
+                success = true;
+            } catch (error) {
+                lastError = error;
+                attempts++;
+                if (attempts < VECTOR_CONFIG.RETRY_ATTEMPTS) {
+                    await new Promise(resolve => setTimeout(resolve, VECTOR_CONFIG.RETRY_DELAY_MS));
+                }
+            }
+        }
+        
+        if (!success) {
+            console.error("Error in queryVector after retries:", lastError);
+            return { 
+                success: false, 
+                error: String(lastError),
+                results: [] 
+            };
+        }
 
-        return { success: true, results };
+        return { success: true, results: results || [] };
     } catch (error) {
         console.error('Error in queryVector:', error);
         return { success: false, error: String(error), results: [] };
@@ -184,23 +232,14 @@ export async function deleteVectors(ids: string[], userId: string) {
             throw new Error('Invalid userId for vector deletion');
         }
         
-        // First verify these vectors belong to the user (security check)
-        const vectors = await index.index.fetch(ids);
+        // Get the user's namespace
+        const namespace = getUserNamespace(userId);
         
-        // Filter to only delete vectors owned by this user
-        const authorizedIds = vectors
-            .filter(vector => vector?.metadata?.userId === userId)
-            .map(vector => vector?.id)
-            .filter((id): id is string => id !== undefined);
-            
-        if (authorizedIds.length === 0) {
-            return { success: true, deletedCount: 0 }; // Nothing to delete
-        }
+        // Delete vectors directly from the user's namespace
+        // This is secure because it only affects vectors in this user's namespace
+        await index.index.delete(ids, { namespace });
         
-        // Delete the authorized vectors
-        await index.index.delete(authorizedIds);
-        
-        return { success: true, deletedCount: authorizedIds.length };
+        return { success: true, deletedCount: ids.length };
     } catch (error) {
         console.error('Error in deleteVectors:', error);
         return { success: false, error: String(error), deletedCount: 0 };
@@ -216,10 +255,22 @@ export async function batchStoreVectors(vectors: Array<{id: string, content: str
             throw new Error('Invalid or empty vectors array');
         }
         
-        // Validate and sanitize each vector
-        const validVectors = vectors
-            .filter(v => v.id && v.content && v.metadata?.userId)
-            .map(v => ({
+        // Group vectors by user ID to store in correct namespaces
+        const vectorsByUser: Record<string, any[]> = {};
+        
+        // Validate and group vectors by userId
+        for (const v of vectors) {
+            // Skip invalid vectors
+            if (!v.id || !v.content || !v.metadata?.userId) continue;
+            
+            const userId = v.metadata.userId;
+            
+            if (!vectorsByUser[userId]) {
+                vectorsByUser[userId] = [];
+            }
+            
+            // Prepare the vector for the group
+            vectorsByUser[userId].push({
                 id: v.id,
                 data: v.content,
                 metadata: {
@@ -228,38 +279,98 @@ export async function batchStoreVectors(vectors: Array<{id: string, content: str
                     ...(v.metadata.subject && { subject: String(v.metadata.subject).substring(0, EMAIL_CLEANING.TRUNCATE_SUBJECT) }),
                     ...(v.metadata.createdAt && { createdAt: v.metadata.createdAt }),
                 }
-            }));
-            
-        if (validVectors.length === 0) {
-            throw new Error('No valid vectors after filtering');
-        }
-        
-        // Process in batches to avoid rate limits
-        const batches = [];
-        for (let i = 0; i < validVectors.length; i += VECTOR_CONFIG.UPSTASH_BATCH_SIZE) {
-            batches.push(validVectors.slice(i, i + VECTOR_CONFIG.UPSTASH_BATCH_SIZE));
+            });
         }
         
         let successCount = 0;
+        const errors: string[] = [];
         
-        // Process each batch
-        for (const batch of batches) {
-            try {
-                await index.index.upsert(batch);
-                successCount += batch.length;
-            } catch (error) {
-                console.error('Error storing batch:', error);
-                // Continue with next batch
+        // Process each user's vectors in batches
+        for (const userId in vectorsByUser) {
+            const userVectors = vectorsByUser[userId];
+            const namespace = getUserNamespace(userId);
+            
+            // Process in batches to avoid rate limits
+            const batches = [];
+            for (let i = 0; i < userVectors.length; i += VECTOR_CONFIG.UPSTASH_BATCH_SIZE) {
+                batches.push(userVectors.slice(i, i + VECTOR_CONFIG.UPSTASH_BATCH_SIZE));
+            }
+            
+            // Process each batch
+            for (const batch of batches) {
+                try {
+                    // Store vectors in the user's namespace
+                    await index.index.upsert(batch, { namespace });
+                    successCount += batch.length;
+                } catch (error) {
+                    console.error(`Error storing batch for user ${userId}:`, error);
+                    errors.push(`Failed to store batch for user ${userId}: ${String(error)}`);
+                    // Continue with next batch
+                }
             }
         }
         
         return { 
             success: successCount > 0, 
             totalCount: vectors.length, 
-            successCount 
+            successCount,
+            errors: errors.length > 0 ? errors : undefined
         };
     } catch (error) {
         console.error('Error in batchStoreVectors:', error);
         return { success: false, error: String(error), totalCount: vectors.length, successCount: 0 };
+    }
+}
+
+/**
+ * List all namespaces in the vector database
+ * Useful for admin purposes to see all user namespaces
+ */
+export async function listNamespaces() {
+    try {
+        const namespaces = await index.index.listNamespaces();
+        return { 
+            success: true, 
+            namespaces 
+        };
+    } catch (error) {
+        console.error('Error listing namespaces:', error);
+        return { 
+            success: false, 
+            error: String(error),
+            namespaces: [] 
+        };
+    }
+}
+
+/**
+ * Delete a namespace for a user
+ * This will delete ALL vectors for this user - use with caution!
+ */
+export async function deleteUserNamespace(userId: string) {
+    try {
+        if (!userId) {
+            throw new Error('Invalid user ID for namespace deletion');
+        }
+        
+        const namespace = getUserNamespace(userId);
+        
+        // Don't allow deleting the default namespace
+        if (namespace === "") {
+            throw new Error('Cannot delete the default namespace');
+        }
+        
+        await index.index.deleteNamespace(namespace);
+        
+        return { 
+            success: true, 
+            message: `Successfully deleted namespace for user ${userId}` 
+        };
+    } catch (error) {
+        console.error('Error deleting namespace:', error);
+        return { 
+            success: false, 
+            error: String(error) 
+        };
     }
 }

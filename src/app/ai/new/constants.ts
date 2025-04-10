@@ -100,6 +100,8 @@ export const VECTOR_CONFIG = {
   RETRY_ATTEMPTS: 3,        // Number of retry attempts for vector operations
   RETRY_DELAY_MS: 1000,     // Delay between retries in milliseconds
   EMBEDDING_DIMENSIONS: 1536, // Default dimension for OpenAI embeddings
+  NAMESPACE_PREFIX: 'user_', // Prefix for user namespaces
+  DEFAULT_NAMESPACE: 'global' // Default namespace for vectors not associated with a user
 };
 
 /**

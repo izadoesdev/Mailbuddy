@@ -1,5 +1,3 @@
-'use server'
-
 /**
  * Main AI module that exports all AI functionality
  * 
@@ -10,9 +8,18 @@
 // Import required functions for local use
 import { processEmail } from './utils/groq';
 import { storeEmail } from './utils/vectors';
+import { saveEmailAIMetadata, getEmailAIMetadata } from './utils/database';
 
 // Vector operations
-export { storeEmail, storeVector, queryVector, deleteVectors, batchStoreVectors } from './utils/vectors';
+export { 
+  storeEmail, 
+  storeVector, 
+  queryVector, 
+  deleteVectors, 
+  batchStoreVectors,
+  listNamespaces,
+  deleteUserNamespace
+} from './utils/vectors';
 
 // Search operations 
 export { searchSimilarEmails, searchEmailsByQuery } from './utils/search';
@@ -40,6 +47,15 @@ export {
   analyzeBatchEmails
 } from './utils/batch';
 
+// Database operations
+export {
+  saveEmailAIMetadata,
+  getEmailAIMetadata,
+  getMultipleEmailAIMetadata,
+  getEmailsByCategory,
+  getEmailsByPriority
+} from './utils/database';
+
 // Constants
 export { 
   EMAIL_CATEGORIES, 
@@ -62,18 +78,77 @@ export async function enhanceEmail(email: any) {
   }
   
   try {
+    // First check if we already have metadata for this email
+    const existingMetadata = await getEmailAIMetadata(email.id);
+    
+    if (existingMetadata.success && existingMetadata.metadata) {
+      // Return existing metadata if available
+      console.log(`Found existing AI metadata for email ${email.id}, returning cached result`);
+      return { 
+        success: true, 
+        data: {
+          ...email,
+          aiMetadata: existingMetadata.metadata
+        },
+        fromCache: true
+      };
+    }
+    
     // Process the email with Groq to extract all AI metadata at once
     const aiData = await processEmail(email);
     
     // Store the email in the vector database for future searches
     await storeEmail(email);
     
+    // Save the AI analysis results to the database
+    const startTime = Date.now();
+    
+    // Create metadata object with proper typing
+    interface EmailMetadata {
+      emailId: string;
+      category?: string;
+      priority?: string;
+      summary?: string;
+      processingTime?: number;
+      modelUsed?: string;
+      priorityExplanation?: string;
+      keywords?: string[];
+    }
+    
+    const dbMetadata: EmailMetadata = {
+      emailId: email.id,
+      category: aiData.category || "Uncategorized",
+      priority: aiData.priority || "Medium",
+      summary: aiData.summary || "No summary available",
+      processingTime: Date.now() - startTime,
+      modelUsed: 'groq',
+      priorityExplanation: aiData.priorityExplanation || "",
+      keywords: Array.isArray(aiData.actionItems) ? aiData.actionItems : []
+    };
+    
+    // Add priorityExplanation if available
+    if ('priorityExplanation' in aiData && typeof aiData.priorityExplanation === 'string') {
+      dbMetadata.priorityExplanation = aiData.priorityExplanation;
+    }
+    
+    // Add action items if available
+    if ('actionItems' in aiData && Array.isArray(aiData.actionItems)) {
+      dbMetadata.keywords = aiData.actionItems;
+    }
+    
+    const saveResult = await saveEmailAIMetadata(dbMetadata);
+    
+    if (!saveResult.success) {
+      console.error(`Failed to save AI metadata for email ${email.id}:`, saveResult.error);
+    }
+    
     return { 
       success: true, 
       data: {
         ...email,
-        ...aiData
-      }
+        aiMetadata: saveResult.success ? saveResult.data : null
+      },
+      fromCache: false
     };
   } catch (error) {
     console.error("Error enhancing email:", error);

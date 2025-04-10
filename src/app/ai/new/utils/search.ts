@@ -5,37 +5,57 @@ import { VECTOR_CONFIG } from '../constants';
 import { cleanEmail } from './clean';
 import type { Email } from '@/app/inbox/types';
 
+// Define the search result type for better type safety
+export type SearchResult = {
+  id: string;
+  score: number;
+  metadata?: Record<string, any>;
+}
+
+export interface SearchResponse {
+  success: boolean;
+  error?: string;
+  results: SearchResult[];
+}
+
 /**
  * Search for similar emails using vector similarity
  */
-export async function searchSimilarEmails(email: Email, options: { topK?: number } = {}) {
+export async function searchSimilarEmails(emailOrContent: Email | string, userId?: string, options: { topK?: number } = {}): Promise<SearchResponse> {
   try {
     const { topK = 10 } = options;
     
-    // Clean and prepare email content for searching
-    const content = cleanEmail(email);
+    // Handle different input types
+    let content: string;
+    let userIdentifier: string | undefined;
+    
+    if (typeof emailOrContent === 'string') {
+      // Direct text content provided
+      content = emailOrContent;
+      userIdentifier = userId;
+    } else {
+      // Email object provided
+      content = cleanEmail(emailOrContent);
+      userIdentifier = emailOrContent.userId;
+    }
     
     // Validate content
-    if (!content || content.length < 10) {
+    if (!content) {
       return { 
         success: false, 
-        error: "Email content too short for meaningful search",
+        error: "Content too short for meaningful search",
         results: []
       };
     }
     
     // Security validation - must have valid userId
-    if (!email.userId || typeof email.userId !== 'string') {
+    if (!userIdentifier || typeof userIdentifier !== 'string') {
       return {
         success: false,
         error: "Invalid user ID for security filtering",
         results: []
       };
     }
-    
-    // Create filter to only search user's documents (critical security measure)
-    const filter = { userId: { $eq: email.userId } };
-    
     // Perform search with retry logic
     let attempts = 0;
     let success = false;
@@ -48,7 +68,6 @@ export async function searchSimilarEmails(email: Email, options: { topK?: number
           data: content,
           topK,
           includeMetadata: true,
-          filter: JSON.stringify(filter) // Convert filter to string as required by Upstash
         });
         success = true;
       } catch (error) {
@@ -70,9 +89,18 @@ export async function searchSimilarEmails(email: Email, options: { topK?: number
       };
     }
     
+    // Process and clean up the results 
+    const formattedResults: SearchResult[] = Array.isArray(results) 
+      ? results.map((match: any) => ({
+          id: String(match.id || ''), 
+          score: typeof match.score === 'number' ? match.score : 0,
+          metadata: match.metadata || {}
+        }))
+      : [];
+    
     return {
       success: true,
-      results: results|| []
+      results: formattedResults
     };
   } catch (error) {
     console.error("Error in searchSimilarEmails:", error);
@@ -87,69 +115,10 @@ export async function searchSimilarEmails(email: Email, options: { topK?: number
 /**
  * Search for emails by text query
  */
-export async function searchEmailsByQuery(query: string, userId: string, options: { topK?: number } = {}) {
+export async function searchEmailsByQuery(query: string, userId: string, options: { topK?: number } = {}): Promise<SearchResponse> {
   try {
-    const { topK = 10 } = options;
-    
-    // Validate query
-    if (!query || query.trim().length < 3) {
-      return { 
-        success: false, 
-        error: "Search query too short (minimum 3 characters)",
-        results: []
-      };
-    }
-    
-    // Security validation - must have valid userId
-    if (!userId || typeof userId !== 'string') {
-      return {
-        success: false,
-        error: "Invalid user ID for security filtering",
-        results: []
-      };
-    }
-    
-    // Create filter to only search user's documents (critical security measure)
-    const filter = { userId: { $eq: userId } };
-    
-    // Perform search with retry logic
-    let attempts = 0;
-    let success = false;
-    let lastError = null;
-    let results = null;
-    
-    while (attempts < VECTOR_CONFIG.RETRY_ATTEMPTS && !success) {
-      try {
-        results = await index.index.query({
-          data: query,
-          topK,
-          includeMetadata: true,
-          filter: JSON.stringify(filter) // Convert filter to string as required by Upstash
-        });
-        success = true;
-      } catch (error) {
-        lastError = error;
-        attempts++;
-        if (attempts < VECTOR_CONFIG.RETRY_ATTEMPTS) {
-          // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, VECTOR_CONFIG.RETRY_DELAY_MS));
-        }
-      }
-    }
-    
-    if (!success) {
-      console.error("Error searching emails by query after retries:", lastError);
-      return { 
-        success: false, 
-        error: String(lastError),
-        results: []
-      };
-    }
-    
-    return {
-      success: true,
-      results: results || []
-    };
+    // For text queries, just use the more general search function
+    return searchSimilarEmails(query, userId, options);
   } catch (error) {
     console.error("Error in searchEmailsByQuery:", error);
     return { 

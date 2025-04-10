@@ -16,17 +16,7 @@ function cleanEmailBody(body: string): string {
   // Check if this is HTML content
   if (body.includes("<") && body.includes(">")) {
     try {
-      cleanedText = convert(body, {
-        selectors: [
-          { selector: 'a', options: { hideLinkHrefIfSameAsText: true, noAnchorUrl: true } },
-          { selector: 'img', options: { format: 'skip' } },
-          { selector: 'style', options: { format: 'skip' } },
-          { selector: 'script', options: { format: 'skip' } },
-          { selector: 'head', options: { format: 'skip' } },
-        ],
-        wordwrap: false,
-        preserveNewlines: true
-      });
+      cleanedText = convert(body);
     } catch (error) {
       console.error("[cleanEmailBody] HTML conversion error:", error);
       // Keep original if conversion fails

@@ -1,7 +1,7 @@
 'use server'
 
 import index from "../index";
-import { AI_PROMPTS, VECTOR_CONFIG } from "../constants";
+import { AI_PROMPTS, VECTOR_CONFIG, PRIORITY_LEVELS } from "../constants";
 import type { Email } from "@/app/inbox/types";
 import { cleanEmail } from "./clean";
 
@@ -96,7 +96,15 @@ export async function prioritizeEmail(email: Email): Promise<string> {
     ${emailText.substring(0, 3000)}`;
 
     const result = await callGroq(prompt, { temperature: 0.1 });
-    return result;
+    
+    // Validate that the response is a valid priority level
+    const validPriorities = Object.values(PRIORITY_LEVELS);
+    if (validPriorities.includes(result)) {
+      return result;
+    }
+    
+    // If not valid, return default
+    return "Medium";
   } catch (error) {
     console.error("Error prioritizing email with Groq:", error);
     return "Medium";
@@ -225,6 +233,7 @@ export async function processEmail(email: Email) {
       return {
         category: "Uncategorized",
         priority: "Medium",
+        priorityExplanation: "Email content too short to analyze",
         summary: "No summary available",
         actionItems: [],
         contactInfo: {}
@@ -235,15 +244,16 @@ export async function processEmail(email: Email) {
     const prompt = `Analyze this email and provide the following information in JSON format:
     
     1. category: Choose one from [${AI_PROMPTS.CATEGORIZE}]
-    2. priority: Choose one from [${Object.values(AI_PROMPTS.PRIORITIZE)}]
-    3. summary: ${AI_PROMPTS.SUMMARIZE}
-    4. actionItems: ${AI_PROMPTS.EXTRACT_ACTION_ITEMS}
-    5. contactInfo: ${AI_PROMPTS.EXTRACT_CONTACT_INFO}
+    2. priority: Choose one from [${Object.values(PRIORITY_LEVELS).join(', ')}]
+    3. priorityExplanation: Briefly explain why you assigned this priority level
+    4. summary: ${AI_PROMPTS.SUMMARIZE}
+    5. actionItems: ${AI_PROMPTS.EXTRACT_ACTION_ITEMS}
+    6. contactInfo: ${AI_PROMPTS.EXTRACT_CONTACT_INFO}
     
     EMAIL:
     ${emailText.substring(0, 3000)}
     
-    Format your response as a single valid JSON object with these 5 fields.`;
+    Format your response as a single valid JSON object with these 6 fields.`;
     
     const result = await callGroq(prompt, { temperature: 0.2, maxTokens: 800 });
     
@@ -257,6 +267,7 @@ export async function processEmail(email: Email) {
         return {
           category: jsonObj.category || "Uncategorized",
           priority: jsonObj.priority || "Medium",
+          priorityExplanation: jsonObj.priorityExplanation || "",
           summary: jsonObj.summary || "No summary available",
           actionItems: Array.isArray(jsonObj.actionItems) ? jsonObj.actionItems : [],
           contactInfo: typeof jsonObj.contactInfo === 'object' ? jsonObj.contactInfo : {}
@@ -267,9 +278,13 @@ export async function processEmail(email: Email) {
     }
     
     // Fallback to individual processing if batch processing fails
+    // Get priority with explanation
+    const priorityInfo = await getPriorityWithExplanation(email);
+    
     return {
       category: await categorizeEmail(email),
-      priority: await prioritizeEmail(email),
+      priority: priorityInfo.priority,
+      priorityExplanation: priorityInfo.explanation,
       summary: await summarizeEmail(email),
       actionItems: await extractActionItems(email),
       contactInfo: await extractContactInfo(email)
@@ -279,9 +294,75 @@ export async function processEmail(email: Email) {
     return {
       category: "Uncategorized",
       priority: "Medium",
+      priorityExplanation: "Error during processing",
       summary: "Error processing email",
       actionItems: [],
       contactInfo: {}
+    };
+  }
+}
+
+/**
+ * Get priority with explanation for an email
+ */
+async function getPriorityWithExplanation(email: Email): Promise<{ priority: string; explanation: string }> {
+  try {
+    const emailText = cleanEmail(email);
+    if (!emailText || emailText.length < 10) {
+      return { 
+        priority: "Medium", 
+        explanation: "Email content too short to analyze"
+      };
+    }
+
+    const prompt = `Based on the content, urgency, and importance of this email, assign a priority level from these options: 
+    ${Object.values(PRIORITY_LEVELS).join(', ')}. 
+    
+    First provide the priority level, then explain why you assigned this priority in a separate paragraph.
+    
+    EMAIL:
+    ${emailText.substring(0, 3000)}`;
+
+    const result = await callGroq(prompt, { temperature: 0.1, maxTokens: 300 });
+    
+    // Extract priority level (first line or word)
+    let priority = "Medium";
+    let explanation = "";
+    
+    // Try to parse the response
+    const lines = result.split('\n').filter(line => line.trim().length > 0);
+    if (lines.length > 0) {
+      // First line or word should be the priority
+      const firstLine = lines[0].trim();
+      const validPriorities = Object.values(PRIORITY_LEVELS);
+      
+      // Check if the first line is just a priority
+      if (validPriorities.includes(firstLine)) {
+        priority = firstLine;
+        // Explanation is everything after the first line
+        explanation = lines.slice(1).join('\n').trim();
+      } else {
+        // Try to extract a valid priority from the first line/word
+        for (const validPriority of validPriorities) {
+          if (firstLine.includes(validPriority)) {
+            priority = validPriority;
+            break;
+          }
+        }
+        // Everything else is the explanation
+        explanation = result.replace(priority, '').trim();
+      }
+    }
+    
+    return { 
+      priority, 
+      explanation: explanation || `Determined to be ${priority} priority based on content analysis.`
+    };
+  } catch (error) {
+    console.error("Error determining priority with explanation:", error);
+    return { 
+      priority: "Medium", 
+      explanation: "Error during priority analysis" 
     };
   }
 }
