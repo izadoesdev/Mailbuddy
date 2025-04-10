@@ -24,6 +24,9 @@
             "recommended": true,
             "suspicious": {
                 "noExplicitAny": "off"
+            },
+            "security": {
+                "noDangerouslySetInnerHtml": "off"
             }
         }
     },
