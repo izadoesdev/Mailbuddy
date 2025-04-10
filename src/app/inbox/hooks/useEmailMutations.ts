@@ -8,8 +8,10 @@ interface ToggleStarParams {
 
 /**
  * Hook for email-related mutations (mark as read, toggle star)
+ * @param options Configuration options
+ * @param options.enabled Whether the mutations are enabled (defaults to true)
  */
-export function useEmailMutations() {
+export function useEmailMutations({ enabled = true } = {}) {
     const queryClient = useQueryClient();
 
     // Mark email as read mutation
@@ -77,8 +79,39 @@ export function useEmailMutations() {
         },
     });
 
+    // Wrapper functions that respect the enabled flag
+    const safeMarkAsRead = {
+        ...markAsRead,
+        mutate: (emailId: string) => {
+            if (enabled) {
+                markAsRead.mutate(emailId);
+            }
+        },
+        mutateAsync: async (emailId: string) => {
+            if (enabled) {
+                return await markAsRead.mutateAsync(emailId);
+            }
+            return emailId;
+        }
+    };
+
+    const safeToggleStar = {
+        ...toggleStar,
+        mutate: (params: ToggleStarParams) => {
+            if (enabled) {
+                toggleStar.mutate(params);
+            }
+        },
+        mutateAsync: async (params: ToggleStarParams) => {
+            if (enabled) {
+                return await toggleStar.mutateAsync(params);
+            }
+            return params;
+        }
+    };
+
     return {
-        markAsRead,
-        toggleStar,
+        markAsRead: safeMarkAsRead,
+        toggleStar: safeToggleStar,
     };
 }
