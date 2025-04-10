@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Row, Text, Input, Icon, Switch, Button, Select, Tooltip } from "@/once-ui/components";
+import { Row, Text, Input, Icon, Switch, Button, Select, Tooltip, IconButton, DropdownWrapper, Dropdown, Option, Column, Avatar } from "@/once-ui/components";
 
 interface InboxControlsProps {
     searchQuery: string;
@@ -75,51 +75,51 @@ export function InboxControls({
                 paddingBottom="20"
                 paddingX="16"
             >
-                <Text variant="display-default-l" as="h1">
+                <Text variant="heading-strong-l">
                     {isAISearchActive ? "AI Search Results" : "Inbox"}
                 </Text>
-                <Row gap="16" vertical="center">
+                <Row maxWidth={24}>
                     <Input
+                        data-border="rounded"
                         id="search-emails"
                         label={isAISearchActive ? "Type to search with AI..." : "Search emails"}
                         labelAsPlaceholder
                         value={localSearchQuery}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         hasPrefix={<Icon name="search" size="s" />}
+                        hasSuffix={
+                            onAISearch && localSearchQuery.trim() && (
+                                <Button
+                                    size="s"
+                                    weight="default"
+                                    label={isAISearchLoading ? "Searching..." : isAISearchActive ? "AI Search Active" : "Find Similar"}
+                                    prefixIcon="sparkles"
+                                    variant={isAISearchActive ? "secondary" : "primary"}
+                                    onClick={handleAISearchClick}
+                                    disabled={!localSearchQuery.trim() || isAISearchLoading}
+                                    loading={isAISearchLoading}
+                                />
+                            )}
                     />
-                    <Row gap="8" vertical="center">
-                        <Text variant="body-default-s">Thread view</Text>
-                        <Switch
-                            id="thread-toggle"
-                            isChecked={threadView}
-                            onToggle={() => onThreadViewChange(!threadView)}
-                        />
-                    </Row>
                 </Row>
+                <Avatar/>
             </Row>
 
             <Row paddingX="16" marginBottom="16" gap="8">
                 {isAISearchActive && onClearAISearch ? (
                     <Button
-                        label="Return to Inbox"
+                        label="Return to inbox"
                         prefixIcon="arrow-left"
-                        variant="primary"
                         onClick={handleClearAISearch}
                     />
                 ) : (
                     <>
-                        <Button
-                            label="Refresh"
-                            prefixIcon="refresh"
-                            variant="secondary"
-                            onClick={onRefresh}
-                            disabled={isLoading || isFetching}
-                        />
-
                         {onSync && (
                             <Button
-                                label="Sync with Gmail"
-                                prefixIcon="cloud-download"
+                                size="s"
+                                weight="default"
+                                label="Gmail sync"
+                                prefixIcon="cloud"
                                 variant="secondary"
                                 onClick={onSync}
                                 disabled={isLoading || isFetching || isSyncing}
@@ -127,37 +127,51 @@ export function InboxControls({
                             />
                         )}
 
-                        <Button
-                            label="Star Selected"
-                            prefixIcon="star"
+                        <IconButton
+                            size="m"
+                            tooltip="Star selected"
+                            icon="star"
                             variant="secondary"
                             disabled={true}
                         />
                     </>
                 )}
 
-                {onAISearch && (
-                    <Button
-                        label={isAISearchLoading ? "Searching..." : isAISearchActive ? "AI Search Active" : "Find Similar Emails (AI)"}
-                        prefixIcon="sparkles"
-                        variant={isAISearchActive ? "secondary" : "primary"}
-                        onClick={handleAISearchClick}
-                        disabled={!localSearchQuery.trim() || isAISearchLoading}
-                        loading={isAISearchLoading}
+                <Row gap="8" fillWidth horizontal="end">
+                    <Switch
+                        id="thread-toggle"
+                        label="Thread view"
+                        isChecked={threadView}
+                        onToggle={() => onThreadViewChange(!threadView)}
                     />
-                )}
-
-                <Select
-                    id="page-size-select"
-                    label={`${pageSize} per page`}
-                    onChange={(value) => onPageSizeChange(Number(value))}
-                    value={pageSize.toString()}
-                    options={[
-                        { value: "10", label: "10 per page" },
-                        { value: "20", label: "20 per page" },
-                        { value: "50", label: "50 per page" },
-                    ]}
-                />
+                    <DropdownWrapper
+                            trigger={
+                                <Button
+                                    size="s"
+                                    weight="default"
+                                    label={`${pageSize} per page`}
+                                    prefixIcon="list"
+                                    variant="secondary"
+                                />
+                            }
+                            onSelect={(value) => onPageSizeChange(Number(value))}
+                            dropdown={
+                                <Column padding="4" fillWidth>
+                                    <Option value="10" label="10 per page" />
+                                    <Option value="20" label="20 per page" />
+                                    <Option value="50" label="50 per page" />
+                                </Column>
+                            }
+                        />
+                        <IconButton
+                            size="m"
+                            icon="refresh"
+                            tooltip="Refresh"
+                            variant="secondary"
+                            onClick={onRefresh}
+                            disabled={isLoading || isFetching}
+                        />
+                </Row>
             </Row>
         </>
     );

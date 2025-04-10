@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
     Heading,
     Text,
@@ -15,10 +16,57 @@ import {
     IconButton,
     Fade,
 } from "@/once-ui/components";
+import { useUser } from "@/libs/auth/client";
 
 export default function Home() {
+    const router = useRouter();
+    const { user, isLoading } = useUser();
+
+    // Redirect to inbox if user is logged in
+    useEffect(() => {
+        // Only redirect when authentication check is complete and user exists
+        if (!isLoading && user) {
+            router.push("/inbox");
+        }
+    }, [user, isLoading, router]);
+
+    // Don't render the full page content during loading or if redirecting
+    if (isLoading) {
+        return (
+            <Column fillWidth paddingTop="80" horizontal="center" flex={1}>
+            </Column>
+        );
+    }
+
     return (
         <Column fillWidth paddingTop="80" paddingBottom="48" paddingX="s" horizontal="center" flex={1}>
+            <Background
+                position="absolute"
+                pointerEvents="none"
+                mask={{
+                    x: 100,
+                    y: 0,
+                    radius: 100,
+                }}
+                gradient={{
+                    display: true,
+                    x: 100,
+                    y: 60,
+                    width: 70,
+                    height: 50,
+                    tilt: -40,
+                    opacity: 90,
+                    colorStart: "accent-background-strong",
+                    colorEnd: "page-background",
+                }}
+                grid={{
+                    display: true,
+                    opacity: 100,
+                    width: "0.25rem",
+                    color: "neutral-alpha-medium",
+                    height: "0.25rem",
+                }}
+            />
             {/* Top fade effect */}
             <Fade
                 zIndex={3}
@@ -441,7 +489,7 @@ export default function Home() {
                 gap="16"
             >
                 <Text variant="label-default-s" onBackground="neutral-weak">
-                    © {new Date().getFullYear()} Mailbuddy. All rights reserved.
+                    {new Date().getFullYear()} Mailbuddy. All rights reserved.
                 </Text>
             </Row>
         </Column>

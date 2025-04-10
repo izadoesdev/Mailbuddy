@@ -12,9 +12,15 @@ import { useInboxData } from "./hooks/useInboxData";
 import { useEmailMutations } from "./hooks/useEmailMutations";
 import { useBackgroundSync } from "./hooks/useBackgroundSync";
 import { useAISearch } from "./hooks/useAISearch";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useUser } from "@/libs/auth/client";
+import { useRouter } from "next/navigation";
 
 export default function InboxPage() {
+    // Authentication check
+    const router = useRouter();
+    const { user, isLoading: isAuthLoading } = useUser();
+    
     // State
     const [searchQuery, setSearchQuery] = useState("");
     const [threadView, setThreadView] = useState(true);
@@ -22,17 +28,27 @@ export default function InboxPage() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
+    const hasSyncedRef = useRef(false);
 
     // Hooks
     const queryClient = useQueryClient();
     const { addToast } = useToast();
+    const isAuthenticated = !!user && !isAuthLoading;
 
-    // Use our custom hooks
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        if (!isAuthLoading && !user) {
+            router.push("/login");
+        }
+    }, [user, isAuthLoading, router]);
+
+    // Only fetch emails if user is authenticated
     const { emails, totalPages, totalCount, isLoading, isFetching } = useInboxData({
         page,
         pageSize,
         threadView,
         searchQuery: debouncedSearchQuery,
+        enabled: isAuthenticated,
     });
 
     // Use AI search hook
@@ -44,18 +60,18 @@ export default function InboxPage() {
         clearAISearch
     } = useAISearch();
 
-    const { markAsRead, toggleStar } = useEmailMutations();
-    const { triggerSync, isSyncing } = useBackgroundSync();
+    // Pass authentication state to hooks
+    const { markAsRead, toggleStar } = useEmailMutations({ enabled: isAuthenticated });
+    const { triggerSync, isSyncing } = useBackgroundSync({ enabled: isAuthenticated });
 
-    // Trigger a sync when the inbox is first loaded
-
-    // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+    // Trigger a sync when the inbox is first loaded, but only once
     useEffect(() => {
-        // Only trigger on first render
-        if (emails.length === 0 && !isLoading && !isFetching) {
+        // Only trigger on first render, when authenticated, and not already synced
+        if (isAuthenticated && !hasSyncedRef.current && !isLoading && !isFetching) {
+            hasSyncedRef.current = true; // Mark as synced to prevent future attempts
             triggerSync();
         }
-    }, []);
+    }, [isAuthenticated, isLoading, isFetching, triggerSync]);
 
     // Handle email selection
     const handleEmailSelect = useCallback(
@@ -131,8 +147,21 @@ export default function InboxPage() {
     const displayEmails = isAISearchActive ? similarEmails : emails;
     const displayTotalCount = isAISearchActive ? similarEmails.length : totalCount;
 
+    // Conditional rendering logic
+    if (isAuthLoading) {
+        return (
+            <Column fill paddingY="20" horizontal="center" vertical="center">
+                <Text variant="heading-default-l">Loading...</Text>
+            </Column>
+        );
+    }
+
+    if (!user) {
+        return null;
+    }
+
     return (
-        <Row fillWidth paddingY="20" gap="32" style={{ height: "calc(100vh - 80px)" }}>
+        <Row fill paddingY="20" gap="32">
             <Column
                 fillWidth
                 style={{
@@ -158,7 +187,7 @@ export default function InboxPage() {
                     isAISearchLoading={isAISearchLoading}
                 />
 
-                <Card fillWidth overflow="hidden" style={{ height: "calc(100vh - 200px)" }}>
+                <Column fill overflow="hidden">
                     <EmailList
                         emails={displayEmails}
                         isLoading={isAISearchActive ? isAISearchLoading : isLoading}
@@ -167,7 +196,7 @@ export default function InboxPage() {
                         onSelectEmail={handleEmailSelect}
                         onToggleStar={handleToggleStar}
                     />
-                </Card>
+                </Column>
 
                 {/* Only show pagination for regular inbox, not for AI search results */}
                 {!isAISearchActive && (
@@ -194,16 +223,15 @@ export default function InboxPage() {
 
             {selectedEmail && (
                 <Column
+                    flex={1}
+                    fillHeight
                     style={{
-                        flexGrow: 1,
-                        height: "calc(100vh - 80px)",
-                        overflow: "auto",
                         width: "60%",
                         transition: "width 0.3s ease",
                     }}
                 >
-                    <EmailDetail
-                        email={selectedEmail}
+                    <EmailDetail 
+                        email={selectedEmail} 
                         onClose={() => setSelectedEmail(null)}
                         onToggleStar={handleToggleStar}
                     />

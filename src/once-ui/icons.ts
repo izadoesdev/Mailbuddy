@@ -32,6 +32,9 @@ import {
     HiOutlineInboxStack,
     HiOutlineBars3,
     HiOutlineBolt,
+    HiOutlineStar,
+    HiOutlineCloud,
+    HiOutlineListBullet,
 } from "react-icons/hi2";
 
 import { RiVisaLine } from "react-icons/ri";
@@ -80,6 +83,10 @@ export const iconLibrary: Record<string, IconType> = {
     shield: HiOutlineShieldCheck,
     twitter: FaTwitter,
     linkedin: FaLinkedin,
+    sparkles: HiOutlineSparkles,
+    star: HiOutlineStar,
+    cloud: HiOutlineCloud,
+    list: HiOutlineListBullet
 };
 
 export type IconLibrary = typeof iconLibrary;
