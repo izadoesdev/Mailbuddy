@@ -136,8 +136,8 @@ export default function AIPage() {
         id: email.id,
         subject: email.subject || "No Subject",
         body: email.body || email.snippet || "",
-        from: email.from,
-        to: email.to,
+        from: email.from || "",
+        to: email.to || "",
         createdAt: email.createdAt
       });
       
@@ -320,7 +320,7 @@ export default function AIPage() {
                       >
                         <Avatar 
                           size="m" 
-                          value={getInitials(extractName(email.from))} 
+                          value={getInitials(extractName(email.from ?? ""))} 
                         />
                         
                         <Column gap="4" flex={1}>
@@ -329,7 +329,7 @@ export default function AIPage() {
                               variant={email.isRead ? "body-default-m" : "body-strong-m"}
                               style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                             >
-                              {extractName(email.from)}
+                              {extractName(email.from ?? "")}
                             </Text>
                             <Row gap="8" vertical="center">
                               {/* Show AI badges if metadata exists */}
@@ -337,14 +337,12 @@ export default function AIPage() {
                                 <Chip 
                                   label={aiCategory} 
                                   color="brand"
-                                  size="s"
                                 />
                               )}
                               {hasAiMetadata && aiPriority && (
                                 <Chip 
                                   label={aiPriority} 
                                   color={priorityColor}
-                                  size="s"
                                 />
                               )}
                               {email.labels?.includes("IMPORTANT") && (
@@ -402,10 +400,10 @@ export default function AIPage() {
                                       ...prev,
                                       [email.id]: {
                                         id: email.id,
-                                        category: email.aiMetadata.category,
-                                        summary: email.aiMetadata.summary,
-                                        priority: email.aiMetadata.priority,
-                                        priorityExplanation: email.aiMetadata.priorityExplanation,
+                                        category: email.aiMetadata.category ?? undefined,
+                                        summary: email.aiMetadata.summary ?? undefined,
+                                        priority: email.aiMetadata.priority ?? undefined,
+                                        priorityExplanation: email.aiMetadata.priorityExplanation ?? undefined,
                                         processed: true,
                                         fromCache: true
                                       }
