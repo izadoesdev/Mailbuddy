@@ -108,32 +108,6 @@ export default function RootLayout({
             <ThemeProvider>
                 <ToastProvider>
                     <Column as="body" fillWidth margin="0" padding="0">
-                        <Background
-                            position="absolute"
-                            mask={{
-                                x: 100,
-                                y: 0,
-                                radius: 100,
-                            }}
-                            gradient={{
-                                display: true,
-                                x: 100,
-                                y: 60,
-                                width: 70,
-                                height: 50,
-                                tilt: -40,
-                                opacity: 90,
-                                colorStart: "accent-background-strong",
-                                colorEnd: "page-background",
-                            }}
-                            grid={{
-                                display: true,
-                                opacity: 100,
-                                width: "0.25rem",
-                                color: "neutral-alpha-medium",
-                                height: "0.25rem",
-                            }}
-                        />
                         <QueryProvider>{children}</QueryProvider>
                     </Column>
                 </ToastProvider>

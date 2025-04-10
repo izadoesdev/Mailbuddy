@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { searchSimilarEmails } from "./actions/searchSimilarEmails";
 import { storeEmailEmbedding } from "./actions/storeEmailEmbedding";
 import type { Email, InboxResponse } from "../inbox/types";
+import { Row } from "@/once-ui/components";
 
 type SimilarEmailResult = {
   id: string;
@@ -299,9 +300,9 @@ export default function AIPage() {
             ))}
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: '30px', border: '1px solid #eaeaea', borderRadius: '5px', color: 'black' }}>
+          <Row style={{ textAlign: 'center', padding: '30px', border: '1px solid #eaeaea', borderRadius: '5px', color: 'black' }}>
             No emails found
-          </div>
+          </Row>
         )}
       </div>
     </div>
