@@ -1,16 +1,7 @@
-export interface Email {
-    id: string;
-    threadId: string;
-    subject: string;
-    from: string;
-    to?: string;
-    snippet: string;
-    body?: string;
-    isRead: boolean;
-    isStarred?: boolean;
-    labels: string[];
-    createdAt: Date;
-    internalDate?: string;
+import type { Email as PrismaEmail, EmailAIMetadata } from "@prisma/client";
+
+export interface Email extends PrismaEmail {
+    aiMetadata: EmailAIMetadata;
 }
 
 export interface InboxResponse {

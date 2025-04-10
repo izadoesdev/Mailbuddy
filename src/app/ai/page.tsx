@@ -299,85 +299,132 @@ export default function AIPage() {
               </Column>
             ) : emails.length > 0 ? (
               <Column fill>
-                {emails.map((email, index) => (
-                  <React.Fragment key={email.id}>
-                    <Flex 
-                      direction="row"
-                      fill 
-                      padding="16" 
-                      gap="16"
-                      background={email.isRead ? "page" : "overlay"}
-                      style={{ flexWrap: 'wrap' }}
-                    >
-                      <Avatar 
-                        size="m" 
-                        value={getInitials(extractName(email.from))} 
-                      />
-                      
-                      <Column gap="4" flex={1}>
-                        <Flex direction="row" horizontal="space-between" style={{ flexWrap: 'wrap', gap: '8px' }}>
-                          <Text 
+                {emails.map((email, index) => {
+                  // Check if this email has AI metadata
+                  const hasAiMetadata = email.aiMetadata !== null && email.aiMetadata !== undefined;
+                  const aiCategory = hasAiMetadata ? email.aiMetadata.category : null;
+                  const aiPriority = hasAiMetadata ? email.aiMetadata.priority : null;
+                  
+                  // Determine priority color if available
+                  const priorityColor = aiPriority ? getPriorityColor(aiPriority) : undefined;
+
+                  return (
+                    <React.Fragment key={email.id}>
+                      <Flex 
+                        direction="row"
+                        fill 
+                        padding="16" 
+                        gap="16"
+                        background={email.isRead ? "page" : "overlay"}
+                        style={{ flexWrap: 'wrap' }}
+                      >
+                        <Avatar 
+                          size="m" 
+                          value={getInitials(extractName(email.from))} 
+                        />
+                        
+                        <Column gap="4" flex={1}>
+                          <Flex direction="row" horizontal="space-between" style={{ flexWrap: 'wrap', gap: '8px' }}>
+                            <Text 
+                              variant={email.isRead ? "body-default-m" : "body-strong-m"}
+                              style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                            >
+                              {extractName(email.from)}
+                            </Text>
+                            <Row gap="8" vertical="center">
+                              {/* Show AI badges if metadata exists */}
+                              {hasAiMetadata && aiCategory && (
+                                <Chip 
+                                  label={aiCategory} 
+                                  color="brand"
+                                  size="s"
+                                />
+                              )}
+                              {hasAiMetadata && aiPriority && (
+                                <Chip 
+                                  label={aiPriority} 
+                                  color={priorityColor}
+                                  size="s"
+                                />
+                              )}
+                              {email.labels?.includes("IMPORTANT") && (
+                                <Badge title="Important" />
+                              )}
+                              <Text variant="label-default-s" onBackground="neutral-weak">
+                                {formatDate(email.createdAt)}
+                              </Text>
+                            </Row>
+                          </Flex>
+                          
+                          <Text
                             variant={email.isRead ? "body-default-m" : "body-strong-m"}
                             style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                           >
-                            {extractName(email.from)}
-                          </Text>
-                          <Row gap="8" vertical="center">
-                            {email.labels?.includes("IMPORTANT") && (
-                              <Badge title="Important" />
-                            )}
-                            <Text variant="label-default-s" onBackground="neutral-weak">
-                              {formatDate(email.createdAt)}
-                            </Text>
-                          </Row>
-                        </Flex>
-                        
-                        <Text
-                          variant={email.isRead ? "body-default-m" : "body-strong-m"}
-                          style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                        >
-                          {email.subject || 'No Subject'}
-                        </Text>
-                        
-                        <Flex direction="row" horizontal="space-between" style={{ flexWrap: 'wrap', gap: '8px' }}>
-                          <Text
-                            variant="body-default-s"
-                            onBackground="neutral-weak"
-                            style={{ 
-                              overflow: "hidden", 
-                              textOverflow: "ellipsis", 
-                              whiteSpace: "nowrap", 
-                              maxWidth: "100%" 
-                            }}
-                          >
-                            {email.snippet}
+                            {email.subject || 'No Subject'}
                           </Text>
                           
-                          <Button
-                            size="s"
-                            variant={processedEmails[email.id] ? "secondary" : "primary"}
-                            prefixIcon="sparkles"
-                            label={
-                              aiProcessing[email.id] 
-                                ? "Analyzing..." 
-                                : processedEmails[email.id] 
-                                  ? "View Analysis" 
-                                  : "Analyze with AI"
-                            }
-                            loading={aiProcessing[email.id]}
-                            disabled={aiProcessing[email.id]}
-                            onClick={() => 
-                              processedEmails[email.id] 
-                                ? setActiveTab('ai_insights')
-                                : handleAnalyzeEmail(email)
-                            }
-                          />
-                        </Flex>
-                      </Column>
-                    </Flex>
-                    {index < emails.length - 1 && <Line color="neutral-alpha-weak" />}
-                  </React.Fragment>
-                ))}
+                          <Flex direction="row" horizontal="space-between" style={{ flexWrap: 'wrap', gap: '8px' }}>
+                            <Text
+                              variant="body-default-s"
+                              onBackground="neutral-weak"
+                              style={{ 
+                                overflow: "hidden", 
+                                textOverflow: "ellipsis", 
+                                whiteSpace: "nowrap", 
+                                maxWidth: "100%" 
+                              }}
+                            >
+                              {/* Show summary if available, otherwise snippet */}
+                              {hasAiMetadata && email.aiMetadata.summary 
+                                ? email.aiMetadata.summary 
+                                : email.snippet}
+                            </Text>
+                            
+                            <Button
+                              size="s"
+                              variant={processedEmails[email.id] || hasAiMetadata ? "secondary" : "primary"}
+                              prefixIcon="sparkles"
+                              label={
+                                aiProcessing[email.id] 
+                                  ? "Analyzing..." 
+                                  : (processedEmails[email.id] || hasAiMetadata)
+                                    ? "View Analysis" 
+                                    : "Analyze with AI"
+                              }
+                              loading={aiProcessing[email.id]}
+                              disabled={aiProcessing[email.id]}
+                              onClick={() => {
+                                // If we already have metadata in email object or in processed state, go to insights tab
+                                if (processedEmails[email.id] || hasAiMetadata) {
+                                  // If metadata is in the email object but not in our state, add it
+                                  if (hasAiMetadata && !processedEmails[email.id]) {
+                                    setProcessedEmails(prev => ({
+                                      ...prev,
+                                      [email.id]: {
+                                        id: email.id,
+                                        category: email.aiMetadata.category,
+                                        summary: email.aiMetadata.summary,
+                                        priority: email.aiMetadata.priority,
+                                        priorityExplanation: email.aiMetadata.priorityExplanation,
+                                        processed: true,
+                                        fromCache: true
+                                      }
+                                    }));
+                                  }
+                                  setActiveTab('ai_insights');
+                                } else {
+                                  // Otherwise analyze with AI
+                                  handleAnalyzeEmail(email);
+                                }
+                              }}
+                            />
+                          </Flex>
+                        </Column>
+                      </Flex>
+                      {index < emails.length - 1 && <Line color="neutral-alpha-weak" />}
+                    </React.Fragment>
+                  );
+                })}
               </Column>
             ) : (
               <Column center paddingY="64">

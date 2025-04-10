@@ -302,44 +302,38 @@ async function getMessageIds(
 }
 
 /**
- * Get existing emails from database
+ * Get existing emails from the database
  */
 async function getExistingEmails(messageIds: { id: string }[]): Promise<any[]> {
     if (messageIds.length === 0) {
         return [];
     }
 
-    const ids = messageIds.map((m) => m.id);
-    log(`Looking for emails with IDs: ${ids.join(", ")}`);
-
-    // Only select the fields we need
-    const emails = await prisma.email.findMany({
-        where: {
-            id: {
-                in: ids,
+    try {
+        // Get existing emails from the database
+        const emails = await prisma.email.findMany({
+            where: {
+                id: {
+                    in: messageIds.map((m) => m.id),
+                },
             },
-        },
-        select: {
-            id: true,
-            threadId: true,
-            userId: true,
-            subject: true,
-            from: true,
-            to: true,
-            snippet: true,
-            body: true,
-            isRead: true,
-            isStarred: true,
-            labels: true,
-            internalDate: true,
-            createdAt: true,
-        },
-    });
+            include: {
+                // Include AI metadata if available
+                aiMetadata: true,
+            },
+            orderBy: {
+                internalDate: "desc",
+            },
+        });
 
-    log(`Found ${emails.length} emails in database before decryption`);
-
-    // Decrypt emails
-    return emails.map((email) => decryptEmail(email));
+        // Decrypt sensitive fields
+        return emails.map((email) => {
+            return decryptEmail(email);
+        });
+    } catch (error) {
+        log("Error fetching existing emails from database:", error);
+        throw error;
+    }
 }
 
 /**
@@ -579,48 +573,40 @@ function encryptEmailFields(emailData: any) {
 }
 
 /**
- * Process and sort emails
+ * Process emails for display, merging and formatting as needed
  */
 function processEmails(existingEmails: any[], fetchedEmails: any[], threadView: boolean): any[] {
     // Combine existing and fetched emails
     const allEmails = [...existingEmails, ...fetchedEmails];
 
-    // Sort emails by date
-    allEmails.sort((a, b) => {
-        // Use internalDate if available, otherwise fall back to createdAt
-        const dateA = a.internalDate ? new Date(Number.parseInt(a.internalDate)) : new Date(a.createdAt);
-        const dateB = b.internalDate ? new Date(Number.parseInt(b.internalDate)) : new Date(b.createdAt);
-        return dateB.getTime() - dateA.getTime();
-    });
-
-    // Process for thread view
-    if (!threadView) {
-        return allEmails;
+    if (allEmails.length === 0) {
+        return [];
     }
 
-    // Only keep the most recent email for each thread
-    return Object.values(
-        allEmails.reduce(
-            (threads, email) => {
-                const emailDate = email.internalDate
-                    ? new Date(Number.parseInt(email.internalDate))
-                    : new Date(email.createdAt);
+    // For thread view, we want to get the latest email from each thread
+    if (threadView) {
+        const threadMap = new Map();
 
-                if (
-                    !threads[email.threadId] ||
-                    emailDate >
-                        (threads[email.threadId].internalDate
-                            ? new Date(Number.parseInt(threads[email.threadId].internalDate))
-                            : new Date(threads[email.threadId].createdAt))
-                ) {
-                    threads[email.threadId] = email;
-                }
-                return threads;
-            },
-            {} as Record<string, any>,
-        ),
+        // Group by thread ID and keep the latest email in each thread
+        for (const email of allEmails) {
+            const threadId = email.threadId;
+            if (!threadMap.has(threadId) || new Date(email.internalDate) > new Date(threadMap.get(threadId).internalDate)) {
+                threadMap.set(threadId, email);
+            }
+        }
+
+        // Sort threads by most recent email
+        return Array.from(threadMap.values()).sort(
+            (a, b) => new Date(b.internalDate).getTime() - new Date(a.internalDate).getTime(),
+        );
+    }
+
+    // Simple sort by date for non-thread view
+    return allEmails.sort(
+        (a, b) => new Date(b.internalDate).getTime() - new Date(a.internalDate).getTime(),
     );
 }
+
 /**
  * Decrypts an email from the database
  */

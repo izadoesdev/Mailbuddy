@@ -1,6 +1,6 @@
-import React from "react";
+import type React from "react";
 import { Column, Text, Skeleton, Icon, Line } from "@/once-ui/components";
-import { Email } from "../types";
+import type { Email } from "../types";
 import { EmailItem } from "./EmailItem";
 
 interface EmailListProps {

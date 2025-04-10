@@ -23,7 +23,7 @@ interface EmailDetailProps {
 }
 
 export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) {
-    const senderName = extractName(email.from);
+    const senderName = extractName(email.from ?? "");
 
     const handleStarClick = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();

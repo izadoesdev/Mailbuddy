@@ -127,6 +127,12 @@ export function useAISearch() {
             from: 'AI Search Result',
             snippet: `Score: ${result.score.toFixed(4)}`,
             isRead: true,
+            aiMetadata: {
+              score: result.score,
+            },
+            userId: 'AI_SEARCH',
+            to: 'AI_SEARCH',
+            body: 'AI_SEARCH',  
             labels: ['AI_SEARCH'],
             createdAt: new Date(), // Ensure this is a proper Date object
           };
