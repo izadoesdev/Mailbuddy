@@ -1,71 +1,8 @@
 "use server"
 
-import { getGroqClient, SYSTEM_PROMPTS, MODELS, processPrompt, processBatch } from "./index";
-import { convert } from "html-to-text";
-import pLimit from "p-limit";
-
-// Categories we want to support
-const EMAIL_CATEGORIES = [
-  "Work",
-  "Personal",
-  "Marketing",
-  "Financial",
-  "Social",
-  "Travel",
-  "Shopping",
-  "Updates",
-  "Newsletters", 
-  "Receipts",
-  "Scheduling",
-  "Support",
-  "Alerts"
-];
-
-// Pre-defined prompt template for email categorization
-const createCategoryPrompt = (email: string) => {
-  const cleanedContent = prepareEmailContent(email);
-  
-  return `
-Analyze this email and categorize it into exactly one of these categories: ${EMAIL_CATEGORIES.join(", ")}
-Base your decision on the content, subject, and purpose of the email.
-Respond with ONLY the category name.
-
-EMAIL CONTENT:
-${cleanedContent}
-  `;
-};
-
-/**
- * Clean and prepare email content for AI processing
- */
-function prepareEmailContent(content: string): string {
-  if (!content) return "";
-  
-  // Convert HTML to plain text if needed
-  let cleanedContent = content;
-  if (content.includes("<") && content.includes(">")) {
-    try {
-      cleanedContent = convert(content, {
-        selectors: [
-          { selector: 'a', options: { hideLinkHrefIfSameAsText: true } },
-          { selector: 'img', format: 'skip' }
-        ],
-        limits: {
-          maxInputLength: 50000
-        }
-      });
-    } catch (error) {
-      console.error("Error converting HTML:", error);
-    }
-  }
-  
-  // Ensure reasonable length for the API
-  if (cleanedContent.length > 8000) {
-    cleanedContent = cleanedContent.substring(0, 8000);
-  }
-  
-  return cleanedContent;
-}
+import { SYSTEM_PROMPTS, MODELS } from "@/app/ai/utils/groq";
+import { processPrompt, processBatch } from "./index";
+import { prepareEmailContentForCategorization, createCategoryPrompt, EMAIL_CATEGORIES } from "@/app/ai/utils/emailProcessing";
 
 /**
  * Categorize a single email using Groq

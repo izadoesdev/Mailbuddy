@@ -1,51 +1,14 @@
 "use server"
 
-import { SYSTEM_PROMPTS, MODELS, processPrompt, processBatch } from "./index";
-import { convert } from "html-to-text";
-
-/**
- * Clean and prepare email content for AI processing
- */
-function prepareEmailContent(subject: string, content: string): string {
-  if (!content) return subject || "";
-  
-  const cleanedSubject = subject || "No Subject";
-  
-  // Convert HTML to plain text if needed
-  let cleanedContent = content;
-  if (content.includes("<") && content.includes(">")) {
-    try {
-      cleanedContent = convert(content, {
-        selectors: [
-          { selector: 'a', options: { hideLinkHrefIfSameAsText: true } },
-          { selector: 'img', format: 'skip' }
-        ],
-        limits: {
-          maxInputLength: 50000
-        }
-      });
-    } catch (error) {
-      console.error("Error converting HTML:", error);
-    }
-  }
-  
-  // Combine subject and content
-  const fullContent = `Subject: ${cleanedSubject}\n\n${cleanedContent}`;
-  
-  // Ensure reasonable length for the API
-  const MAX_LENGTH = 16000; // Longer context for summarization
-  if (fullContent.length > MAX_LENGTH) {
-    return fullContent.substring(0, MAX_LENGTH);
-  }
-  
-  return fullContent;
-}
+import { SYSTEM_PROMPTS, MODELS } from "@/app/ai/utils/groq";
+import { processPrompt, processBatch } from "./index";
+import { prepareEmailContentForSummarization } from "@/app/ai/utils/emailProcessing";
 
 /**
  * Generate a concise summary for an email
  */
 export async function summarizeEmail(subject: string, body: string) {
-  const content = prepareEmailContent(subject, body);
+  const content = prepareEmailContentForSummarization(subject, body);
   
   const messages = [
     { role: "system" as const, content: SYSTEM_PROMPTS.EMAIL_SUMMARIZER },
@@ -84,7 +47,7 @@ export async function summarizeEmails(emails: Array<{ subject: string, body: str
   
   // Create prompts for all emails
   const prompts = emails.map(email => {
-    const content = prepareEmailContent(email.subject, email.body);
+    const content = prepareEmailContentForSummarization(email.subject, email.body);
     
     return {
       messages: [

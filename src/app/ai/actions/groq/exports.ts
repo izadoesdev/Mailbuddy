@@ -1,13 +1,18 @@
 "use server"
 
+// Import from utils
+import { 
+  SYSTEM_PROMPTS,
+  MODELS,
+} from '@/app/ai/utils/groq';
+import type { EmailInput, ProcessOptions } from '@/app/ai/utils/groq';
+
 // Import all required modules directly to avoid linter errors
 import { 
   getGroqClient,
   processBatch,
   processPrompt,
-  createPromptFunction,
-  SYSTEM_PROMPTS,
-  MODELS
+  createPromptFunction
 } from './index';
 
 import { 
@@ -23,8 +28,9 @@ import {
 import {
   prioritizeEmail,
   prioritizeEmails,
-  PRIORITY_LEVELS
 } from './emailPrioritizer';
+
+import { PRIORITY_LEVELS } from '@/app/ai/utils/emailProcessing';
 
 import {
   saveEmailAIMetadata,
@@ -33,52 +39,6 @@ import {
   getEmailsByCategory,
   getEmailsByPriority
 } from './aiMetadataService';
-
-// Re-export everything for convenient access
-export {
-  // Core functionality
-  getGroqClient,
-  processBatch,
-  processPrompt,
-  createPromptFunction,
-  SYSTEM_PROMPTS,
-  MODELS,
-  
-  // Email categorization
-  categorizeEmail,
-  categorizeEmails,
-  
-  // Email summarization
-  summarizeEmail,
-  summarizeEmails,
-  
-  // Email prioritization
-  prioritizeEmail,
-  prioritizeEmails,
-  PRIORITY_LEVELS,
-  
-  // AI Metadata services
-  saveEmailAIMetadata,
-  getEmailAIMetadata,
-  getMultipleEmailAIMetadata,
-  getEmailsByCategory,
-  getEmailsByPriority
-};
-
-// Define types for email processing
-type EmailInput = {
-  id: string;
-  subject: string;
-  body: string;
-  from?: string;
-  to?: string;
-  createdAt?: Date | string;
-};
-
-type ProcessOptions = {
-  forceReprocess?: boolean;
-  modelOverride?: string;
-};
 
 /**
  * Process a single email with all AI capabilities and save results to database
@@ -249,7 +209,8 @@ export async function processEmails(emails: EmailInput[], options?: ProcessOptio
       priority: priority.priority,
       priorityExplanation: priority.explanation,
       processed: true,
-      fromCache: false
+      fromCache: false,
+      processingTime: Math.floor(processingTime / emailsToProcess.length)
     });
   }
   
