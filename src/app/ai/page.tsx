@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, FormEvent } from "react";
+import React, { useState, useEffect } from "react";
+import type { FormEvent } from "react";
 import {
   Heading,
   Text,
@@ -17,7 +18,8 @@ import {
   Line,
   Spinner,
   Feedback,
-  SegmentedControl
+  SegmentedControl,
+  Flex,
 } from "@/once-ui/components";
 import { searchSimilarEmails } from "./actions/searchSimilarEmails";
 import { processEmail } from "./actions/groq/exports";
@@ -192,8 +194,12 @@ export default function AIPage() {
     { value: 'ai_insights', label: 'AI Insights', disabled: getProcessedEmailsArray().length === 0 }
   ];
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+
   return (
-    <Column maxWidth="xl" marginX="auto" paddingY="24" paddingX="16" gap="32">
+    <Column maxWidth="xl" paddingY="24" paddingX="16" gap="32" style={{ margin: "0 auto" }}>
       <Row horizontal="space-between" vertical="center" paddingBottom="16">
         <Heading variant="display-default-l" as="h1">AI Email Assistant</Heading>
       </Row>
@@ -213,6 +219,7 @@ export default function AIPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 hasPrefix={<Icon name="search" size="s" />}
+                style={{ flexGrow: 1 }}
               />
               <Button
                 type="submit"
@@ -251,15 +258,15 @@ export default function AIPage() {
       {/* Tabs section */}
       <SegmentedControl
         buttons={tabOptions}
-        value={activeTab}
-        onChange={(value) => setActiveTab(value)}
+        defaultSelected={activeTab}
+        onToggle={handleTabChange}
       />
       
       {/* Email content based on active tab */}
       <Card fill padding="0" radius="xl" border="neutral-alpha-weak">
         {activeTab === 'inbox' && (
           <Column fill>
-            <Row horizontal="space-between" padding="16" vertical="center">
+            <Flex direction="row" horizontal="space-between" padding="16" vertical="center" style={{ flexWrap: 'wrap', gap: '8px' }}>
               <Text variant="heading-strong-s">{loading ? 'Loading emails...' : `Inbox (${totalCount})`}</Text>
               
               <Row gap="8">
@@ -281,7 +288,7 @@ export default function AIPage() {
                   onClick={() => setPage(p => p + 1)}
                 />
               </Row>
-            </Row>
+            </Flex>
             
             <Line color="neutral-alpha-weak" />
             
@@ -294,11 +301,13 @@ export default function AIPage() {
               <Column fill>
                 {emails.map((email, index) => (
                   <React.Fragment key={email.id}>
-                    <Row 
+                    <Flex 
+                      direction="row"
                       fill 
                       padding="16" 
                       gap="16"
                       background={email.isRead ? "page" : "overlay"}
+                      style={{ flexWrap: 'wrap' }}
                     >
                       <Avatar 
                         size="m" 
@@ -306,7 +315,7 @@ export default function AIPage() {
                       />
                       
                       <Column gap="4" flex={1}>
-                        <Row horizontal="space-between">
+                        <Flex direction="row" horizontal="space-between" style={{ flexWrap: 'wrap', gap: '8px' }}>
                           <Text 
                             variant={email.isRead ? "body-default-m" : "body-strong-m"}
                             style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
@@ -321,7 +330,7 @@ export default function AIPage() {
                               {formatDate(email.createdAt)}
                             </Text>
                           </Row>
-                        </Row>
+                        </Flex>
                         
                         <Text
                           variant={email.isRead ? "body-default-m" : "body-strong-m"}
@@ -330,7 +339,7 @@ export default function AIPage() {
                           {email.subject || 'No Subject'}
                         </Text>
                         
-                        <Row horizontal="space-between">
+                        <Flex direction="row" horizontal="space-between" style={{ flexWrap: 'wrap', gap: '8px' }}>
                           <Text
                             variant="body-default-s"
                             onBackground="neutral-weak"
@@ -338,14 +347,14 @@ export default function AIPage() {
                               overflow: "hidden", 
                               textOverflow: "ellipsis", 
                               whiteSpace: "nowrap", 
-                              maxWidth: "70%" 
+                              maxWidth: "100%" 
                             }}
                           >
                             {email.snippet}
                           </Text>
                           
                           <Button
-                            size="xs"
+                            size="s"
                             variant={processedEmails[email.id] ? "secondary" : "primary"}
                             prefixIcon="sparkles"
                             label={
@@ -363,9 +372,9 @@ export default function AIPage() {
                                 : handleAnalyzeEmail(email)
                             }
                           />
-                        </Row>
+                        </Flex>
                       </Column>
-                    </Row>
+                    </Flex>
                     {index < emails.length - 1 && <Line color="neutral-alpha-weak" />}
                   </React.Fragment>
                 ))}
@@ -390,8 +399,8 @@ export default function AIPage() {
             <Column fill>
               {similarEmails.map((result, index) => (
                 <React.Fragment key={result.id}>
-                  <Row fill padding="16" gap="16">
-                    <Column gap="2" width="64">
+                  <Flex direction="row" fill padding="16" gap="16" style={{ flexWrap: 'wrap' }}>
+                    <Column gap="2" style={{ width: '64px', flexShrink: 0, marginBottom: '8px' }}>
                       <Text variant="label-strong-s">Score</Text>
                       <Chip 
                         label={result.score.toFixed(4)} 
@@ -407,7 +416,7 @@ export default function AIPage() {
                       
                       <Row horizontal="end">
                         <Button
-                          size="xs"
+                          size="s"
                           variant="secondary"
                           prefixIcon="eye"
                           label="View Email"
@@ -419,7 +428,7 @@ export default function AIPage() {
                         />
                       </Row>
                     </Column>
-                  </Row>
+                  </Flex>
                   {index < similarEmails.length - 1 && <Line color="neutral-alpha-weak" />}
                 </React.Fragment>
               ))}
@@ -450,23 +459,27 @@ export default function AIPage() {
                     <React.Fragment key={processedEmail.id}>
                       <Row fill padding="24" gap="16">
                         <Column gap="16" flex={1}>
-                          <Row horizontal="space-between" vertical="center">
+                          <Flex direction="row" horizontal="space-between" vertical="center" style={{ flexWrap: 'wrap', gap: '8px' }}>
                             <Text variant="heading-strong-m">
                               {email?.subject || 'No Subject'}
                             </Text>
                             {processedEmail.fromCache && (
                               <Badge title="Cached" color="info" />
                             )}
-                          </Row>
+                          </Flex>
                           
-                          <Row gap="16" wrap>
+                          <Flex direction="row" style={{ flexWrap: 'wrap', gap: '16px' }}>
                             <Card 
                               padding="16" 
                               background="neutral-weak" 
                               radius="l" 
                               direction="column"
                               gap="8"
-                              width="30%"
+                              style={{ 
+                                flex: '1 1 calc(33% - 16px)', 
+                                minWidth: '250px', 
+                                marginBottom: '16px' 
+                              }}
                             >
                               <Text variant="label-strong-s">Category</Text>
                               <Chip 
@@ -481,7 +494,11 @@ export default function AIPage() {
                               radius="l" 
                               direction="column"
                               gap="8"
-                              width="30%"
+                              style={{ 
+                                flex: '1 1 calc(33% - 16px)', 
+                                minWidth: '250px', 
+                                marginBottom: '16px'
+                              }}
                             >
                               <Text variant="label-strong-s">Priority</Text>
                               <Chip 
@@ -501,7 +518,10 @@ export default function AIPage() {
                               radius="l" 
                               direction="column"
                               gap="8"
-                              width="30%"
+                              style={{ 
+                                flex: '1 1 calc(33% - 16px)', 
+                                minWidth: '250px'
+                              }}
                             >
                               <Text variant="label-strong-s">Processing</Text>
                               <Text variant="body-default-xs">
@@ -510,7 +530,7 @@ export default function AIPage() {
                                   : 'N/A'}
                               </Text>
                             </Card>
-                          </Row>
+                          </Flex>
                           
                           <Card 
                             padding="16" 
@@ -526,7 +546,7 @@ export default function AIPage() {
                             </Text>
                           </Card>
                           
-                          <Row horizontal="end" gap="8">
+                          <Flex direction="row" horizontal="end" gap="8" style={{ flexWrap: 'wrap' }}>
                             <Button
                               size="s"
                               variant="tertiary"
@@ -548,7 +568,7 @@ export default function AIPage() {
                                 console.log("View original email:", processedEmail.id);
                               }}
                             />
-                          </Row>
+                          </Flex>
                         </Column>
                       </Row>
                       {index < getProcessedEmailsArray().length - 1 && <Line color="neutral-alpha-weak" />}

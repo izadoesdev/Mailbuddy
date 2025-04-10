@@ -1,7 +1,6 @@
 'use server'
 
 import { prisma } from "@/libs/db";
-import { MODELS } from "./index";
 
 /**
  * Save email AI metadata to the database
