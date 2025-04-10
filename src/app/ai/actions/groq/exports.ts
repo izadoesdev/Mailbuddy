@@ -40,17 +40,37 @@ import {
   getEmailsByPriority
 } from './aiMetadataService';
 
+// Helper for logging
+const log = (message: string, data?: any) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] [Email Processing] ${message}`, data ? data : "");
+};
+
 /**
  * Process a single email with all AI capabilities and save results to database
  * Checks for existing metadata first to avoid redundant processing
  */
 export async function processEmail(email: EmailInput, options?: ProcessOptions) {
+  const startTime = Date.now();
+  log(`Starting to process email ${email.id}`, { 
+    subject: email.subject,
+    forceReprocess: options?.forceReprocess || false 
+  });
+
   try {
     // Check if we already have metadata for this email
     if (!options?.forceReprocess) {
+      log(`Checking for existing metadata for email ${email.id}`);
       const existingMetadata = await getEmailAIMetadata(email.id);
+      
       if (existingMetadata.success && existingMetadata.metadata) {
         // Return existing metadata if available
+        const duration = Date.now() - startTime;
+        log(`Found existing metadata for email ${email.id}, returning cached result (${duration}ms)`, {
+          category: existingMetadata.metadata.category,
+          priority: existingMetadata.metadata.priority
+        });
+        
         return {
           id: email.id,
           category: existingMetadata.metadata.category || "Uncategorized",
@@ -61,22 +81,39 @@ export async function processEmail(email: EmailInput, options?: ProcessOptions) 
           fromCache: true
         };
       }
+      
+      log(`No existing metadata found for email ${email.id}, will process with AI`);
+    } else {
+      log(`Force reprocessing email ${email.id}`);
     }
     
-    // Start timing
-    const startTime = Date.now();
-    
     // Run AI processes in parallel for better performance
+    log(`Starting parallel AI processing for email ${email.id}`);
+    const processingStartTime = Date.now();
+    
     const [category, summary, priority] = await Promise.all([
-      categorizeEmail(email.body),
-      summarizeEmail(email.subject, email.body),
-      prioritizeEmail(email)
+      categorizeEmail(email.body).then(result => {
+        log(`Category result for email ${email.id}: ${result}`);
+        return result;
+      }),
+      summarizeEmail(email.subject, email.body).then(result => {
+        log(`Summary generated for email ${email.id}: ${result.substring(0, 50)}${result.length > 50 ? '...' : ''}`);
+        return result;
+      }),
+      prioritizeEmail(email).then(result => {
+        log(`Priority determined for email ${email.id}: ${result.priority}`, {
+          explanation: result.explanation
+        });
+        return result;
+      })
     ]);
     
     // Calculate processing time
-    const processingTime = Date.now() - startTime;
+    const processingTime = Date.now() - processingStartTime;
+    log(`Parallel AI processing completed in ${processingTime}ms for email ${email.id}`);
     
     // Save results to database
+    log(`Saving AI metadata to database for email ${email.id}`);
     await saveEmailAIMetadata({
       emailId: email.id,
       category,
@@ -85,6 +122,14 @@ export async function processEmail(email: EmailInput, options?: ProcessOptions) 
       summary,
       processingTime,
       modelUsed: options?.modelOverride || "multiple", // Default to "multiple" for mixed model usage
+    });
+    
+    const totalDuration = Date.now() - startTime;
+    log(`Email ${email.id} processing completed in ${totalDuration}ms`, {
+      category,
+      priority: priority.priority,
+      processingTime,
+      totalDuration
     });
     
     return {
@@ -98,11 +143,15 @@ export async function processEmail(email: EmailInput, options?: ProcessOptions) 
       processingTime
     };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const duration = Date.now() - startTime;
+    log(`Error processing email ${email.id} (${duration}ms): ${errorMessage}`, { error });
+    
     console.error('Error processing email with Groq:', error);
     return {
       id: email.id,
       processed: false,
-      error: error instanceof Error ? error.message : String(error)
+      error: errorMessage
     };
   }
 }
