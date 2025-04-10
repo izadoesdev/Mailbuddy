@@ -165,7 +165,6 @@ export async function GET(request: NextRequest) {
         // Process emails
         const allEmails = processEmails(existingEmails, fetchedEmails, threadView);
         log(`Total emails to display: ${allEmails.length}`);
-
         // Return the results
         const result = {
             emails: allEmails,
