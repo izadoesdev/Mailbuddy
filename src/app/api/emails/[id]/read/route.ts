@@ -92,6 +92,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             },
             data: {
                 isRead: true,
+                labels: {
+                    push: ["UNREAD"],
+                },
             },
         });
 

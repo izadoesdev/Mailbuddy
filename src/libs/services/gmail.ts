@@ -1,12 +1,9 @@
 import { google } from "googleapis";
 import { extractContentFromParts } from "../utils/email-content";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/libs/db";
 import env from "../env";
 import { auth } from "@/libs/auth";
 import { headers } from "next/headers";
-
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 /**
  * Interface for email data

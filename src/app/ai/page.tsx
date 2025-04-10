@@ -21,8 +21,8 @@ import {
   SegmentedControl,
   Flex,
 } from "@/once-ui/components";
-import { searchSimilarEmails } from "./actions/searchSimilarEmails";
-import { processEmail } from "./actions/groq/exports";
+import { searchSimilarEmails } from "./new/utils/search";
+import { processEmail } from "./new/utils/groq";
 import type { Email, InboxResponse } from "../inbox/types";
 import { formatDate } from "../inbox/utils";
 import { extractName, getInitials } from "../inbox/utils";
@@ -132,16 +132,10 @@ export default function AIPage() {
     setError(null);
     
     try {
-      const result = await processEmail({
-        id: email.id,
-        subject: email.subject || "No Subject",
-        body: email.body || email.snippet || "",
-        from: email.from || "",
-        to: email.to || "",
-        createdAt: email.createdAt
-      });
+      const result = await processEmail(email);
       
       if (result.processed) {
+        // Update the processed emails state
         // Add to processed emails map
         setProcessedEmails(prev => ({
           ...prev,
