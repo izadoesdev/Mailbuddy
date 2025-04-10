@@ -12,6 +12,23 @@ type SimilarEmailResult = {
   };
 }
 
+// Helper to ensure a date is properly formatted as a Date object
+function ensureDate(date: any): Date {
+  if (!date) return new Date();
+  
+  if (date instanceof Date) return date;
+  
+  if (typeof date === 'string') {
+    return new Date(date);
+  }
+  
+  if (typeof date === 'number') {
+    return new Date(date);
+  }
+  
+  return new Date();
+}
+
 export function useAISearch() {
   const [similarEmails, setSimilarEmails] = useState<Email[]>([]);
   const [isAISearchActive, setIsAISearchActive] = useState(false);
@@ -38,7 +55,7 @@ export function useAISearch() {
         // Fetch single email details from the API
         try {
           // Use the API route that gets a specific email by ID
-          const response = await fetch(`/api/email/${id}`);
+          const response = await fetch(`/api/emails/${id}`);
           if (!response.ok) {
             console.warn(`Could not fetch details for email ${id}, status: ${response.status}`);
             
@@ -77,17 +94,23 @@ export function useAISearch() {
         .filter(Boolean)
         .map((email) => {
           const matchingResult = results.find(r => r.id === email.id);
-          const emailWithScore = {
+          
+          // Process the email to ensure dates are correctly formatted
+          const processedEmail = {
             ...email,
+            // Ensure createdAt is a Date object
+            createdAt: email.internalDate 
+              ? new Date(Number.parseInt(email.internalDate))
+              : ensureDate(email.createdAt),
             labels: [...(email.labels || []), 'AI_SEARCH'], // Add AI_SEARCH label
           };
           
           // Add the AI score as a custom property
           if (matchingResult) {
-            (emailWithScore as any).aiScore = matchingResult.score;
+            (processedEmail as any).aiScore = matchingResult.score;
           }
           
-          return emailWithScore;
+          return processedEmail;
         });
       
       return { semanticResults: results, fullEmails };
@@ -105,7 +128,7 @@ export function useAISearch() {
             snippet: `Score: ${result.score.toFixed(4)}`,
             isRead: true,
             labels: ['AI_SEARCH'],
-            createdAt: new Date(),
+            createdAt: new Date(), // Ensure this is a proper Date object
           };
           
           // Store the score in the emails map for display

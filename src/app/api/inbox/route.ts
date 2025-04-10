@@ -197,6 +197,7 @@ export async function GET(request: NextRequest) {
  * Count total threads for a user
  */
 async function getTotalThreadCount(userId: string): Promise<number> {
+    // Count distinct thread IDs for the user
     const result = await prisma.message.groupBy({
         by: ["threadId"],
         where: { userId },
