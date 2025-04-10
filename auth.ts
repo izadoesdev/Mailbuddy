@@ -1,7 +1,10 @@
 import { type Account, betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./src/libs/db";
-import { customSession } from "better-auth/plugins";
+import { customSession, multiSession } from "better-auth/plugins";
+import { nextCookies } from "better-auth/next-js";
+
+
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: "postgresql",
@@ -19,6 +22,10 @@ export const auth = betterAuth({
             prompt: "consent",
         },
     },
+    emailAndPassword: {
+        enabled: true,
+        autoSignIn: true,
+    },
     session: {
         expiresIn: 60 * 60 * 24 * 30, // 30 days
         updateAge: 60 * 60 * 24, // 1 day
@@ -30,32 +37,23 @@ export const auth = betterAuth({
     plugins: [
         customSession(async ({ user, session }) => {
             // Fetch the user's role from the database
-            const dbUser = await prisma.user.findUnique({
+            const dbUser: { accounts: Account[] } = await prisma.user.findUnique({
                 where: { id: user.id },
                 select: { emailVerified: true, accounts: true },
             });
 
             return {
                 user: {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    image: user.image,
-                    emailVerified: user.emailVerified || false,
-                    accessToken: dbUser?.accounts[0].accessToken,
-                    refreshToken: dbUser?.accounts[0].refreshToken,
+                    ...user,
+                    accessToken: dbUser.accounts[0].accessToken,
+                    refreshToken: dbUser.accounts[0].refreshToken,
                 },
-                session: {
-                    id: session.id,
-                    expiresAt: session.expiresAt,
-                    createdAt: session.createdAt,
-                    updatedAt: session.updatedAt,
-                    ipAddress: session.ipAddress,
-                    userAgent: session.userAgent,
-                },
+                session,
             };
         }),
+        multiSession(),
+        nextCookies(),
     ],
 });
 
-export type User = (typeof auth)["$Infer"]["Session"]["user"]
+export type User = (typeof auth)["$Infer"]["Session"]["user"];
