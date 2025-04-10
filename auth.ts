@@ -58,4 +58,4 @@ export const auth = betterAuth({
     ],
 });
 
-export type User = (typeof auth)["$Infer"]["Session"]["user"] & { accounts: Account[] };
+export type User = (typeof auth)["$Infer"]["Session"]["user"]

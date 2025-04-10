@@ -6,6 +6,7 @@ import { encryptText, encodeEncryptedData } from "@/libs/utils/encryption";
 import { extractContentFromParts } from "@/libs/utils/email-content";
 import { auth, type User } from "@/libs/auth";
 import { headers } from "next/headers";
+import type { Account } from "better-auth";
 
 // Constants
 const GMAIL_USER_ID = "me";
@@ -73,7 +74,7 @@ function initializeGmailClient(accessToken: string) {
 async function refreshAccessToken(userId: string): Promise<string | null> {
     try {
         // Find the user
-        const user: User = await prisma.user.findUnique({
+        const user: User & { accounts: Account[] } = await prisma.user.findUnique({
             where: { id: userId },
             include: { accounts: true },
         });
