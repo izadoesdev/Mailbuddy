@@ -135,9 +135,16 @@ model EmailAIMetadata {
   id                 String   @id @default(uuid())
   emailId            String   @unique
   category           String?
+  categories         String[] // Store multiple categories
+  categoryConfidences Json?   // Store confidence scores for each category
   priority           String?
   priorityExplanation String?
   summary            String?
+  sentiment          String?  // Positive, Negative, Neutral
+  importance         String?  // Critical, High, Medium, Low
+  requiresResponse   Boolean? // Whether the email requires a response
+  responseTimeframe  String?  // Suggested timeframe for response
+  keywords           String[] // Key topics or keywords from the email
   processingTime     Int?     // Time taken to process in milliseconds
   modelUsed          String?  // Store which model was used for analysis
   tokensUsed         Int?     // Store token usage for analytics
@@ -148,5 +155,8 @@ model EmailAIMetadata {
   @@index([emailId])
   @@index([category])
   @@index([priority])
+  @@index([sentiment])
+  @@index([importance])
+  @@index([requiresResponse])
   @@map("email_ai_metadata")
 }

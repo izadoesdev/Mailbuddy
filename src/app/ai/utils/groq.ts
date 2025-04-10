@@ -1,5 +1,6 @@
 import Groq from 'groq-sdk';
 import pLimit from 'p-limit';
+import { type EmailAnalysis, createAnalysisPrompt, prepareEmailForAnalysis } from './emailProcessing';
 
 // Initialize Groq client (assuming environment variable is set)
 export const groq = new Groq({
@@ -107,6 +108,118 @@ export type EmailInput = {
 export type ProcessOptions = {
   forceReprocess?: boolean;
   modelOverride?: string;
-  // Example: You might add specific category lists here if needed for the categorizer
-  // predefinedCategories?: string[];
 };
+
+/**
+ * Analyze an email using the Groq API
+ */
+export async function analyzeEmail(
+  email: { 
+    subject: string; 
+    body: string; 
+    from?: string; 
+    to?: string;
+    createdAt?: Date | string;
+  }
+): Promise<EmailAnalysis | null> {
+  if (!process.env.GROQ_API_KEY) {
+    console.error('Groq API key is not configured');
+    return null;
+  }
+
+  try {
+    // Prepare the email content for analysis
+    const emailContent = prepareEmailForAnalysis(email);
+    
+    // Generate the prompt for analysis
+    const prompt = createAnalysisPrompt(emailContent);
+    
+    // Call the Groq API
+    const completion = await groq.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: 'llama3-8b-8192',
+      temperature: 0.1,
+      max_tokens: 500,
+    });
+    
+    const response = completion.choices[0]?.message?.content?.trim() || '';
+    
+    // Extract JSON from the response
+    try {
+      // Use regex to find JSON object in response (in case there's extra text)
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const analysisData = JSON.parse(jsonMatch[0]);
+        
+        // Validate the response has the required fields
+        if (
+          typeof analysisData.sentiment === 'string' &&
+          typeof analysisData.importance === 'string' &&
+          typeof analysisData.requiresResponse === 'boolean' &&
+          Array.isArray(analysisData.keywords) &&
+          typeof analysisData.summary === 'string'
+        ) {
+          return analysisData as EmailAnalysis;
+        }
+      }
+      
+      console.error('Invalid response format from Groq API:', response);
+      return null;
+    } catch (parseError) {
+      console.error('Error parsing Groq API response:', parseError);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error calling Groq API:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate a response to an email based on its content
+ */
+export async function generateEmailResponse(
+  email: { 
+    subject: string; 
+    body: string; 
+    from?: string; 
+    to?: string;
+  },
+  instructions?: string
+): Promise<string | null> {
+  if (!process.env.GROQ_API_KEY) {
+    console.error('Groq API key is not configured');
+    return null;
+  }
+
+  try {
+    // Clean and prepare the email content
+    const emailContent = prepareEmailForAnalysis(email);
+    
+    // Create the prompt for response generation
+    const prompt = `
+You are drafting an email response to the following message. 
+${instructions ? `Instructions: ${instructions}` : ''}
+Write a professional, concise, and appropriate response. 
+Do not include any email headers, just the body of the response.
+
+Original email:
+${emailContent}
+
+Your response:
+`;
+    
+    // Call the Groq API
+    const completion = await groq.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: 'llama3-8b-8192',
+      temperature: 0.7, // Slightly higher temperature for creative response
+      max_tokens: 1000,
+    });
+    
+    return completion.choices[0]?.message?.content?.trim() || null;
+  } catch (error) {
+    console.error('Error generating email response:', error);
+    return null;
+  }
+}

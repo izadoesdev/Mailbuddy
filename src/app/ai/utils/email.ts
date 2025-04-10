@@ -71,7 +71,25 @@ function cleanEmailBody(body: string): string {
     .trim();
 
   // Convert HTML to plain text
-  cleanedText = convert(cleanedText);
+  try {
+    if (cleanedText.includes("<") && cleanedText.includes(">")) {
+      cleanedText = convert(cleanedText, {
+        selectors: [
+          { selector: 'a', options: { hideLinkHrefIfSameAsText: true, noAnchorUrl: true } },
+          { selector: 'img', options: { format: 'skip' } },
+          { selector: 'style', options: { format: 'skip' } },
+          { selector: 'script', options: { format: 'skip' } },
+          { selector: 'head', options: { format: 'skip' } },
+          { selector: 'hr', options: { format: 'skip' } },
+          { selector: 'br', options: { format: 'linebreak' } }
+        ],
+        wordwrap: false,
+        preserveNewlines: true
+      });
+    }
+  } catch (error) {
+    console.error("Error converting HTML:", error);
+  }
   
   return cleanedText;
 }

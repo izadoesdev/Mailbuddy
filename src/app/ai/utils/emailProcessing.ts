@@ -22,7 +22,19 @@ export const EMAIL_CATEGORIES = [
   "Receipts",
   "Scheduling",
   "Support",
-  "Alerts"
+  "Alerts",
+  "Educational",
+  "Invoices",
+  "Shipping",
+  "Legal",
+  "Healthcare",
+  "Events",
+  "Promotions",
+  "Job",
+  "Entertainment",
+  "Food",
+  "Technology",
+  "Security"
 ];
 
 /**
@@ -72,12 +84,12 @@ function stripHtml(content: string): string {
       return convert(content, {
         selectors: [
           { selector: 'a', options: { hideLinkHrefIfSameAsText: true, noAnchorUrl: true } },
-          { selector: 'img', format: 'skip' },
-          { selector: 'style', format: 'skip' },
-          { selector: 'script', format: 'skip' },
-          { selector: 'head', format: 'skip' },
-          { selector: 'hr', format: 'skip' },
-          { selector: 'br', format: 'linebreak' }
+          { selector: 'img', options: { format: 'skip' } },
+          { selector: 'style', options: { format: 'skip' } },
+          { selector: 'script', options: { format: 'skip' } },
+          { selector: 'head', options: { format: 'skip' } },
+          { selector: 'hr', options: { format: 'skip' } },
+          { selector: 'br', options: { format: 'linebreak' } }
         ],
         limits: {
           maxInputLength: 100000
@@ -173,8 +185,19 @@ function cleanEmail(content: string): string {
 }
 
 // Pre-defined prompt template for email categorization
-export const createCategoryPrompt = (email: string) => {
+export const createCategoryPrompt = (email: string, multiLabel = true) => {
   const cleanedContent = prepareEmailContentForCategorization(email);
+  
+  if (multiLabel) {
+    return `
+Analyze this email and categorize it. It can belong to multiple categories from this list: ${EMAIL_CATEGORIES.join(", ")}
+Base your decision on the content, subject, and purpose of the email.
+Respond with a JSON array containing the categories, like: ["Category1", "Category2"]
+
+EMAIL CONTENT:
+${cleanedContent}
+    `;
+  }
   
   return `
 Analyze this email and categorize it into exactly one of these categories: ${EMAIL_CATEGORIES.join(", ")}
@@ -263,4 +286,63 @@ ${cleanedBody}
   }
   
   return structuredEmail;
-} 
+}
+
+/**
+ * Types for sentiment analysis
+ */
+export type SentimentType = 'Positive' | 'Negative' | 'Neutral';
+export type ImportanceType = 'Critical' | 'High' | 'Medium' | 'Low';
+
+export interface EmailAnalysis {
+  sentiment: SentimentType;
+  importance: ImportanceType;
+  requiresResponse: boolean;
+  responseTimeframe?: string;
+  keywords: string[];
+  summary: string;
+}
+
+/**
+ * Prepare email content for sentiment and importance analysis
+ */
+export function prepareEmailForAnalysis(
+  email: { 
+    subject: string; 
+    body: string; 
+    from?: string; 
+    to?: string;
+    createdAt?: Date | string;
+  }
+): string {
+  // Use the same preparation logic as prioritization
+  return prepareEmailContentForPrioritization(email);
+}
+
+/**
+ * Create a prompt to analyze email sentiment and importance
+ */
+export const createAnalysisPrompt = (emailContent: string) => {
+  return `
+Analyze the following email and provide:
+1. Sentiment (Positive, Negative, or Neutral)
+2. Importance (Critical, High, Medium, or Low)
+3. Whether it requires a response (true/false)
+4. Response timeframe if needed (e.g., "Within 24 hours", "ASAP", "This week", etc.)
+5. Key topics or keywords (up to 5)
+6. A brief summary (2-3 sentences)
+
+Return the results in this JSON format:
+{
+  "sentiment": "...",
+  "importance": "...",
+  "requiresResponse": true/false,
+  "responseTimeframe": "...",
+  "keywords": ["...", "..."],
+  "summary": "..."
+}
+
+EMAIL:
+${emailContent}
+  `;
+}; 
