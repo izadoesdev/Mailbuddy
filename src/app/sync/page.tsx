@@ -303,7 +303,7 @@ export default function SyncPage() {
             // Cancel any ongoing sync operations
             cancelSync();
         }
-    }, [addLogEntry, addToast, router, syncInfo.newMessageCount]);
+    }, [addLogEntry, addToast, syncInfo.newMessageCount]);
 
     // Start message stream sync process
     const startMessageStreamSync = async () => {
@@ -381,8 +381,12 @@ export default function SyncPage() {
                 buffer += chunk;
 
                 // Process complete JSON objects from the buffer
-                let newlineIndex;
-                while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+                let newlineIndex: number;
+                while (true) {
+                    newlineIndex = buffer.indexOf("\n");
+                    if (newlineIndex === -1) break;
+                    
+                    // Process each line as a JSON object
                     const line = buffer.slice(0, newlineIndex).trim();
                     buffer = buffer.slice(newlineIndex + 1);
 
@@ -574,11 +578,13 @@ export default function SyncPage() {
 
         if (remainingMs < 60000) {
             return `${Math.ceil(remainingMs / 1000)} seconds`;
-        } else if (remainingMs < 3600000) {
-            return `${Math.ceil(remainingMs / 60000)} minutes`;
-        } else {
-            return `${Math.ceil(remainingMs / 3600000)} hours`;
         }
+        
+        if (remainingMs < 3600000) {
+            return `${Math.ceil(remainingMs / 60000)} minutes`;
+        }
+        
+        return `${Math.ceil(remainingMs / 3600000)} hours`;
     };
 
     const cancelSync = useCallback(async () => {
