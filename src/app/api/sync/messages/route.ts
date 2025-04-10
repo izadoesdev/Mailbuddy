@@ -325,6 +325,9 @@ function createSyncStream(
     batchSize: number,
     abortSignal: AbortSignal,
 ): ReadableStream {
+    // Store the gmail client in a mutable variable
+    let gmailClient = gmail;
+    
     return new ReadableStream({
         async start(controller) {
             // Handle aborts from the AbortController
@@ -370,7 +373,7 @@ function createSyncStream(
 
                     try {
                         // Query Gmail API for messages
-                        const response = (await gmail.users.messages.list({
+                        const response = (await gmailClient.users.messages.list({
                             userId: GMAIL_USER_ID,
                             maxResults: batchSize,
                             pageToken: pageToken || undefined,
@@ -505,7 +508,7 @@ function createSyncStream(
 
                             if (newAccessToken) {
                                 // Re-initialize the Gmail client with the new token
-                                gmail = initializeGmailClient(newAccessToken);
+                                gmailClient = initializeGmailClient(newAccessToken);
 
                                 // Log the retry
                                 log("Access token refreshed, retrying the current batch");

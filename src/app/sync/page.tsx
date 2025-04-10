@@ -185,7 +185,7 @@ const SyncLogDisplay = ({
                     <Column gap="8">
                         {syncLog.slice(-10).map((logEntry, index) => (
                             <Text
-                                key={index}
+                                key={logEntry.timestamp}
                                 variant="body-default-xs"
                                 onBackground="neutral-strong"
                             >
@@ -232,7 +232,7 @@ export default function SyncPage() {
 
     // State for cancel function so it can be updated
     const [cancelSyncFn, setCancelSyncFn] = useState(() => () => {
-        addLogEntry(`Sync cancelled by user`);
+        addLogEntry("Sync cancelled by user");
         setIsSyncing(false);
         setSyncStage("idle");
         setStatus("Sync cancelled");

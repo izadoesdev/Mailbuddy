@@ -12,6 +12,7 @@ import { google } from "googleapis";
 import { extractContentFromParts } from "@/libs/utils/email-content";
 import env from "@/libs/env";
 import { storeEmailEmbedding } from "@/app/ai/actions/storeEmailEmbedding";
+import { getEmailCategories } from "@/app/ai/actions/getEmailCategory";
 
 // For API requests
 const GMAIL_USER_ID = "me";
@@ -164,6 +165,15 @@ export async function GET(request: NextRequest) {
         // Process emails
         const allEmails = processEmails(existingEmails, fetchedEmails, threadView);
         log(`Total emails to display: ${allEmails.length}`);
+
+        // Categorize emails
+        const categories = await getEmailCategories(allEmails.map((email) => email.body));
+        log(`Categorized ${allEmails.length} emails`);
+
+        // Add categories to emails
+        allEmails.forEach((email, index) => {
+            email.category = categories[index];
+        });
 
         // Return the results
         const result = {
