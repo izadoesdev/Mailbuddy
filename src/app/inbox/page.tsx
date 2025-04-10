@@ -1,7 +1,7 @@
 "use client";
 
 import type { Email } from "./types";
-import { Row, Column, Card, useToast, Text } from "@/once-ui/components";
+import { Row, Column, useToast, Text } from "@/once-ui/components";
 import { EmailList } from "./components/EmailList";
 import { EmailDetail } from "./components/EmailDetail";
 import { InboxControls } from "./components/InboxControls";
@@ -14,13 +14,17 @@ import { useBackgroundSync } from "./hooks/useBackgroundSync";
 import { useAISearch } from "./hooks/useAISearch";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useUser } from "@/libs/auth/client";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 
 export default function InboxPage() {
     // Authentication check
     const router = useRouter();
     const { user, isLoading: isAuthLoading } = useUser();
-    
+
+    if(!isAuthLoading && !user){
+        redirect('/login')
+    } 
+
     // State
     const [searchQuery, setSearchQuery] = useState("");
     const [threadView, setThreadView] = useState(true);
