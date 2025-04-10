@@ -73,7 +73,7 @@ function initializeGmailClient(accessToken: string) {
 async function refreshAccessToken(userId: string): Promise<string | null> {
     try {
         // Find the user
-        const user = await prisma.user.findUnique({
+        const user: User = await prisma.user.findUnique({
             where: { id: userId },
             include: { accounts: true },
         });
