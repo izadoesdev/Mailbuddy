@@ -128,12 +128,26 @@ export function useAISearch() {
             snippet: `Score: ${result.score.toFixed(4)}`,
             isRead: true,
             aiMetadata: {
-              score: result.score,
+              id: 'AI_SEARCH',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              emailId: 'AI_SEARCH',
+              category: 'AI_SEARCH',
+              priority: 'AI_SEARCH',
+              priorityExplanation: 'AI_SEARCH',
+              summary: 'AI_SEARCH',
+              processingTime: 0,
+              modelUsed: 'AI_SEARCH',
+              tokensUsed: 0,
             },
             userId: 'AI_SEARCH',
             to: 'AI_SEARCH',
             body: 'AI_SEARCH',  
             labels: ['AI_SEARCH'],
+            internalDate: new Date().toISOString(),
+            isStarred: false,
+            fetchedAt: new Date(),
+            updatedAt: new Date(),
             createdAt: new Date(), // Ensure this is a proper Date object
           };
           
