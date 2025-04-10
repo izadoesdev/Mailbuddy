@@ -1,5 +1,5 @@
 import React from "react";
-import { Column, Text, Skeleton, Icon } from "@/once-ui/components";
+import { Column, Text, Skeleton, Icon, Line } from "@/once-ui/components";
 import { Email } from "../types";
 import { EmailItem } from "./EmailItem";
 
@@ -50,17 +50,22 @@ export function EmailList({
 
     // Render list of emails
     return (
-        <Column fillWidth gap="1" overflow="auto" style={{ maxHeight: "calc(100vh - 200px)" }}>
+        <Column fill overflowY="auto"
+            radius="l"
+            border="neutral-alpha-medium">
             {emails.map((email, index) => (
-                <EmailItem
-                    key={email.id}
-                    email={email}
-                    index={index}
-                    isSelected={selectedEmailId === email.id}
-                    totalEmails={emails.length}
-                    onSelect={onSelectEmail}
-                    onToggleStar={onToggleStar}
-                />
+                <Column fillWidth key={email.id}>
+                    <EmailItem
+                        key={email.id}
+                        email={email}
+                        index={index}
+                        isSelected={selectedEmailId === email.id}
+                        totalEmails={emails.length}
+                        onSelect={onSelectEmail}
+                        onToggleStar={onToggleStar}
+                    />
+                    {index < emails.length - 1 && <Line/>}
+                </Column>
             ))}
         </Column>
     );

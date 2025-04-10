@@ -145,7 +145,7 @@ export default function InboxPage() {
     }, [triggerSync]);
 
     // Calculate width for main content
-    const mainContentWidth = selectedEmail ? "40%" : "100%";
+    const mainContentWidth = selectedEmail ? "50%" : "100%";
     
     // Determine which emails to display based on AI search status
     const displayEmails = isAISearchActive ? similarEmails : emails;
@@ -165,7 +165,7 @@ export default function InboxPage() {
     }
 
     return (
-        <Row fill paddingY="20" gap="32">
+        <Row fill padding="8" gap="32">
             <Column
                 fillWidth
                 style={{
@@ -228,9 +228,8 @@ export default function InboxPage() {
             {selectedEmail && (
                 <Column
                     flex={1}
-                    fillHeight
+                    fill
                     style={{
-                        width: "60%",
                         transition: "width 0.3s ease",
                     }}
                 >

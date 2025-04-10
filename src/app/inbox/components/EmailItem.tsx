@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, Row, Column, Chip, Line, IconButton, Avatar, Badge } from "@/once-ui/components";
+import { Text, Row, Column, Chip, Line, IconButton, Avatar, Badge, Card, Tag } from "@/once-ui/components";
 import type { Email } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
 
@@ -24,20 +24,21 @@ export function EmailItem({
 
     return (
         <React.Fragment>
-            <div
+            <Row
+                fillWidth
                 onClick={() => onSelect(email)}
                 onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                         onSelect(email);
                     }
                 }}
-                style={{ cursor: "pointer" }}
             >
                 <Row
                     fillWidth
                     padding="16"
                     gap="16"
-                    background={isSelected ? "neutral-weak" : email.isRead ? "page" : "overlay"}
+                    transition="micro-medium"
+                    background={isSelected ? "neutral-medium" : email.isRead ? "page" : "overlay"}
                 >
                     <Row gap="12" vertical="center">
                         <IconButton
@@ -65,7 +66,7 @@ export function EmailItem({
                                 {senderName}
                             </Text>
                             <Row gap="8" vertical="center">
-                                {email.labels?.includes("IMPORTANT") && <Badge title="Important" />}
+                                {email.labels?.includes("IMPORTANT") && <Tag variant="neutral" label="Important"  />}
                                 <Text variant="label-default-s" onBackground="neutral-weak">
                                     {formatDate(email.createdAt)}
                                 </Text>
@@ -133,7 +134,7 @@ export function EmailItem({
                         </Row>
                     </Column>
                 </Row>
-            </div>
+            </Row>
             {index < totalEmails - 1 && <Line color="neutral-alpha-weak" />}
         </React.Fragment>
     );

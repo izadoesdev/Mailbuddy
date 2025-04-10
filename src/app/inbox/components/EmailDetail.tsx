@@ -10,6 +10,7 @@ import {
     Card,
     Button,
     Heading,
+    Tag,
 } from "@/once-ui/components";
 import type { Email } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
@@ -32,11 +33,11 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
     };
 
     return (
-        <Card fillWidth padding="24">
-            <Column gap="24">
-                <Row horizontal="space-between" vertical="center">
-                    <Row gap="8" vertical="center">
-                        <Heading>{email.subject}</Heading>
+        <Column fill radius="xl" border="neutral-alpha-medium" overflow="hidden">
+            <Column gap="24" fill>
+                <Row horizontal="space-between" vertical="center" paddingY="12" paddingX="24" borderBottom="neutral-alpha-medium" >
+                    <Row gap="12" vertical="center">
+                        <Heading variant="heading-strong-m">{email.subject}</Heading>
                         <IconButton
                             variant="ghost"
                             size="s"
@@ -46,10 +47,10 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                             onClick={handleStarClick}
                         />
                     </Row>
-                    <IconButton variant="ghost" icon="close" onClick={onClose} />
+                    <IconButton tooltip="Close" tooltipPosition="left" variant="ghost" icon="close" onClick={onClose} />
                 </Row>
 
-                <Row gap="16" vertical="center">
+                <Row gap="16" vertical="center" paddingX="24">
                     <Avatar size="l" value={getInitials(senderName)} />
                     <Column gap="4">
                         <Text variant="body-strong-m">{senderName}</Text>
@@ -70,29 +71,29 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                 </Row>
 
                 {email.labels?.length > 0 && (
-                    <Row gap="8" wrap>
+                    <Row gap="8" wrap paddingY="12" paddingX="24">
                         {email.labels
                             .filter((label: string) => !["UNREAD", "INBOX"].includes(label))
                             .map((label: string) => (
-                                <Chip key={label} label={label.replace("CATEGORY_", "")} />
+                                <Tag size="m" key={label} label={label.replace("CATEGORY_", "")} />
                             ))}
                     </Row>
                 )}
 
-                <Line />
+                <Row fill paddingX="8">
+                    <div
+                        dangerouslySetInnerHTML={{
+                            __html: DOMPurify.sanitize(email.body || email.snippet || ""),
+                        }}
+                        style={{ width: "100%", height: "100%", overflow: "auto", backgroundColor: "#fff", borderRadius: "12px" }}
+                    />
+                </Row>
 
-                <div
-                    dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(email.body || email.snippet || ""),
-                    }}
-                    style={{ maxWidth: "100%", overflow: "auto" }}
-                />
-
-                <Row gap="16">
-                    <Button variant="secondary" label="Reply" prefixIcon="reply" />
+                <Row gap="8" horizontal="end" borderTop="neutral-alpha-medium" paddingY="8" paddingX="16">
                     <Button variant="secondary" label="Forward" prefixIcon="arrowRight" />
+                    <Button label="Reply" prefixIcon="reply" />
                 </Row>
             </Column>
-        </Card>
+        </Column>
     );
 }
