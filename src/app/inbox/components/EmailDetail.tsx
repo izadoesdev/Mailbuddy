@@ -159,9 +159,18 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                                 {email.aiMetadata.priorityExplanation && (
                                     <Column gap="4">
                                         <Text variant="body-strong-s">Reasoning:</Text>
-                                        <Text variant="body-default-s">
-                                            {email.aiMetadata.priorityExplanation}
-                                        </Text>
+                                        <Text variant="body-default-s">{email.aiMetadata.priorityExplanation}</Text>
+                                    </Column>
+                                )}
+                                
+                                {email.aiMetadata.keywords && email.aiMetadata.keywords.length > 0 && (
+                                    <Column gap="4">
+                                        <Text variant="body-strong-s">Key Points:</Text>
+                                        <Row gap="4" wrap>
+                                            {email.aiMetadata.keywords.map((keyword: string) => (
+                                                <Chip key={`keyword-${keyword}`} label={keyword} />
+                                            ))}
+                                        </Row>
                                     </Column>
                                 )}
 
@@ -170,7 +179,7 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                                         <Column gap="4">
                                             <Text variant="body-strong-s">Key Points:</Text>
                                             <Row gap="4" wrap>
-                                                {email.aiMetadata.keywords.map((keyword) => (
+                                                {email.aiMetadata.keywords.map((keyword: string) => (
                                                     <Chip
                                                         key={`keyword-${keyword}`}
                                                         label={keyword}
@@ -189,13 +198,7 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                         dangerouslySetInnerHTML={{
                             __html: DOMPurify.sanitize(email.body || email.snippet || ""),
                         }}
-                        style={{
-                            width: "100%",
-                            height: "100%",
-                            overflow: "auto",
-                            backgroundColor: "#fff",
-                            borderRadius: "12px",
-                        }}
+                        style={{ width: "100%", height: "100%", overflow: "auto", borderRadius: "12px", background: "var(--neutral-alpha-weak)", padding: "var(--static-space-20)" }}
                     />
                 </Row>
 

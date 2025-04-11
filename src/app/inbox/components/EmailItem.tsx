@@ -7,9 +7,8 @@ import {
     Line,
     IconButton,
     Avatar,
-    Badge,
-    Card,
     Tag,
+    Icon,
 } from "@/once-ui/components";
 import type { Email } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
@@ -55,12 +54,12 @@ export function EmailItem({
                         <IconButton
                             variant="ghost"
                             size="s"
-                            icon={email.isStarred ? "starFill" : "star"}
                             onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
                                 onToggleStar(email, e)
                             }
-                            color={email.isStarred ? "warning" : "neutral"}
-                        />
+                        >
+                            <Icon size="s" onBackground={email.isStarred ? "warning-weak" : "neutral-medium"} name={email.isStarred ? "starFill" : "star"} />
+                        </IconButton>
                         <Avatar size="m" value={getInitials(senderName)} />
                     </Row>
 
