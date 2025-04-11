@@ -11,6 +11,7 @@ import {
     Button,
     Heading,
     Tag,
+    Icon,
 } from "@/once-ui/components";
 import type { Email } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
@@ -51,7 +52,7 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
 
     return (
         <Column fill radius="xl" border="neutral-alpha-medium" overflow="hidden">
-            <Column gap="24" fill>
+            <Column fill>
                 <Row
                     horizontal="space-between"
                     vertical="center"
@@ -78,8 +79,8 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                         onClick={onClose}
                     />
                 </Row>
-
-                <Row gap="16" vertical="center" paddingX="24">
+                <Column fill overflowY="auto" paddingY="12" gap="16">
+                <Row gap="16" vertical="center" paddingX="24" fillWidth fitHeight>
                     <Avatar size="l" value={getInitials(senderName)} />
                     <Column gap="4">
                         <Text variant="body-strong-m">{senderName}</Text>
@@ -111,96 +112,68 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
 
                 {/* AI Metadata Card */}
                 {email.aiMetadata && (
-                    <Column paddingX="24" gap="12">
-                        <Card fill padding="16" radius="l">
-                            <Column gap="12">
-                                <Row horizontal="space-between" vertical="center">
-                                    <Heading variant="heading-strong-s">
-                                        <Row gap="8" vertical="center">
-                                            <span>✨ AI Analysis</span>
-                                        </Row>
-                                    </Heading>
+                    <Column fillWidth paddingX="24" gap="12">
+                            <Column fillWidth radius="l" border="neutral-alpha-medium" background="neutral-alpha-weak" paddingBottom="16">
+                                <Row gap="8" paddingX="8" paddingY="8">
+                                    {email.aiMetadata.category && (
+                                        <Column width={8} border="neutral-alpha-medium" radius="m" paddingX="12" paddingY="8" gap="4" background={getPriorityColor(
+                                            email.aiMetadata.priority ?? undefined,
+                                        ) as any}>
+                                            <Text variant="label-default-s" onBackground="neutral-weak">Category</Text>
+                                            <Text variant="label-strong-s">{email.aiMetadata.category}</Text>
+                                        </Column>
+                                    )}
+
+                                    {email.aiMetadata.priority && (
+                                        <Column width={8} border="neutral-alpha-medium" radius="m" paddingX="12" paddingY="8" gap="4" background={getPriorityColor(
+                                            email.aiMetadata.priority,
+                                        ) as any}>
+                                            <Text variant="label-default-s" onBackground="neutral-weak">Priority</Text>
+                                            <Text variant="label-strong-s">{email.aiMetadata.priority}</Text>
+                                        </Column>
+                                    )}
                                 </Row>
 
-                                <Line />
+                                <Icon radius="full" padding="8" solid="brand-medium" position="absolute" right="16" top="16" onSolid="brand-strong" name="sparkles" size="xs" />
 
                                 {email.aiMetadata.summary && (
-                                    <Column gap="4">
-                                        <Text variant="body-strong-s">Summary:</Text>
+                                    <Column gap="4" paddingX="16" paddingTop="8">
+                                        <Text variant="label-default-s" onBackground="neutral-weak">Summary</Text>
                                         <Text variant="body-default-m">
                                             {email.aiMetadata.summary}
                                         </Text>
                                     </Column>
                                 )}
 
-                                <Row wrap gap="16">
-                                    {email.aiMetadata.category && (
-                                        <Column gap="4">
-                                            <Text variant="body-strong-s">Category:</Text>
-                                            <Tag label={email.aiMetadata.category} />
-                                        </Column>
-                                    )}
-
-                                    {email.aiMetadata.priority && (
-                                        <Column gap="4">
-                                            <Text variant="body-strong-s">Priority:</Text>
-                                            <Tag
-                                                label={email.aiMetadata.priority}
-                                                variant={
-                                                    getPriorityColor(
-                                                        email.aiMetadata.priority,
-                                                    ) as any
-                                                }
-                                            />
-                                        </Column>
-                                    )}
-                                </Row>
-
                                 {email.aiMetadata.priorityExplanation && (
-                                    <Column gap="4">
-                                        <Text variant="body-strong-s">Reasoning:</Text>
-                                        <Text variant="body-default-s">{email.aiMetadata.priorityExplanation}</Text>
-                                    </Column>
+                                    <Row gap="8" paddingX="16" paddingTop="16">
+                                        <Icon onBackground="neutral-weak" size="xs" name="infoCircle"/><Text onBackground="neutral-medium" variant="label-default-s">{email.aiMetadata.priorityExplanation}</Text>
+                                    </Row>
                                 )}
                                 
                                 {email.aiMetadata.keywords && email.aiMetadata.keywords.length > 0 && (
                                     <Column gap="4">
                                         <Text variant="body-strong-s">Key Points:</Text>
-                                        <Row gap="4" wrap>
+                                        <ul>
                                             {email.aiMetadata.keywords.map((keyword: string) => (
-                                                <Chip key={`keyword-${keyword}`} label={keyword} />
+                                                <li key={`keyword-${keyword}`}>{keyword}</li>
                                             ))}
-                                        </Row>
+                                        </ul>
                                     </Column>
                                 )}
-
-                                {email.aiMetadata.keywords &&
-                                    email.aiMetadata.keywords.length > 0 && (
-                                        <Column gap="4">
-                                            <Text variant="body-strong-s">Key Points:</Text>
-                                            <Row gap="4" wrap>
-                                                {email.aiMetadata.keywords.map((keyword: string) => (
-                                                    <Chip
-                                                        key={`keyword-${keyword}`}
-                                                        label={keyword}
-                                                    />
-                                                ))}
-                                            </Row>
-                                        </Column>
-                                    )}
                             </Column>
-                        </Card>
                     </Column>
                 )}
 
-                <Row fill paddingX="8">
+                <Row fillWidth fitHeight paddingX="8">
                     <div
                         dangerouslySetInnerHTML={{
                             __html: DOMPurify.sanitize(email.body || email.snippet || ""),
                         }}
-                        style={{ width: "100%", height: "100%", overflow: "auto", borderRadius: "12px", background: "var(--neutral-alpha-weak)", padding: "var(--static-space-20)" }}
+                        style={{ width: "100%", height: "100%", borderRadius: "12px", background: "var(--static-white)", padding: "var(--static-space-20)", color: "var(--static-black)" }}
                     />
                 </Row>
+                </Column>
 
                 <Row
                     gap="8"

@@ -1,7 +1,7 @@
 "use client";
 
-import type { Email } from "./types";
-import { Row, Column, useToast, Text } from "@/once-ui/components";
+import type { Email, GmailLabel } from "./types";
+import { Row, Column, useToast, Text, Button } from "@/once-ui/components";
 import { EmailList } from "./components/EmailList";
 import { EmailDetail } from "./components/EmailDetail";
 import { InboxControls } from "./components/InboxControls";
@@ -15,6 +15,22 @@ import { useAISearch } from "./hooks/useAISearch";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useUser } from "@/libs/auth/client";
 import { redirect, useRouter } from "next/navigation";
+
+type CategoryOption = {
+    value: string;
+    label: string;
+};
+
+const CATEGORY_OPTIONS: CategoryOption[] = [
+    { value: "inbox", label: "Inbox" },
+    { value: "important", label: "Important" },
+    { value: "starred", label: "Starred" },
+    { value: "sent", label: "Sent" },
+    { value: "social", label: "Social" },
+    { value: "promotions", label: "Promotions" },
+    { value: "updates", label: "Updates" },
+    { value: "forums", label: "Forums" }
+];
 
 export default function InboxPage() {
     // Authentication check
@@ -31,6 +47,7 @@ export default function InboxPage() {
     const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
+    const [currentCategory, setCurrentCategory] = useState<string>("inbox");
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const hasSyncedRef = useRef(false);
 
@@ -52,6 +69,7 @@ export default function InboxPage() {
         pageSize,
         threadView,
         searchQuery: debouncedSearchQuery,
+        category: currentCategory,
         enabled: isAuthenticated,
     });
 
@@ -142,6 +160,12 @@ export default function InboxPage() {
         triggerSync();
     }, [triggerSync]);
 
+    // Handle category change
+    const handleCategoryChange = useCallback((category: string) => {
+        setCurrentCategory(category);
+        setPage(1);
+    }, []);
+
     // Calculate width for main content
     const mainContentWidth = selectedEmail ? "50%" : "100%";
 
@@ -186,6 +210,18 @@ export default function InboxPage() {
                     isAISearchActive={isAISearchActive}
                     isAISearchLoading={isAISearchLoading}
                 />
+
+                <Row marginY="16" gap="8" wrap>
+                    {CATEGORY_OPTIONS.map((option) => (
+                        <Button
+                            key={option.value}
+                            variant={currentCategory === option.value ? "primary" : "secondary"}
+                            onClick={() => handleCategoryChange(option.value)}
+                        >
+                            {option.label}
+                        </Button>
+                    ))}
+                </Row>
 
                 <Column fill overflow="hidden">
                     <EmailList
