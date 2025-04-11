@@ -114,22 +114,20 @@ export async function GET(request: NextRequest) {
             skip,
             take: pageSize
         };
-        
-        // Add distinct option for thread view if needed
-        if (threadView) {
-            queryOptions.distinct = ['threadId'];
-        }
+
+        // Message filter - just filter by userId for messages since they don't have labels
+        const messageFilters = { userId };
 
         // Execute queries in parallel to improve performance
         const [emails, totalCount] = await Promise.all([
             prisma.email.findMany(queryOptions),
             threadView 
-                ? prisma.email.groupBy({ 
+                ? prisma.message.groupBy({ 
                     by: ['threadId'],
-                    where: baseFilters,
+                    where: messageFilters,
                     _count: true
                   })
-                : prisma.message.count({ where: baseFilters })
+                : prisma.message.count({ where: messageFilters })
         ]);
         
         log(`Retrieved ${emails.length} emails from database`);
