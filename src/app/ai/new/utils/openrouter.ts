@@ -364,7 +364,6 @@ Remember to ONLY return a valid JSON object. The summary MUST use 'you' and 'you
             temperature: 0.2,
             maxTokens: 800,
         });
-        console.log("OpenRouter response: ", result);
         // Try to extract JSON from the response
         try {
             // First check if response is wrapped in code blocks (```json ... ```)
@@ -415,7 +414,6 @@ Remember to ONLY return a valid JSON object. The summary MUST use 'you' and 'you
             }
         } catch (error) {
             console.error("Error parsing comprehensive email analysis JSON:", error);
-            console.error("Raw result:", result);
 
             // Try to extract JSON from code blocks before falling back to regex
             try {
