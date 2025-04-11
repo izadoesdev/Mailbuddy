@@ -4,6 +4,7 @@ import index from '../index';
 import { VECTOR_CONFIG } from '../constants';
 import { cleanEmail } from './clean';
 import type { Email } from '@/app/inbox/types';
+import { queryVector } from './vectors';
 
 // Define the search result type for better type safety
 export type SearchResult = {
@@ -56,47 +57,33 @@ export async function searchSimilarEmails(emailOrContent: Email | string, userId
         results: []
       };
     }
-    // Perform search with retry logic
-    let attempts = 0;
-    let success = false;
-    let lastError = null;
-    let results = null;
+
+    console.log(`Searching vectors for user ${userIdentifier} with namespace ${VECTOR_CONFIG.NAMESPACE_PREFIX}${userIdentifier}`);
+
+    // Use the existing queryVector function which already handles namespacing
+    const queryResults = await queryVector(content, userIdentifier, { 
+      topK, 
+      includeMetadata: true 
+    });
     
-    while (attempts < VECTOR_CONFIG.RETRY_ATTEMPTS && !success) {
-      try {
-        results = await index.index.query({
-          data: content,
-          topK,
-          includeMetadata: true,
-        });
-        success = true;
-      } catch (error) {
-        lastError = error;
-        attempts++;
-        if (attempts < VECTOR_CONFIG.RETRY_ATTEMPTS) {
-          // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, VECTOR_CONFIG.RETRY_DELAY_MS));
-        }
-      }
-    }
-    
-    if (!success) {
-      console.error("Error searching similar emails after retries:", lastError);
-      return { 
-        success: false, 
-        error: String(lastError),
+    if (!queryResults.success) {
+      return {
+        success: false,
+        error: queryResults.error || "Vector search failed",
         results: []
       };
     }
     
-    // Process and clean up the results 
-    const formattedResults: SearchResult[] = Array.isArray(results) 
-      ? results.map((match: any) => ({
+    // Process and clean up the results
+    const formattedResults: SearchResult[] = Array.isArray(queryResults.results) 
+      ? queryResults.results.map((match: any) => ({
           id: String(match.id || ''), 
           score: typeof match.score === 'number' ? match.score : 0,
           metadata: match.metadata || {}
         }))
       : [];
+    
+    console.log(`Search found ${formattedResults.length} results for user ${userIdentifier}`);
     
     return {
       success: true,
@@ -117,7 +104,16 @@ export async function searchSimilarEmails(emailOrContent: Email | string, userId
  */
 export async function searchEmailsByQuery(query: string, userId: string, options: { topK?: number } = {}): Promise<SearchResponse> {
   try {
-    // For text queries, just use the more general search function
+    // Validate userId (required for security)
+    if (!userId || typeof userId !== 'string') {
+      return {
+        success: false,
+        error: "Invalid user ID for security filtering",
+        results: []
+      };
+    }
+    
+    // For text queries, use the more general search function with explicit userId
     return searchSimilarEmails(query, userId, options);
   } catch (error) {
     console.error("Error in searchEmailsByQuery:", error);

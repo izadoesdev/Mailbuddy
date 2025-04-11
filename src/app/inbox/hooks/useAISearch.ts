@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { searchSimilarEmails } from '@/app/ai/new/utils/search';
 import type { Email, InboxResponse } from '../types';
+import { useUser } from '@/libs/auth/client';
 
 type SimilarEmailResult = {
   id: string;
@@ -32,16 +33,29 @@ function ensureDate(date: any): Date {
 export function useAISearch() {
   const [similarEmails, setSimilarEmails] = useState<Email[]>([]);
   const [isAISearchActive, setIsAISearchActive] = useState(false);
+  const { user } = useUser(); // Get the current user to access userId
 
   // Set up a mutation for handling the AI search
   const aiSearchMutation = useMutation({
     mutationFn: async (query: string) => {
-      // First get the semantic search results
-      const results = await searchSimilarEmails(query); // Use the new search utility
-      
-      if (!results || !Array.isArray(results)) {
-        throw new Error((results as any)?.error || 'Failed to perform AI search');
+      if (!user?.id) {
+        console.error("AI Search Error: User not authenticated");
+        throw new Error('User not authenticated');
       }
+      
+      console.log(`Performing AI search for user: ${user.id}`);
+      
+      // First get the semantic search results
+      // Pass user.id as the userId parameter for security filtering
+      const searchResponse = await searchSimilarEmails(query, user.id);
+      
+      if (!searchResponse || !searchResponse.success) {
+        console.error(`AI Search Error: ${searchResponse?.error || 'Unknown error'}`);
+        throw new Error(searchResponse?.error || 'Failed to perform AI search');
+      }
+      
+      const results = searchResponse.results || [];
+      console.log(`AI Search found ${results.length} similar emails`);
       
       // Extract the IDs of similar emails
       const emailIds = results.map(result => result.id);
@@ -113,6 +127,7 @@ export function useAISearch() {
           return processedEmail;
         });
       
+      console.log(`Successfully retrieved ${fullEmails.length} full emails for AI search results`);
       return { semanticResults: results, fullEmails };
     },
     onSuccess: (data) => {
@@ -147,7 +162,7 @@ export function useAISearch() {
               modelUsed: 'AI_SEARCH',
               tokensUsed: 0,
             },
-            userId: 'AI_SEARCH',
+            userId: user?.id || 'AI_SEARCH',
             to: 'AI_SEARCH',
             body: 'AI_SEARCH',  
             labels: ['AI_SEARCH'],
@@ -180,7 +195,11 @@ export function useAISearch() {
   
   // Function to perform the AI search
   const performAISearch = (query: string) => {
-    if (!query.trim()) return;
+    if (!query.trim() || !user?.id) {
+      console.error("Cannot perform AI search: empty query or no user ID");
+      return;
+    }
+    console.log(`Starting AI search with query: "${query}" for user: ${user.id}`);
     aiSearchMutation.mutate(query);
   };
   

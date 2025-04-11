@@ -512,27 +512,29 @@ async function processEmailsForVectorStorage(emails: any[]): Promise<void> {
             // Process emails in batch sequentially to avoid memory spikes
             for (const email of batch) {
                 try {
+                    log(`Enhancing email ${email.id} for user ${email.userId}`);
+                    
+                    // Dynamically import AI modules to avoid circular dependencies
+                    // and ensure we're using the latest version of the module
+                    const ai = await import('@/app/ai/new/ai');
+                    
                     // Use the enhanceEmail function which will:
                     // 1. Process with Groq to extract metadata
                     // 2. Store in vector database
                     // 3. Save metadata to database
-                    await import('@/app/ai/new/ai').then(ai => {
-                        return ai.enhanceEmail(email);
-                    }).catch(e => {
-                        log(`Error enhancing email ${email.id}:`, e);
-                        // Fallback to just storing in vector database if enhanceEmail fails
-                        return import('@/app/ai/new/ai').then(ai => {
-                            return ai.storeEmail(email);
-                        }).catch(vectorError => {
-                            log(`Error storing email in vector database: ${email.id}`, vectorError);
-                        });
-                    });
+                    const result = await ai.enhanceEmail(email);
+                    
+                    if (!result.success) {
+                        log(`Error enhancing email ${email.id}: ${result.error}`);
+                    } else {
+                        log(`Successfully enhanced email ${email.id} with AI metadata`);
+                    }
                     
                     // Add a small delay between emails to reduce CPU contention
                     await new Promise(resolve => setTimeout(resolve, 50));
                 } catch (error) {
                     log(`Error processing email ${email.id}:`, error);
-                    // Continue with other emails
+                    // Continue with other emails even if one fails
                 }
             }
             
