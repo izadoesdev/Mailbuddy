@@ -326,27 +326,27 @@ export async function processEmail(email: Email) {
         }
 
         // Create a comprehensive prompt that extracts all information at once
-        const prompt = `Analyze this email and provide the following information in JSON format.
+        const prompt = `Analyze this email that was sent to the user and provide the following information in JSON format.
     
 IMPORTANT: Your output MUST follow this exact JSON format with all fields properly quoted:
 {
   "category": "Choose from this list: ${AI_PROMPTS.CATEGORIZE}",
   "priority": "Choose one from this list: ${Object.values(PRIORITY_LEVELS).join(", ")}",
-  "priorityExplanation": "Briefly explain why you assigned this priority level",
-  "summary": "Provide a concise summary of this email in 1-2 sentences",
-  "actionItems": ["List action items as array of strings. If none, use empty array"],
-  "contactInfo": {"name": "John Doe", "email": "email if found", "phone": "phone if found"}
+  "priorityExplanation": "Briefly explain why you assigned this priority level from the user's perspective",
+  "summary": "Provide a concise summary directly addressing the reader as 'you'. Use second-person perspective, e.g., 'It encourages you to engage' not 'It encourages the user to engage'",
+  "actionItems": ["List specific actions the user needs to take. If none, use empty array"],
+  "contactInfo": {"name": "Sender's name", "email": "sender's email if found", "phone": "phone if found"}
 }
     
 EMAIL:
 ${emailText.substring(0, 3000)}
 
-Remember to ONLY return a valid JSON object.`;
+Remember to ONLY return a valid JSON object. The summary MUST use 'you' and 'your' to address the reader directly.`;
 
         // Use a more powerful model for comprehensive analysis
         const result = await callOpenRouter(prompt, {
-            // model: "google/gemini-flash-1.5-8b",
-            model: "qwen/qwen2.5-vl-72b-instruct:free",
+            model: "google/gemini-flash-1.5-8b",
+            // model: "qwen/qwen2.5-vl-72b-instruct:free",
             temperature: 0.2,
             maxTokens: 800,
         });
@@ -456,10 +456,11 @@ async function getPriorityWithExplanation(
             };
         }
 
-        const prompt = `Based on the content, urgency, and importance of this email, assign a priority level from these options: 
+        const prompt = `Based on the content, urgency, and importance of this email to the user receiving it, assign a priority level from these options: 
     ${Object.values(PRIORITY_LEVELS).join(", ")}. 
     
-    First provide the priority level, then explain why you assigned this priority in a separate paragraph.
+    Consider how important and time-sensitive it is for the user to respond or take action on this email.
+    First provide the priority level, then explain why you assigned this priority from the user's perspective in a separate paragraph.
     
     EMAIL:
     ${emailText.substring(0, 3000)}`;

@@ -100,6 +100,16 @@ export async function enhanceEmail(email: any) {
         // Process the email with OpenRouter to extract all AI metadata at once
         const aiData = await processEmailOpenRouter(email);
 
+        // Check if we got valid AI data - don't proceed if invalid
+        if (!aiData || !aiData.summary || aiData.summary === "Error processing email") {
+            console.error(`Failed to generate valid AI metadata for email ${email.id}`);
+            return { 
+                success: false, 
+                error: "Failed to generate valid AI metadata",
+                data: null 
+            };
+        }
+
         // Store the email in the vector database for future searches
         await storeEmail(email);
 

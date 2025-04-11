@@ -108,22 +108,26 @@ export const VECTOR_CONFIG = {
  * AI processing prompts
  */
 export const AI_PROMPTS = {
-    CATEGORIZE: `Analyze this email and determine the most appropriate category from this list: ${EMAIL_CATEGORIES.join(", ")}. 
+    CATEGORIZE: `Analyze this email that was sent to the user and determine the most appropriate category from this list: ${EMAIL_CATEGORIES.join(", ")}. 
                Respond with only the category name.`,
 
-    PRIORITIZE: `Based on the content, urgency, and importance of this email, assign a priority level from these options: 
+    PRIORITIZE: `Based on the content, urgency, and importance of this email to the user receiving it, assign a priority level from these options: 
                ${Object.values(PRIORITY_LEVELS).join(", ")}. 
+               Consider how important and time-sensitive it is for the user to respond or take action.
                Respond with only the priority level.`,
 
     SUMMARIZE: `Provide a concise summary of this email in 1-2 sentences highlighting key information, 
-              requests, or action items. Keep it under 200 characters.`,
+              requests, or action items directly to you as the reader. Use second-person perspective (using "you" and "your") 
+              to address the reader directly. For example, say "It encourages you to engage" instead of "It encourages the user to engage".
+              Keep it under 200 characters.`,
 
-    EXTRACT_ACTION_ITEMS: `Extract specific action items or tasks requested in this email. 
+    EXTRACT_ACTION_ITEMS: `Extract specific action items or tasks requested of the user in this email. 
+                         Focus only on what the user needs to do.
                          Format as a list with deadlines if mentioned. 
-                         If no action items are present, respond with "No action items".`,
+                         If no action items are present for the user, respond with "No action items".`,
 
     EXTRACT_CONTACT_INFO: `Extract any contact information present in this email including names, 
-                         email addresses, phone numbers, and addresses. 
+                         email addresses, phone numbers, and addresses of the sender or other contacts mentioned. 
                          Format as structured data. If none found, respond with "No contact information".`,
 };
 

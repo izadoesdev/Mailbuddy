@@ -477,7 +477,8 @@ async function processEmailsForVectorStorage(emails: any[]): Promise<void> {
                     const result = await ai.enhanceEmail(email);
 
                     if (!result.success) {
-                        log(`Error enhancing email ${email.id}: ${result.error}`);
+                        log(`Failed to enhance email ${email.id}, skipping storage: ${result.error}`);
+                        // Skip storing if processing failed
                     } else {
                         log(`Successfully enhanced email ${email.id} with AI metadata`);
                     }
@@ -485,8 +486,8 @@ async function processEmailsForVectorStorage(emails: any[]): Promise<void> {
                     // Add a small delay between emails to reduce CPU contention
                     await new Promise((resolve) => setTimeout(resolve, 50));
                 } catch (error) {
-                    log(`Error processing email ${email.id}:`, error);
-                    // Continue with other emails even if one fails
+                    log(`Error processing email ${email.id}, skipping storage:`, error);
+                    // Continue with other emails even if one fails, but don't store failed results
                 }
             }
 
@@ -550,6 +551,9 @@ function processEmails(existingEmails: any[], fetchedEmails: any[], threadView: 
     if (allEmails.length === 0) {
         return [];
     }
+    
+    // Queue emails without AI metadata for background processing
+    queueMissingAIMetadata(allEmails);
 
     // Filter out emails with certain labels that shouldn't appear in the main inbox
     const filteredEmails = allEmails.filter(email => {
@@ -589,6 +593,73 @@ function processEmails(existingEmails: any[], fetchedEmails: any[], threadView: 
     return filteredEmails.sort(
         (a, b) => new Date(b.internalDate).getTime() - new Date(a.internalDate).getTime(),
     );
+}
+
+/**
+ * Queue emails without AI metadata for background processing
+ */
+async function queueMissingAIMetadata(emails: any[]): Promise<void> {
+    try {
+        // Filter emails that need AI processing
+        const emailsNeedingMetadata = emails.filter(email => 
+            !email.aiMetadata || 
+            !email.aiMetadata.summary || 
+            !email.aiMetadata.category
+        );
+
+        if (emailsNeedingMetadata.length === 0) {
+            return;
+        }
+
+        log(`Queueing ${emailsNeedingMetadata.length} emails for AI metadata generation`);
+
+        // Process in background to avoid blocking the API response
+        setTimeout(async () => {
+            try {
+                // Process emails in batches to avoid overwhelming the system
+                const BATCH_SIZE = 5;
+                
+                for (let i = 0; i < emailsNeedingMetadata.length; i += BATCH_SIZE) {
+                    const batch = emailsNeedingMetadata.slice(i, i + BATCH_SIZE);
+                    
+                    // Process each email in the batch
+                    for (const email of batch) {
+                        try {
+                            log(`Processing AI metadata for email ${email.id}`);
+                            
+                            // Dynamically import AI modules to avoid circular dependencies
+                            const ai = await import("@/app/ai/new/ai");
+                            
+                            // Use the enhanceEmail function to process the email
+                            const result = await ai.enhanceEmail(email);
+                            
+                            if (result.success) {
+                                log(`Successfully generated AI metadata for email ${email.id}`);
+                            } else {
+                                // If processing failed, don't save the failed result
+                                log(`Failed to generate AI metadata for email ${email.id}, result discarded: ${result.error}`);
+                            }
+                            
+                            // Add a small delay between emails
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        } catch (error) {
+                            log(`Error processing AI metadata for email ${email.id}, result discarded:`, error);
+                            // Continue with next email without storing the failed result
+                        }
+                    }
+                    
+                    // Add a delay between batches
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                log(`Completed background AI metadata processing for ${emailsNeedingMetadata.length} emails`);
+            } catch (error) {
+                log("Error in background AI metadata processing:", error);
+            }
+        }, 100);
+    } catch (error) {
+        log("Error queueing emails for AI metadata:", error);
+    }
 }
 
 /**
