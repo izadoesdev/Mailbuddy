@@ -32,10 +32,8 @@ ol {
 li {
     list-style-position: inside;
     padding: 0;
-    line-height: 175%;
     font-size: inherit;
     color: inherit;
-    margin-bottom: var(--static-space-12);
 
     &::marker {
         color: var(--brand-on-background-weak);

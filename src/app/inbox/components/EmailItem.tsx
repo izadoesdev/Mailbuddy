@@ -6,12 +6,11 @@ import {
     Chip,
     Line,
     IconButton,
-    Avatar,
     Tag,
     Icon,
 } from "@/once-ui/components";
 import type { Email } from "../types";
-import { extractName, getInitials, formatDate } from "../utils";
+import { extractName, formatDate } from "../utils";
 
 interface EmailItemProps {
     email: Email;
@@ -76,27 +75,28 @@ export function EmailItem({
                     </Row>
 
                     <Column gap="4" fill>
-                        <Row fillWidth horizontal="space-between">
-                            <Text variant="label-default-s" onBackground="neutral-weak">
+                        <Row fillWidth horizontal="space-between" gap="24">
+                            <Row vertical="center" gap="8" fillWidth>
+                                <Text
+                                    variant={email.isRead ? "body-default-m" : "body-strong-m"}
+                                    style={{
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
+                                    {email.subject}
+                                </Text>
+                                {email.aiMetadata && (
+                                    <Icon onBackground="brand-medium" name="sparkles" size="xs" />
+                                )}
+                            </Row>
+                            <Text variant="label-default-s" onBackground="neutral-weak" wrap="nowrap">
                                 {formatDate(email.createdAt)}
                             </Text>
                         </Row>
 
-                        <Text
-                            variant={email.isRead ? "body-default-m" : "body-strong-m"}
-                            style={{
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                            }}
-                        >
-                            {email.subject}
-                            {email.aiMetadata && (
-                                <span style={{ marginLeft: "8px", color: "#0070f3" }}>✨</span>
-                            )}
-                        </Text>
-
-                        <Row fillWidth horizontal="space-between">
+                        <Row fillWidth horizontal="space-between" gap="40">
                             <Text
                                 variant="body-default-s"
                                 onBackground="neutral-weak"
@@ -104,7 +104,6 @@ export function EmailItem({
                                     overflow: "hidden",
                                     textOverflow: "ellipsis",
                                     whiteSpace: "nowrap",
-                                    maxWidth: "70%",
                                 }}
                             >
                                 {(email as any).aiScore ? (
@@ -116,12 +115,17 @@ export function EmailItem({
                                     email.snippet
                                 )}
                             </Text>
-
+                            
                             {email.labels?.length > 0 &&
                                 email.labels.some(
                                     (l: string) => !["IMPORTANT", "UNREAD", "INBOX"].includes(l),
                                 ) && (
                                     <Row gap="4">
+                                        <Row gap="8" vertical="center">
+                                            {email.labels?.includes("IMPORTANT") && (
+                                                <Tag variant="neutral" label="Important" />
+                                            )}
+                                        </Row>
                                         {email.labels
                                             .filter(
                                                 (label: string) =>
