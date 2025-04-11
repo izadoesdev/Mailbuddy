@@ -51,6 +51,7 @@ function setUserFetchStatus(userId: string, isActive: boolean): void {
 async function withGmailApi<T>(
     userId: string,
     initialAccessToken: string | null,
+    refreshToken: string | null,
     apiCall: (gmail: any) => Promise<T>,
     retryCount = 0,
 ): Promise<T | null> {
@@ -71,7 +72,7 @@ async function withGmailApi<T>(
     try {
         // Set up Gmail API client
         const oauth2Client = new google.auth.OAuth2();
-        oauth2Client.setCredentials({ access_token: accessToken });
+        oauth2Client.setCredentials({ access_token: accessToken, refresh_token: refreshToken });
         const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
         // Execute the API call
@@ -84,7 +85,7 @@ async function withGmailApi<T>(
 
             if (newToken) {
                 log("Token refreshed successfully, retrying API call...");
-                return withGmailApi(userId, newToken, apiCall, retryCount + 1);
+                return withGmailApi(userId, newToken, refreshToken, apiCall, retryCount + 1);
             }
 
             log(`Failed to refresh token for user ${userId} after 401 error`);
@@ -157,7 +158,8 @@ export async function GET(request: NextRequest) {
             missingMessageIds,
             userId,
             session.user.accessToken ?? null,
-            0, // Initial retry count
+            session.user.refreshToken ?? null,
+            0,
             userId, // Pass the account user ID for token refresh
         );
         log(`Successfully fetched ${fetchedEmails.length} emails from Gmail API`);
@@ -348,6 +350,7 @@ async function fetchMissingEmails(
     missingIds: string[],
     userId: string,
     accessToken: string | null,
+    refreshToken: string | null,
     retryCount = 0,
     accountUserId = userId, // Default to userId if not provided
 ): Promise<any[]> {
@@ -395,6 +398,7 @@ async function fetchMissingEmails(
                     const fullMessage = await withGmailApi(
                         accountUserId,
                         accessToken,
+                        refreshToken,
                         async (gmail) => {
                             return gmail.users.messages.get({
                                 userId: GMAIL_USER_ID,
