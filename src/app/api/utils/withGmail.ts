@@ -1,6 +1,6 @@
 import { prisma } from "@/libs/db";
 import env from "@/libs/env";
-import { google } from "googleapis";
+import { type gmail_v1, google } from "googleapis";
 import { GaxiosResponse, OAuth2Client } from "googleapis-common";
 
 const log = (message: string, ...args: any[]) => {
@@ -83,7 +83,7 @@ export async function withGmailApi<T>(
     userId: string,
     initialAccessToken: string | null,
     refreshToken: string | null,
-    apiCall: (gmail: any) => Promise<T>,
+    apiCall: (gmail: gmail_v1.Gmail) => Promise<T>,
     retryCount = 0,
 ): Promise<T | null> {
     const MAX_RETRY_ATTEMPTS = 1;

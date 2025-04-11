@@ -11,6 +11,7 @@ import {
 import { extractContentFromParts } from "@/libs/utils/email-content";
 import { withGmailApi } from "../utils/withGmail";
 import { enhanceEmail} from "@/app/ai/new/ai";
+import { cacheable } from "../utils/cacheable";
 
 
 const GMAIL_USER_ID = "me";
@@ -18,23 +19,10 @@ const PAGE_SIZE = 20;
 const FETCH_BATCH_SIZE = 20;
 
 /**
- * GET handler for inbox API
+ * Fetch emails from database with caching
  */
-export async function GET(request: NextRequest) {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = session.user.id;
-
-    try {
-        const { searchParams } = new URL(request.url);
-        const page = Number.parseInt(searchParams.get("page") || "1", 10);
-        const pageSize = Number.parseInt(searchParams.get("pageSize") || PAGE_SIZE.toString(), 10);
-        const category = searchParams.get("category") || null;
-        const skip = (page - 1) * pageSize;
-
+const fetchEmailsFromDb = cacheable(
+    async (userId: string, page: number, pageSize: number, category: string | null, skip: number) => {
         const baseFilters: any = { userId };
         
         if (category) {
@@ -86,22 +74,81 @@ export async function GET(request: NextRequest) {
                 _count: true
             })
         ]);
+
+        return { emails, totalCount };
+    },
+    { 
+        expireInSec: 300, // 5 minutes cache
+        prefix: 'user_emails',
+        staleWhileRevalidate: true,
+        staleTime: 60 // 1 minute before revalidation starts in background
+    }
+);
+
+/**
+ * Get email count with caching
+ */
+const getEmailCount = cacheable(
+    async (userId: string) => {
+        const messageFilters = { userId };
+        return prisma.message.groupBy({ 
+            by: ['threadId'],
+            where: messageFilters,
+            _count: true
+        });
+    },
+    { 
+        expireInSec: 600, // 10 minutes
+        prefix: 'user_email_count',
+        staleWhileRevalidate: true,
+        staleTime: 120 // 2 minutes before revalidation
+    }
+);
+
+/**
+ * Check for missing emails with caching
+ */
+const checkMissingEmailsCached = cacheable(
+    checkForMissingEmails,
+    {
+        expireInSec: 300, // 5 minutes
+        prefix: 'missing_emails',
+        staleWhileRevalidate: true,
+        staleTime: 60
+    }
+);
+
+/**
+ * GET handler for inbox API
+ */
+export async function GET(request: NextRequest) {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+
+    try {
+        const { searchParams } = new URL(request.url);
+        const page = Number.parseInt(searchParams.get("page") || "1", 10);
+        const pageSize = Number.parseInt(searchParams.get("pageSize") || PAGE_SIZE.toString(), 10);
+        const category = searchParams.get("category") || null;
+        const skip = (page - 1) * pageSize;
+
+        // Use cached DB fetch
+        const { emails, totalCount } = await fetchEmailsFromDb(userId, page, pageSize, category, skip);
         
         if (emails.length === 0 && page > 1) {
             await prisma.email.findMany({
-                where: baseFilters,
+                where: { userId },
                 select: { id: true },
                 take: 5
             });
-            
-            await prisma.email.findMany({
-                where: baseFilters,
-                select: { id: true },
-                take: pageSize
-            });
         }
 
-        const missingEmails = await checkForMissingEmails(
+        // Use cached check for missing emails
+        const missingEmails = await checkMissingEmailsCached(
             userId,
             page,
             pageSize,
@@ -119,9 +166,11 @@ export async function GET(request: NextRequest) {
             );
             
             if (fetchedEmails.length > 0) {
-                const updatedQueryOptions = { ...queryOptions };
-                updatedQueryOptions.skip = skip;
-                const updatedEmails = await prisma.email.findMany(updatedQueryOptions);
+                // Invalidate the cache for this user's data
+                fetchEmailsFromDb.invalidate(userId, page, pageSize, category, skip);
+                
+                // Re-fetch emails after cache invalidation
+                const { emails: updatedEmails } = await fetchEmailsFromDb(userId, page, pageSize, category, skip);
                 emails.splice(0, emails.length, ...updatedEmails);
             }
         }
@@ -154,7 +203,7 @@ export async function GET(request: NextRequest) {
                 }
             );
             
-            if (latestMessages.length > 0) {
+            if (latestMessages && latestMessages.length > 0) {
                 const fetchedEmails = await fetchMissingEmails(
                     latestMessages.map((m: any) => m.id),
                     userId,
@@ -164,21 +213,17 @@ export async function GET(request: NextRequest) {
                 );
                 
                 if (fetchedEmails.length > 0) {
-                    const updatedEmails = await prisma.email.findMany({
-                        where: baseFilters,
-                        ...queryOptions.select && { select: queryOptions.select },
-                        orderBy: { internalDate: 'desc' as const },
-                        skip: skip,
-                        take: pageSize
-                    });
+                    // Invalidate the cache for this user's data
+                    fetchEmailsFromDb.invalidate(userId, page, pageSize, category, skip);
                     
-                    if (updatedEmails.length > 0) {
-                        emails.splice(0, emails.length, ...updatedEmails);
-                    }
+                    // Re-fetch emails after cache invalidation
+                    const { emails: updatedEmails } = await fetchEmailsFromDb(userId, page, pageSize, category, skip);
+                    emails.splice(0, emails.length, ...updatedEmails);
                 }
             }
         }
 
+        // Decrypt and process the emails
         const decryptedEmails = emails.map(email => {
             const decryptedEmail = { ...email };
             
