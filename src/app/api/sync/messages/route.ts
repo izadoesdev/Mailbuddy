@@ -2,8 +2,8 @@ import { google } from "googleapis";
 import { auth } from "@/libs/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/libs/db";
+import type { gmail_v1 } from "googleapis";
 import env from "@/libs/env";
-import { withGmailApi } from "../../utils/withGmail";
 
 // Constants
 const DEFAULT_BATCH_SIZE = 500;
@@ -36,7 +36,7 @@ interface MessageData {
     id: string;
     threadId: string;
     userId: string;
-    internalDate?: string;
+    createdAt: string;
 }
 
 interface TransactionResult {
@@ -323,7 +323,7 @@ async function refreshAccessToken(userId: string): Promise<string | null> {
  */
 function createSyncStream(
     userId: string,
-    gmail: any,
+    gmail: gmail_v1.Gmail,
     batchSize: number,
     abortSignal: AbortSignal,
 ): ReadableStream {
@@ -350,11 +350,29 @@ function createSyncStream(
                 let batchNumber = 1;
                 let retryCount = 0;
                 const MAX_RETRIES = 3;
+                
+                // Arrays to collect all messages before processing
+                let allMessages: Array<{
+                    id: string;
+                    threadId: string;
+                    internalDate?: string;
+                }> = [];
+                let allBatchesComplete = false;
 
                 log(`Starting message sync with batch size ${batchSize}`);
 
                 // Send initial state
-                sendMessage(controller, MESSAGE_TYPES.INIT, "Starting message sync");
+                sendMessage(controller, MESSAGE_TYPES.INIT, "Starting message sync (newest first)");
+
+                // First phase: Collect all messages from Gmail API
+                sendMessage(
+                    controller,
+                    MESSAGE_TYPES.BATCH_START,
+                    "Starting to collect all messages",
+                    {
+                        phase: "collection",
+                    },
+                );
 
                 do {
                     // Check if we've been aborted
@@ -363,22 +381,13 @@ function createSyncStream(
                         return;
                     }
 
-                    // Send batch start notification
-                    sendMessage(
-                        controller,
-                        MESSAGE_TYPES.BATCH_START,
-                        `Starting batch ${batchNumber}`,
-                        {
-                            batchNumber,
-                        },
-                    );
-
                     try {
                         // Query Gmail API for messages
                         const response = await gmailClient.users.messages.list({
                             userId: GMAIL_USER_ID,
                             maxResults: batchSize,
                             pageToken: pageToken || undefined,
+                            fields: "messages(id,threadId),nextPageToken,resultSizeEstimate",
                         });
 
                         // Reset retry count on successful request
@@ -409,74 +418,31 @@ function createSyncStream(
                             );
                         }
 
-                        // Process messages in batch
+                        // Add this batch to our collection
                         if (messages.length > 0) {
-                            // Group messages by chunk size for bulk insert
-                            const messageChunks: Array<Array<{ id: string; threadId: string }>> =
-                                [];
-                            for (let i = 0; i < messages.length; i += CHUNK_SIZE) {
-                                messageChunks.push(messages.slice(i, i + CHUNK_SIZE));
-                            }
-
-                            // Process each chunk
-                            for (const chunk of messageChunks) {
-                                // Check for abort between chunks
-                                if (abortSignal.aborted) {
-                                    log("Aborting chunks processing due to cancel request");
-                                    return;
-                                }
-
-                                // Process this batch of messages
-                                const result = await processMessageChunk(chunk, userId);
-
-                                // Update counts
-                                processedMessages += chunk.length;
-                                newMessageCount += result.created;
-
-                                // Calculate progress
-                                const progress = calculateProgress(
-                                    processedMessages,
-                                    totalMessages,
-                                );
-
-                                // Send progress update
-                                sendMessage(
-                                    controller,
-                                    MESSAGE_TYPES.PROGRESS,
-                                    `Processed ${processedMessages} messages, ${newMessageCount} new`,
-                                    {
-                                        processedMessages,
-                                        totalMessages: Math.max(totalMessages, processedMessages),
-                                        newMessageCount,
-                                        progress,
-                                    },
-                                );
-
-                                // Send save result
-                                sendMessage(
-                                    controller,
-                                    MESSAGE_TYPES.SAVE_RESULT,
-                                    `Saved ${result.created} new messages, ${result.existing} existing`,
-                                    {
-                                        createdCount: result.created,
-                                        existingCount: result.existing,
-                                    },
-                                );
-                            }
+                            allMessages = [...allMessages, ...messages];
+                            
+                            // Send progress update for collection phase
+                            sendMessage(
+                                controller,
+                                MESSAGE_TYPES.PROGRESS,
+                                `Collected ${allMessages.length} messages so far`,
+                                {
+                                    collectedMessages: allMessages.length,
+                                    totalMessages: Math.max(totalMessages, allMessages.length),
+                                    progress: calculateProgress(
+                                        allMessages.length,
+                                        totalMessages,
+                                    ),
+                                    phase: "collection",
+                                },
+                            );
                         }
 
                         // Get next page token for pagination
                         pageToken = nextPageToken || null;
                         count++;
-                        batchNumber++;
-
-                        // Send batch complete notification
-                        sendMessage(
-                            controller,
-                            MESSAGE_TYPES.BATCH_COMPLETE,
-                            `Completed batch ${batchNumber - 1}`,
-                            { batchNumber: batchNumber - 1 },
-                        );
+                        
                     } catch (error) {
                         // Check if we've been aborted
                         if (abortSignal.aborted) {
@@ -517,10 +483,9 @@ function createSyncStream(
                                 sendMessage(
                                     controller,
                                     MESSAGE_TYPES.RESUME,
-                                    `Refreshed access token, retrying batch ${batchNumber}`,
+                                    "Refreshed access token, retrying collection",
                                 );
 
-                                // Don't increment batchNumber, we'll retry the same batch
                                 // Add a short delay before retrying to avoid rate limiting
                                 await new Promise((resolve) => setTimeout(resolve, 1000));
                             } else {
@@ -542,21 +507,130 @@ function createSyncStream(
                         }
                     }
                 } while (pageToken);
+                
+                // All batches have been collected
+                allBatchesComplete = true;
+                log(`Collected all ${allMessages.length} messages, now processing in reverse order`);
+                
+                // Reverse the messages so newest come first
+                allMessages = allMessages.reverse();
+                
+                sendMessage(
+                    controller,
+                    MESSAGE_TYPES.BATCH_COMPLETE,
+                    `Completed collection phase. Found ${allMessages.length} messages.`,
+                    { 
+                        collectedMessages: allMessages.length,
+                        phase: "collection" 
+                    },
+                );
+                
+                // Second phase: Process messages in chunks (newest first)
+                sendMessage(
+                    controller,
+                    MESSAGE_TYPES.BATCH_START,
+                    "Starting to process messages (newest first)",
+                    {
+                        phase: "processing",
+                    },
+                );
+
+                // Group messages by chunk size for bulk insert
+                const messageChunks: Array<Array<{ id: string; threadId: string }>> = [];
+                for (let i = 0; i < allMessages.length; i += CHUNK_SIZE) {
+                    messageChunks.push(allMessages.slice(i, i + CHUNK_SIZE));
+                }
+
+                // Process each chunk
+                for (let i = 0; i < messageChunks.length; i++) {
+                    const chunk = messageChunks[i];
+                    batchNumber = i + 1;
+                    
+                    // Check for abort between chunks
+                    if (abortSignal.aborted) {
+                        log("Aborting chunks processing due to cancel request");
+                        return;
+                    }
+                    
+                    // Send batch start notification
+                    sendMessage(
+                        controller,
+                        MESSAGE_TYPES.BATCH_START,
+                        `Processing batch ${batchNumber} of ${messageChunks.length}`,
+                        {
+                            batchNumber,
+                            totalBatches: messageChunks.length,
+                            phase: "processing",
+                        },
+                    );
+
+                    // Process this batch of messages
+                    const result = await processMessageChunk(chunk, userId);
+
+                    // Update counts
+                    processedMessages += chunk.length;
+                    newMessageCount += result.created;
+
+                    // Calculate progress
+                    const progress = calculateProgress(
+                        processedMessages,
+                        allMessages.length,
+                    );
+
+                    // Send progress update
+                    sendMessage(
+                        controller,
+                        MESSAGE_TYPES.PROGRESS,
+                        `Processed ${processedMessages} messages, ${newMessageCount} new`,
+                        {
+                            processedMessages,
+                            totalMessages: allMessages.length,
+                            newMessageCount,
+                            progress,
+                            phase: "processing",
+                        },
+                    );
+
+                    // Send save result
+                    sendMessage(
+                        controller,
+                        MESSAGE_TYPES.SAVE_RESULT,
+                        `Saved ${result.created} new messages, ${result.existing} existing`,
+                        {
+                            createdCount: result.created,
+                            existingCount: result.existing,
+                            batchNumber,
+                            totalBatches: messageChunks.length,
+                        },
+                    );
+                    
+                    // Send batch complete notification
+                    sendMessage(
+                        controller,
+                        MESSAGE_TYPES.BATCH_COMPLETE,
+                        `Completed batch ${batchNumber} of ${messageChunks.length}`,
+                        { 
+                            batchNumber,
+                            totalBatches: messageChunks.length,
+                            phase: "processing" 
+                        },
+                    );
+                }
 
                 // Send completion message
                 sendMessage(
                     controller,
                     MESSAGE_TYPES.COMPLETE,
-                    `Sync completed. Processed ${processedMessages} messages, found ${newMessageCount} new messages.`,
+                    `Sync completed. Processed ${processedMessages} messages in reverse order (newest first), found ${newMessageCount} new messages.`,
                     {
                         processedMessages,
-                        totalMessages,
+                        totalMessages: allMessages.length,
                         newMessageCount,
                     },
                 );
 
                 log(
-                    `Message sync completed, processed ${processedMessages} messages, ${newMessageCount} new`,
+                    `Message sync completed, processed ${processedMessages} messages in reverse order, ${newMessageCount} new`,
                 );
                 controller.close();
             } catch (error) {
@@ -585,103 +659,43 @@ function createSyncStream(
  * Process a chunk of messages and save to database
  */
 async function processMessageChunk(
-    chunk: Array<{ id: string; threadId: string }>,
+    chunk: Array<{ id: string; threadId: string; internalDate?: string }>,
     userId: string,
 ): Promise<TransactionResult> {
-    try {
-        // Find account for API access
-        const account = await prisma.account.findFirst({
+    // Create message data for upserting
+    const messageDataToUpsert: MessageData[] = chunk.map((msg) => ({
+        id: msg.id,
+        threadId: msg.threadId,
+        userId,
+        createdAt: msg.internalDate || new Date().toISOString(),
+    }));
+
+    // Perform database transaction
+    return await prisma.$transaction<TransactionResult>(async (tx: any) => {
+        // Find existing messages
+        const existingMessages = await tx.message.findMany({
             where: {
-                userId,
-                providerId: PROVIDER_ID,
-            },
-            select: {
-                accessToken: true,
-                refreshToken: true,
-            },
-        });
-        
-        if (!account?.accessToken) {
-            log(`No valid access token for user ${userId}`);
-            throw new Error("No valid access token");
-        }
-        
-        // Get additional metadata for messages in parallel
-        const messagePromises = chunk.map(msg => 
-            withGmailApi(
-                userId,
-                account.accessToken,
-                account.refreshToken,
-                async (gmail) => {
-                    try {
-                        const response = await gmail.users.messages.get({
-                            userId: GMAIL_USER_ID,
-                            id: msg.id,
-                            format: "minimal",
-                        });
-                        
-                        return {
-                            id: msg.id,
-                            threadId: msg.threadId,
-                            internalDate: response.data.internalDate,
-                        };
-                    } catch (error) {
-                        log(`Error fetching metadata for message ${msg.id}:`, error);
-                        return {
-                            id: msg.id,
-                            threadId: msg.threadId,
-                        };
-                    }
-                }
-            )
-        );
-        
-        const messageDetails = await Promise.all(messagePromises);
-        
-        // Create message data for upserting, filtering out nulls from failed API calls
-        const messageDataToUpsert: MessageData[] = messageDetails
-            .filter(Boolean)
-            .map((msg: any) => ({
-                id: msg.id,
-                threadId: msg.threadId,
-                userId,
-                internalDate: msg.internalDate,
-            }));
-
-        if (messageDataToUpsert.length === 0) {
-            return { created: 0, existing: chunk.length };
-        }
-
-        // Perform database transaction
-        return await prisma.$transaction<TransactionResult>(async (tx: any) => {
-            // Find existing messages
-            const existingMessages = await tx.message.findMany({
-                where: {
-                    id: {
-                        in: messageDataToUpsert.map((m) => m.id),
-                    },
+                id: {
+                    in: messageDataToUpsert.map((m) => m.id),
                 },
-                select: { id: true },
-            });
-
-            const existingIds = new Set(existingMessages.map((m: { id: string }) => m.id));
-            const newMessages = messageDataToUpsert.filter((m) => !existingIds.has(m.id));
-
-            // Create new messages
-            if (newMessages.length > 0) {
-                await tx.message.createMany({
-                    data: newMessages,
-                    skipDuplicates: true,
-                });
-            }
-
-            return {
-                created: newMessages.length,
-                existing: existingIds.size,
-            };
+            },
+            select: { id: true },
         });
-    } catch (error) {
-        log(`Error in processMessageChunk:`, error);
-        return { created: 0, existing: chunk.length };
-    }
+
+        const existingIds = new Set(existingMessages.map((m: { id: string }) => m.id));
+        const newMessages = messageDataToUpsert.filter((m) => !existingIds.has(m.id));
+
+        // Create new messages
+        if (newMessages.length > 0) {
+            await tx.message.createMany({
+                data: newMessages,
+                skipDuplicates: true,
+            });
+        }
+
+        return {
+            created: newMessages.length,
+            existing: existingIds.size,
+        };
+    });
 }

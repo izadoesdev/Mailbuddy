@@ -179,7 +179,7 @@ async function getMessageIds(
                     // First try to sort by internalDate (Gmail's timestamp) if available
                     { internalDate: "desc" },
                     // Otherwise fall back to our database timestamp
-                    { createdAt: "asc" },
+                    { createdAt: "desc" },
                 ],
                 // Apply pagination at the database level
                 skip,
@@ -205,7 +205,7 @@ async function getMessageIds(
                     createdAt: true,
                 },
                 distinct: ["threadId"],
-                orderBy: { createdAt: "asc" },
+                orderBy: { createdAt: "desc" },
                 // Apply pagination at the database level
                 skip,
                 take: pageSize,
@@ -231,7 +231,7 @@ async function getMessageIds(
             const messages = await prisma.message.findMany({
                 where: { userId },
                 select: { id: true },
-                orderBy: { createdAt: "asc" },
+                orderBy: { createdAt: "desc" },
                 skip,
                 take: pageSize,
             });
