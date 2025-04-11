@@ -11,8 +11,7 @@ import {
 import { google } from "googleapis";
 import { extractContentFromParts } from "@/libs/utils/email-content";
 import env from "@/libs/env";
-// import { storeEmail } from "@/app/ai/new/ai";
-import { enhanceEmail } from "@/app/ai/new/ai";
+import { withGmailApi } from "../utils/withGmail";
 
 // For API requests
 const GMAIL_USER_ID = "me";
@@ -24,7 +23,7 @@ const activeUserFetches = new Map<string, { isActive: boolean }>();
 
 // Helper function to log messages
 const log = (message: string, ...args: any[]) => {
-    console.log(`[Inbox API] ${message}`, ...args);
+    // console.log(`[Inbox API] ${message}`, ...args);
 };
 
 /**
@@ -39,63 +38,6 @@ function isUserFetchActive(userId: string): boolean {
  */
 function setUserFetchStatus(userId: string, isActive: boolean): void {
     activeUserFetches.set(userId, { isActive });
-}
-
-/**
- * Gmail API helper that automatically handles token refreshes
- * @param userId The user ID to perform the operation for
- * @param accessToken The initial access token
- * @param apiCall Function that performs the actual Gmail API call
- * @returns The result of the API call
- */
-async function withGmailApi<T>(
-    userId: string,
-    initialAccessToken: string | null,
-    refreshToken: string | null,
-    apiCall: (gmail: any) => Promise<T>,
-    retryCount = 0,
-): Promise<T | null> {
-    const MAX_RETRY_ATTEMPTS = 1;
-    
-    let accessToken = initialAccessToken;
-
-    if (!accessToken) {
-        log(`No access token available for user ${userId}, attempting to refresh...`);
-        const newToken = await refreshAccessToken(userId);
-        if (!newToken) {
-            log(`Failed to refresh token for user ${userId}`);
-            return null;
-        }
-        accessToken = newToken;
-    }
-
-    try {
-        // Set up Gmail API client
-        const oauth2Client = new google.auth.OAuth2();
-        oauth2Client.setCredentials({ access_token: accessToken, refresh_token: refreshToken });
-        const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-
-        // Execute the API call
-        return await apiCall(gmail);
-    } catch (error: any) {
-        // Handle token refresh on 401 Unauthorized errors
-        if (error?.response?.status === 401 && retryCount < MAX_RETRY_ATTEMPTS) {
-            log(`Received 401 error, refreshing token for user ${userId}...`);
-            const newToken = await refreshAccessToken(userId);
-
-            if (newToken) {
-                log("Token refreshed successfully, retrying API call...");
-                return withGmailApi(userId, newToken, refreshToken, apiCall, retryCount + 1);
-            }
-
-            log(`Failed to refresh token for user ${userId} after 401 error`);
-            return null;
-        }
-
-        // Log and rethrow other errors
-        log(`Gmail API error for user ${userId}:`, error);
-        throw error;
-    }
 }
 
 /**
@@ -684,11 +626,13 @@ async function refreshAccessToken(userId: string): Promise<string | null> {
             where: { id: userId },
             include: { accounts: true },
         });
+        console.log(user);
 
         if (!user || !user.accounts || user.accounts.length === 0) {
             log(`No accounts found for user ${userId}`);
             return null;
         }
+        console.log(user.accounts);
 
         // Get the Google account
         const googleAccount = user.accounts.find((account) => account.providerId === "google");
@@ -696,6 +640,7 @@ async function refreshAccessToken(userId: string): Promise<string | null> {
             log(`No Google account or refresh token found for user ${userId}`);
             return null;
         }
+        console.log(googleAccount);
 
         // Set up OAuth2 client
         const oauth2Client = new google.auth.OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);

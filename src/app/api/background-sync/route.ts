@@ -7,7 +7,7 @@ import { extractContentFromParts } from "@/libs/utils/email-content";
 import { auth, type User } from "@/libs/auth";
 import { headers } from "next/headers";
 import type { Account } from "better-auth";
-
+import { initializeGmailClient, refreshAccessToken } from "../utils/withGmail";
 // Constants
 const GMAIL_USER_ID = "me";
 const MAX_USERS_PER_RUN = 10;
@@ -18,7 +18,6 @@ const MAX_HISTORY_RESULTS = 500;
 const log = (message: string, ...args: any[]) => {
     console.log(`[Background Sync] ${message}`, ...args);
 };
-
 /**
  * Encrypt email fields for database storage
  */
@@ -57,71 +56,6 @@ function encryptEmailFields(emailData: any) {
         subject: encryptedSubject,
         snippet: encryptedSnippet,
     };
-}
-
-/**
- * Initialize Gmail client for a given access token
- */
-function initializeGmailClient(accessToken: string) {
-    const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({ access_token: accessToken });
-    return google.gmail({ version: "v1", auth: oauth2Client });
-}
-
-/**
- * Refresh access token for a user
- */
-async function refreshAccessToken(userId: string): Promise<string | null> {
-    try {
-        // Find the user
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            include: { accounts: true },
-        });
-
-        if (!user || !user.accounts || user.accounts.length === 0) {
-            log(`No accounts found for user ${userId}`);
-            return null;
-        }
-
-        // Get the Google account
-        const googleAccount = user.accounts.find((account) => account.providerId === "google");
-        if (!googleAccount || !googleAccount.refreshToken) {
-            log(`No Google account or refresh token found for user ${userId}`);
-            return null;
-        }
-
-        // Set up OAuth2 client
-        const oauth2Client = new google.auth.OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
-
-        // Set refresh token
-        oauth2Client.setCredentials({
-            refresh_token: googleAccount.refreshToken,
-        });
-
-        // Refresh the token
-        const { credentials } = await oauth2Client.refreshAccessToken();
-        const newAccessToken = credentials.access_token;
-
-        if (!newAccessToken) {
-            log(`Failed to refresh access token for user ${userId}`);
-            return null;
-        }
-
-        // Update the access token in the database
-        await prisma.account.update({
-            where: { id: googleAccount.id },
-            data: {
-                accessToken: newAccessToken,
-            },
-        });
-
-        log(`Successfully refreshed access token for user ${userId}`);
-        return newAccessToken;
-    } catch (error) {
-        log(`Error refreshing access token for user ${userId}:`, error);
-        return null;
-    }
 }
 
 /**
