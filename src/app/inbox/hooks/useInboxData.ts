@@ -20,7 +20,7 @@ const fetchEmails = async ({
     pageSize,
     searchQuery,
     category,
-}: Omit<FetchEmailsParams, "enabled">): Promise<InboxResponse> => {
+}: Omit<FetchEmailsParams, "enabled" | "threadView">): Promise<InboxResponse> => {
     try {
         const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : "";
         const categoryParam = category ? `&category=${encodeURIComponent(category)}` : "";
@@ -104,8 +104,8 @@ export function useInboxData({
 
     // Define the query options
     const queryOptions: UseQueryOptions<InboxResponse, Error> = {
-        queryKey: ["emails", page, pageSize, threadView, searchQuery, category],
-        queryFn: () => fetchEmails({ page, pageSize, threadView, searchQuery, category }),
+        queryKey: ["emails", page, pageSize, searchQuery, category],
+        queryFn: () => fetchEmails({ page, pageSize, searchQuery, category }),
         staleTime: 60 * 1000, // 1 minute
         retry: false, // Disable retries to prevent multiple error messages
         enabled, // Only run the query when enabled is true

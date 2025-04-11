@@ -10,40 +10,27 @@ import {
 } from "@/libs/utils/encryption";
 import { extractContentFromParts } from "@/libs/utils/email-content";
 import { withGmailApi } from "../utils/withGmail";
+import { enhanceEmail} from "@/app/ai/new/ai";
 
-// For API requests
+
 const GMAIL_USER_ID = "me";
-const PAGE_SIZE = 20; // Default number of emails per page
-const FETCH_BATCH_SIZE = 20; // Number of emails to fetch from Gmail at once
+const PAGE_SIZE = 20;
+const FETCH_BATCH_SIZE = 20;
 
-// A Map to track active fetches by user ID
 const activeUserFetches = new Map<string, { isActive: boolean }>();
 
-// Helper function to log messages
-const log = (message: string, ...args: any[]) => {
-    console.log(`[Inbox API] ${message}`, ...args);
-};
-
-/**
- * Check if a fetch is active for a user
- */
 function isUserFetchActive(userId: string): boolean {
     return activeUserFetches.get(userId)?.isActive || false;
 }
 
-/**
- * Set user fetch status
- */
 function setUserFetchStatus(userId: string, isActive: boolean): void {
     activeUserFetches.set(userId, { isActive });
 }
 
 /**
- * GET handler for inbox API - Optimized version
+ * GET handler for inbox API
  */
 export async function GET(request: NextRequest) {
-    const startTime = Date.now();
-    
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -51,34 +38,25 @@ export async function GET(request: NextRequest) {
 
     const userId = session.user.id;
 
-    // Check if fetch is already in progress
     if (isUserFetchActive(userId)) {
         return NextResponse.json({ error: "Fetch already in progress" }, { status: 409 });
     }
 
-    // Mark fetch as active
     setUserFetchStatus(userId, true);
 
     try {
-        // Get request parameters
         const { searchParams } = new URL(request.url);
         const page = Number.parseInt(searchParams.get("page") || "1", 10);
         const pageSize = Number.parseInt(searchParams.get("pageSize") || PAGE_SIZE.toString(), 10);
-        const threadView = searchParams.get("threadView") === "true";
         const category = searchParams.get("category") || null;
         const skip = (page - 1) * pageSize;
 
-        log(`Fetching inbox for user: ${userId}, page: ${page}, pageSize: ${pageSize}, threadView: ${threadView}, category: ${category}`);
-
-        // Build the base query filters
         const baseFilters: any = { userId };
         
-        // Add category filtering to the database query if applicable
         if (category) {
             if (category.toUpperCase() === "STARRED") {
                 baseFilters.isStarred = true;
             } else {
-                // For other categories, handle the CATEGORY_ prefix
                 let labelToMatch = category.toUpperCase();
                 if (["SOCIAL", "UPDATES", "FORUMS", "PROMOTIONS", "PERSONAL"].includes(labelToMatch)) {
                     labelToMatch = `CATEGORY_${labelToMatch}`;
@@ -87,14 +65,12 @@ export async function GET(request: NextRequest) {
             }
         }
         
-        // Exclude emails that shouldn't appear in the main inbox
         baseFilters.NOT = {
             labels: {
                 hasSome: ["TRASH", "DRAFT", "SPAM"]
             }
         };
 
-        // Build query options based on thread view
         const queryOptions: any = {
             where: baseFilters,
             select: {
@@ -111,53 +87,36 @@ export async function GET(request: NextRequest) {
                 aiMetadata: true,
             },
             orderBy: { internalDate: 'desc' as const },
+            distinct: ['threadId'],
             skip: skip,
             take: pageSize
         };
-        
-        // Add distinct option for thread view if needed
-        if (threadView) {
-            queryOptions.distinct = ['threadId'];
-        }
 
-        // Message filter - just filter by userId for messages since they don't have labels
         const messageFilters = { userId };
 
-        // Execute queries in parallel to improve performance
         const [emails, totalCount] = await Promise.all([
             prisma.email.findMany(queryOptions),
-            threadView 
-                ? prisma.message.groupBy({ 
-                    by: ['threadId'],
-                    where: messageFilters,
-                    _count: true
-                  })
-                : prisma.message.count({ where: messageFilters })
+            prisma.message.groupBy({ 
+                by: ['threadId'],
+                where: messageFilters,
+                _count: true
+            })
         ]);
         
-        log(`Retrieved ${emails.length} emails from database`);
-        log(`Total count: ${typeof totalCount === 'number' ? totalCount : totalCount.length}`);
-        
-        // For debugging
         if (emails.length === 0 && page > 1) {
-            // Check if we need to fetch more emails from previous pages
-            const checkPreviousEmails = await prisma.email.findMany({
+            await prisma.email.findMany({
                 where: baseFilters,
                 select: { id: true },
                 take: 5
             });
-            log(`Database has ${checkPreviousEmails.length} emails with the current filters`);
             
-            // Expand search for this page - remove skip to see if we have any results at all
-            const expandedSearch = await prisma.email.findMany({
+            await prisma.email.findMany({
                 where: baseFilters,
                 select: { id: true },
                 take: pageSize
             });
-            log(`Found ${expandedSearch.length} emails when removing pagination skip`);
         }
 
-        // Check for missing emails that need to be fetched from Gmail
         const missingEmails = await checkForMissingEmails(
             userId,
             page,
@@ -167,87 +126,60 @@ export async function GET(request: NextRequest) {
         );
         
         if (missingEmails.length > 0) {
-            log(`Found ${missingEmails.length} missing emails to fetch from Gmail`);
-            
-            // Fetch missing emails and merge with existing results
             const fetchedEmails = await fetchMissingEmails(
                 missingEmails.map(m => m.id),
                 userId,
                 session.user.accessToken ?? null,
                 session.user.refreshToken ?? null,
-                0,
                 userId
             );
             
-            log(`Successfully fetched ${fetchedEmails.length} emails from Gmail API`);
-            
-            // Append fetched emails to our results if within the current page bounds
             if (fetchedEmails.length > 0) {
-                // For simplicity, we'll re-query to get updated results rather than merging
-                const updatedQueryOptions = { ...queryOptions }; // Clone the options 
-                // Make sure the skip parameter is included
+                const updatedQueryOptions = { ...queryOptions };
                 updatedQueryOptions.skip = skip;
                 const updatedEmails = await prisma.email.findMany(updatedQueryOptions);
                 emails.splice(0, emails.length, ...updatedEmails);
-                log(`Updated emails array with ${emails.length} emails after Gmail fetch for page ${page}`);
             }
         }
 
-        // If we still have no emails for this page but we know there should be more
-        // (based on message count), try to fetch more from Gmail
-        const totalCountNumber = typeof totalCount === 'number' ? totalCount : totalCount.length;
+        const totalCountNumber = totalCount.length;
         if (emails.length === 0 && page > 1 && skip < totalCountNumber) {
-            log(`No emails found for page ${page}, but total count is ${totalCountNumber}. Attempting to fetch more.`);
-            
-            // Calculate the range we need for this page
             const startIndex = (page - 1) * pageSize;
             const endIndex = page * pageSize;
             
-            // Get the messages from Gmail for this page
             const latestMessages = await withGmailApi(
                 userId,
                 session.user.accessToken ?? null,
                 session.user.refreshToken ?? null,
                 async (gmail) => {
                     try {
-                        // Get a batch of messages from Gmail with proper pagination
                         const response = await gmail.users.messages.list({
                             userId: GMAIL_USER_ID,
-                            maxResults: endIndex, // Fetch enough messages to cover this page
+                            maxResults: endIndex,
                         });
                         
-                        // If we have enough messages, extract just the ones for this page
                         const allMessages = response.data.messages || [];
                         
                         if (allMessages.length > startIndex) {
-                            // Extract just the messages for the current page
                             return allMessages.slice(startIndex, endIndex);
                         }
                         return [];
                     } catch (error) {
-                        log("Error fetching messages from Gmail:", error);
                         return [];
                     }
                 }
             );
             
             if (latestMessages.length > 0) {
-                log(`Found ${latestMessages.length} messages from Gmail API for page ${page}`);
-                
-                // Fetch these specific messages
                 const fetchedEmails = await fetchMissingEmails(
                     latestMessages.map((m: any) => m.id),
                     userId,
                     session.user.accessToken ?? null,
                     session.user.refreshToken ?? null,
-                    0,
                     userId
                 );
                 
                 if (fetchedEmails.length > 0) {
-                    log(`Fetched ${fetchedEmails.length} emails from Gmail API`);
-                    
-                    // Query the newly fetched emails for the current page
                     const updatedEmails = await prisma.email.findMany({
                         where: baseFilters,
                         ...queryOptions.select && { select: queryOptions.select },
@@ -257,19 +189,15 @@ export async function GET(request: NextRequest) {
                     });
                     
                     if (updatedEmails.length > 0) {
-                        log(`Retrieved ${updatedEmails.length} newly fetched emails for page ${page}`);
                         emails.splice(0, emails.length, ...updatedEmails);
                     }
                 }
             }
         }
 
-        // Decrypt only necessary fields for display
         const decryptedEmails = emails.map(email => {
-            // Create a copy without decryption first
             const decryptedEmail = { ...email };
             
-            // Only decrypt subject and snippet for the inbox view
             if (email.subject) {
                 try {
                     const { encryptedData, iv, authTag } = decodeEncryptedData(email.subject);
@@ -291,13 +219,8 @@ export async function GET(request: NextRequest) {
             return decryptedEmail;
         });
 
-        // Handle thread view grouping if needed
-        const processedEmails = threadView 
-            ? processThreadView(decryptedEmails)
-            : decryptedEmails;
+        const processedEmails = processThreadView(decryptedEmails);
         
-        // Queue emails missing AI metadata for background processing
-        // Don't wait for this to complete
         const emailsNeedingMetadata = emails.filter(email => {
             const metadata = email as unknown as { aiMetadata?: { summary?: string, category?: string } };
             return !metadata.aiMetadata || 
@@ -305,29 +228,22 @@ export async function GET(request: NextRequest) {
         });
         
         if (emailsNeedingMetadata.length > 0) {
-            log(`Queueing ${emailsNeedingMetadata.length} emails for background AI processing`);
             queueBackgroundAIProcessing(emailsNeedingMetadata);
         }
 
-        // Prepare and return the result
         const result = {
             emails: processedEmails,
-            hasMore: skip + processedEmails.length < (typeof totalCount === 'number' ? totalCount : totalCount.length),
-            totalCount: typeof totalCount === 'number' ? totalCount : totalCount.length,
+            hasMore: skip + processedEmails.length < totalCountNumber,
+            totalCount: totalCountNumber,
             page,
             pageSize,
         };
 
-        log(`Request completed in ${Date.now() - startTime}ms`);
-
-        // Mark fetch as completed before returning
         setUserFetchStatus(userId, false);
 
         return NextResponse.json(result);
     } catch (error) {
-        // Mark fetch as completed even on error
         setUserFetchStatus(userId, false);
-        log("Error in inbox retrieval:", error);
         return NextResponse.json(
             {
                 error: error instanceof Error ? error.message : "An unexpected error occurred",
@@ -339,7 +255,6 @@ export async function GET(request: NextRequest) {
 
 /**
  * Check for emails that might be missing from the database
- * This optimized version only runs when necessary
  */
 async function checkForMissingEmails(
     userId: string,
@@ -349,29 +264,24 @@ async function checkForMissingEmails(
     refreshToken: string | null
 ): Promise<{ id: string }[]> {
     try {
-        // Calculate how many messages to retrieve based on the current page
         const messagesNeeded = page * pageSize;
         
-        // Check Gmail for messages for the requested page
         const missingIds = await withGmailApi(
             userId,
             accessToken,
             refreshToken,
             async (gmail) => {
-                // Get messages from Gmail with pagination support
                 const response = await gmail.users.messages.list({
                     userId: GMAIL_USER_ID,
-                    maxResults: messagesNeeded, // Get enough messages to cover all pages up to the current one
+                    maxResults: messagesNeeded,
                 });
                 
                 if (!response.data.messages) {
                     return [];
                 }
                 
-                // Get message IDs from Gmail
                 const gmailIds = response.data.messages?.map((m: any) => m.id) || [];
                 
-                // Check which ones exist in our database
                 const existingEmails = await prisma.email.findMany({
                     where: { 
                         id: { in: gmailIds },
@@ -380,17 +290,14 @@ async function checkForMissingEmails(
                     select: { id: true }
                 });
                 
-                // Create a set of existing IDs for faster lookups
                 const existingIdSet = new Set(existingEmails.map(e => e.id));
                 
-                // Return IDs that don't exist in our database
                 return gmailIds
                     .filter((id: string) => !existingIdSet.has(id))
                     .map((id: string) => ({ id }));
             }
         );
         
-        // Update the sync state
         await prisma.syncState.upsert({
             where: { userId },
             update: { lastSyncTime: new Date() },
@@ -403,7 +310,6 @@ async function checkForMissingEmails(
         
         return missingIds || [];
     } catch (error) {
-        log("Error checking for missing emails:", error);
         return [];
     }
 }
@@ -416,7 +322,6 @@ function processThreadView(emails: any[]): any[] {
     
     const threadMap = new Map();
     
-    // Group by thread ID and keep the latest email in each thread
     for (const email of emails) {
         const threadId = email.threadId;
         if (
@@ -427,7 +332,6 @@ function processThreadView(emails: any[]): any[] {
         }
     }
     
-    // Convert to array and sort by internalDate
     return Array.from(threadMap.values()).sort(
         (a, b) => new Date(b.internalDate).getTime() - new Date(a.internalDate).getTime()
     );
@@ -439,40 +343,55 @@ function processThreadView(emails: any[]): any[] {
 function queueBackgroundAIProcessing(emails: any[]): void {
     if (emails.length === 0) return;
     
-    // Start background processing without waiting
     setTimeout(async () => {
         try {
-            // Process emails in batches
             const BATCH_SIZE = 5;
             
             for (let i = 0; i < emails.length; i += BATCH_SIZE) {
                 const batch = emails.slice(i, i + BATCH_SIZE);
                 
-                // Process each email in the batch
                 for (const email of batch) {
                     try {
-                        log(`Processing AI metadata for email ${email.id}`);
-                        
-                        // Dynamically import AI modules to avoid circular dependencies
-                        const ai = await import("@/app/ai/new/ai");
-                        
-                        // Use the enhanceEmail function to process the email
-                        await ai.enhanceEmail(email);
-                        
-                        // Add a small delay between emails to reduce CPU contention
-                        await new Promise(resolve => setTimeout(resolve, 100));
+                        await enhanceEmail(email);
+                        // await new Promise(resolve => setTimeout(resolve, 100));
                     } catch (error) {
-                        log(`Error processing AI metadata for email ${email.id}:`, error);
+                        // Continue with next email
                     }
                 }
                 
-                // Add a delay between batches
                 await new Promise(resolve => setTimeout(resolve, 200));
             }
         } catch (error) {
-            log("Error in background AI processing:", error);
+            // Silent error in background processing
         }
     }, 100);
+}
+
+/**
+ * Process emails for vector storage
+ */
+async function processEmailsForVectorStorage(emails: any[]): Promise<void> {
+    try {
+        const VECTOR_BATCH_SIZE = 5;
+
+        for (let i = 0; i < emails.length; i += VECTOR_BATCH_SIZE) {
+            const batch = emails.slice(i, i + VECTOR_BATCH_SIZE);
+
+            for (const email of batch) {
+                try {
+                    const ai = await import("@/app/ai/new/ai");
+                    await ai.enhanceEmail(email);
+                    await new Promise((resolve) => setTimeout(resolve, 50));
+                } catch (error) {
+                    // Skip this email
+                }
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+    } catch (error) {
+        // Silent error
+    }
 }
 
 /**
@@ -483,37 +402,27 @@ async function fetchMissingEmails(
     userId: string,
     accessToken: string | null,
     refreshToken: string | null,
-    retryCount = 0,
-    accountUserId = userId, // Default to userId if not provided
+    accountUserId = userId,
 ): Promise<any[]> {
     if (missingIds.length === 0) {
         return [];
     }
 
-    // Check if operation has been cancelled
     if (!isUserFetchActive(userId)) {
-        log(`Fetch operation cancelled for user ${userId}`);
         return [];
     }
 
     try {
-        // Batch fetch message details from database to improve performance
         const messageDetails = await prisma.message.findMany({
             where: { id: { in: missingIds } },
             select: { id: true, threadId: true, createdAt: true },
         });
 
-        // Create a map for faster lookups
         const messageDetailsMap = new Map(messageDetails.map((message) => [message.id, message]));
-
-        // Fetch messages in batches to avoid overwhelming Gmail API
         const fetchedEmails: any[] = [];
 
-        // Process in batches to avoid overwhelming Gmail API
         for (let i = 0; i < missingIds.length; i += FETCH_BATCH_SIZE) {
-            // Check for cancellation before processing each batch
             if (!isUserFetchActive(userId)) {
-                log(`Fetch operation cancelled for user ${userId} during batch processing`);
                 return fetchedEmails;
             }
 
@@ -521,12 +430,10 @@ async function fetchMissingEmails(
             let batchResults: any[] = [];
 
             try {
-                // Use a map to get batch messages with automatic token refresh
                 const messageBatchPromises = batch.map(async (messageId) => {
                     const message = messageDetailsMap.get(messageId);
                     if (!message) return null;
 
-                    // Use the withGmailApi helper to handle token refresh
                     const fullMessage = await withGmailApi(
                         accountUserId,
                         accessToken,
@@ -542,18 +449,15 @@ async function fetchMissingEmails(
 
                     if (!fullMessage?.data) return null;
 
-                    // Extract email details
                     const headers = fullMessage.data.payload?.headers || [];
                     const subject = headers.find((h: any) => h.name === "Subject")?.value || "";
                     const from = headers.find((h: any) => h.name === "From")?.value || "";
                     const to = headers.find((h: any) => h.name === "To")?.value || "";
 
-                    // Get email content
                     const content = fullMessage.data.payload
                         ? extractContentFromParts(fullMessage.data.payload)
                         : { text: "", html: "" };
 
-                    // Create email object
                     return {
                         id: messageId,
                         threadId: message.threadId,
@@ -575,23 +479,19 @@ async function fetchMissingEmails(
                     };
                 });
 
-                // Wait for all fetches to complete
                 batchResults = (await Promise.all(messageBatchPromises)).filter(Boolean) as any[];
                 fetchedEmails.push(...batchResults);
 
-                // Store batch results in database
                 if (batchResults.length > 0) {
                     await storeEmailBatch(batchResults);
                 }
             } catch (error) {
-                log(`Error processing batch ${i / FETCH_BATCH_SIZE + 1}:`, error);
                 // Continue with next batch
             }
         }
 
         return fetchedEmails;
     } catch (error) {
-        log("Error in fetchMissingEmails:", error);
         return [];
     }
 }
@@ -603,10 +503,8 @@ async function storeEmailBatch(emails: any[]): Promise<void> {
     if (emails.length === 0) return;
 
     try {
-        // Encrypt all emails
         const encryptedEmails = emails.map((email) => encryptEmailFields(email));
 
-        // Store in batches of 50 for optimal performance
         const BATCH_SIZE = 50;
         for (let i = 0; i < encryptedEmails.length; i += BATCH_SIZE) {
             const batch = encryptedEmails.slice(i, i + BATCH_SIZE);
@@ -616,72 +514,13 @@ async function storeEmailBatch(emails: any[]): Promise<void> {
             });
         }
 
-        log(`Successfully stored ${encryptedEmails.length} emails in database`);
-
-        // Store emails in vector database for AI search
-        // Run this asynchronously without awaiting - don't block the API response
         setTimeout(() => {
-            processEmailsForVectorStorage(emails).catch((error) => {
-                log("Background vector processing error:", error);
+            processEmailsForVectorStorage(emails).catch(() => {
+                // Silently catch errors in background processing
             });
         }, 100);
     } catch (error) {
-        log("Error batch storing emails:", error);
         // Continue execution as we've already fetched the emails
-    }
-}
-
-/**
- * Process emails for vector storage and AI metadata generation in the background
- * This runs asynchronously after the API has already sent its response
- */
-async function processEmailsForVectorStorage(emails: any[]): Promise<void> {
-    try {
-        log(`Starting background vector processing for ${emails.length} emails`);
-
-        // Process emails in batches to avoid overwhelming the system
-        const VECTOR_BATCH_SIZE = 5; // Smaller batch size to reduce memory pressure
-
-        for (let i = 0; i < emails.length; i += VECTOR_BATCH_SIZE) {
-            const batch = emails.slice(i, i + VECTOR_BATCH_SIZE);
-
-            // Process emails in batch sequentially to avoid memory spikes
-            for (const email of batch) {
-                try {
-                    log(`Enhancing email ${email.id} for user ${email.userId}`);
-
-                    // Dynamically import AI modules to avoid circular dependencies
-                    // and ensure we're using the latest version of the module
-                    const ai = await import("@/app/ai/new/ai");
-
-                    // Use the enhanceEmail function which will:
-                    // 1. Process with Groq to extract metadata
-                    // 2. Store in vector database
-                    // 3. Save metadata to database
-                    const result = await ai.enhanceEmail(email);
-
-                    if (!result.success) {
-                        log(`Failed to enhance email ${email.id}, skipping storage: ${result.error}`);
-                        // Skip storing if processing failed
-                    } else {
-                        log(`Successfully enhanced email ${email.id} with AI metadata`);
-                    }
-
-                    // Add a small delay between emails to reduce CPU contention
-                    await new Promise((resolve) => setTimeout(resolve, 50));
-                } catch (error) {
-                    log(`Error processing email ${email.id}, skipping storage:`, error);
-                    // Continue with other emails even if one fails, but don't store failed results
-                }
-            }
-
-            // Add a small delay between batches
-            await new Promise((resolve) => setTimeout(resolve, 100));
-        }
-
-        log(`Successfully completed background vector processing for ${emails.length} emails`);
-    } catch (error) {
-        log("Error in background vector processing:", error);
     }
 }
 
@@ -716,7 +555,6 @@ function encryptEmailFields(emailData: any) {
         encryptedSnippet = encodeEncryptedData(encryptedSnippetData, snippetIv, snippetAuthTag);
     }
 
-    // Return encrypted email
     return {
         ...emailData,
         body: encryptedBody,

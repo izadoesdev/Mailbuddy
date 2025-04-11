@@ -15,6 +15,7 @@ import { useAISearch } from "./hooks/useAISearch";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useUser } from "@/libs/auth/client";
 import { redirect, useRouter } from "next/navigation";
+import { createParser, useQueryState } from "nuqs";
 
 type CategoryOption = {
     value: string;
@@ -32,6 +33,17 @@ const CATEGORY_OPTIONS: CategoryOption[] = [
     { value: "forums", label: "Forums" }
 ];
 
+// Create parsers for the URL query parameters
+const numberParser = createParser({
+    parse: Number,
+    serialize: String,
+}).withDefault(1);
+
+const pageSizeParser = createParser({
+    parse: Number,
+    serialize: String,
+}).withDefault(20);
+
 export default function InboxPage() {
     // Authentication check
     const router = useRouter();
@@ -41,13 +53,18 @@ export default function InboxPage() {
         redirect("/login");
     }
 
-    // State
+    // URL state with nuqs
+    const [page, setPage] = useQueryState('page', numberParser);
+    const [pageSize, setPageSize] = useQueryState('pageSize', pageSizeParser);
+    const [currentCategory, setCurrentCategory] = useQueryState('category', { 
+        defaultValue: 'inbox',
+        history: 'replace'
+    });
+
+    // Local state
     const [searchQuery, setSearchQuery] = useState("");
     const [threadView, setThreadView] = useState(true);
     const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(20);
-    const [currentCategory, setCurrentCategory] = useState<string>("inbox");
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const hasSyncedRef = useRef(false);
 
@@ -117,7 +134,7 @@ export default function InboxPage() {
     const handleSearchChange = useCallback((query: string) => {
         setSearchQuery(query);
         setPage(1); // Reset to first page on new search
-    }, []);
+    }, [setPage]);
 
     // Handle AI search
     const handleAISearch = useCallback(
@@ -136,19 +153,19 @@ export default function InboxPage() {
     // Handle page change
     const handlePageChange = useCallback((newPage: number) => {
         setPage(newPage);
-    }, []);
+    }, [setPage]);
 
     // Handle page size change
     const handlePageSizeChange = useCallback((size: number) => {
         setPageSize(size);
         setPage(1);
-    }, []);
+    }, [setPageSize, setPage]);
 
     // Toggle thread view
     const handleThreadViewChange = useCallback(() => {
         setThreadView((prev) => !prev);
         setPage(1);
-    }, []);
+    }, [setPage]);
 
     // Handle refresh
     const handleRefresh = useCallback(() => {
@@ -164,7 +181,7 @@ export default function InboxPage() {
     const handleCategoryChange = useCallback((category: string) => {
         setCurrentCategory(category);
         setPage(1);
-    }, []);
+    }, [setCurrentCategory, setPage]);
 
     // Calculate width for main content
     const mainContentWidth = selectedEmail ? "50%" : "100%";
@@ -255,17 +272,13 @@ export default function InboxPage() {
 
             {selectedEmail && (
                 <Column
-                    flex={1}
-                    fill
+                    fillWidth
                     style={{
+                        width: "50%",
                         transition: "width 0.3s ease",
                     }}
                 >
-                    <EmailDetail
-                        email={selectedEmail}
-                        onClose={() => setSelectedEmail(null)}
-                        onToggleStar={handleToggleStar}
-                    />
+                    <EmailDetail email={selectedEmail} onClose={() => setSelectedEmail(null)} />
                 </Column>
             )}
         </Row>

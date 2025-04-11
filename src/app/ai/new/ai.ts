@@ -83,10 +83,6 @@ export async function enhanceEmail(email: any) {
         const existingMetadata = await getEmailAIMetadata(email.id);
 
         if (existingMetadata.success && existingMetadata.metadata) {
-            // Return existing metadata if available
-            console.log(
-                `Found existing AI metadata for email ${email.id}, returning cached result`,
-            );
             return {
                 success: true,
                 data: {

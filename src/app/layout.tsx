@@ -7,6 +7,7 @@ import { headers } from "next/headers";
 import { baseURL, meta, og, schema, style } from "@/app/resources/config";
 import { Background, Column, Flex, ThemeProvider, ToastProvider } from "@/once-ui/components";
 import { Meta, Schema } from "@/once-ui/modules";
+import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import { QueryProvider } from "@/libs/query/QueryProvider";
 
 import { Geist } from "next/font/google";
@@ -107,9 +108,11 @@ export default function RootLayout({
             </head>
             <ThemeProvider>
                 <ToastProvider>
+                  <NuqsAdapter>
                     <Column as="body" fillWidth margin="0" padding="0">
                         <QueryProvider>{children}</QueryProvider>
                     </Column>
+                  </NuqsAdapter>
                 </ToastProvider>
             </ThemeProvider>
         </Flex>
