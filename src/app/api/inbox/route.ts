@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
                     where: baseFilters,
                     _count: true
                   })
-                : prisma.email.count({ where: baseFilters })
+                : prisma.message.count({ where: baseFilters })
         ]);
         
         log(`Retrieved ${emails.length} emails from database`);
