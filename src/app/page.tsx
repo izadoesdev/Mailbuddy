@@ -23,12 +23,12 @@ export default function Home() {
     const { user, isLoading } = useUser();
 
     // Redirect to inbox if user is logged in
-    useEffect(() => {
-        // Only redirect when authentication check is complete and user exists
-        if (!isLoading && user) {
-            router.push("/inbox");
-        }
-    }, [user, isLoading, router]);
+    // useEffect(() => {
+    //     // Only redirect when authentication check is complete and user exists
+    //     if (!isLoading && user) {
+    //         router.push("/inbox");
+    //     }
+    // }, [user, isLoading, router]);
 
     // Don't render the full page content during loading or if redirecting
     if (isLoading) {
