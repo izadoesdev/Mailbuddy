@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
                 aiMetadata: true,
             },
             orderBy: { internalDate: 'desc' as const },
-            skip,
+            skip: skip,
             take: pageSize
         };
         
@@ -184,10 +184,12 @@ export async function GET(request: NextRequest) {
             // Append fetched emails to our results if within the current page bounds
             if (fetchedEmails.length > 0) {
                 // For simplicity, we'll re-query to get updated results rather than merging
-                const updatedQueryOptions = { ...queryOptions }; // Clone the options
+                const updatedQueryOptions = { ...queryOptions }; // Clone the options 
+                // Make sure the skip parameter is included
+                updatedQueryOptions.skip = skip;
                 const updatedEmails = await prisma.email.findMany(updatedQueryOptions);
                 emails.splice(0, emails.length, ...updatedEmails);
-                log(`Updated emails array with ${emails.length} emails after Gmail fetch`);
+                log(`Updated emails array with ${emails.length} emails after Gmail fetch for page ${page}`);
             }
         }
 
@@ -197,20 +199,31 @@ export async function GET(request: NextRequest) {
         if (emails.length === 0 && page > 1 && skip < totalCountNumber) {
             log(`No emails found for page ${page}, but total count is ${totalCountNumber}. Attempting to fetch more.`);
             
-            // Get the latest messages from Gmail for this page
+            // Calculate the range we need for this page
+            const startIndex = (page - 1) * pageSize;
+            const endIndex = page * pageSize;
+            
+            // Get the messages from Gmail for this page
             const latestMessages = await withGmailApi(
                 userId,
                 session.user.accessToken ?? null,
                 session.user.refreshToken ?? null,
                 async (gmail) => {
                     try {
-                        // Get a batch of messages from Gmail
+                        // Get a batch of messages from Gmail with proper pagination
                         const response = await gmail.users.messages.list({
                             userId: GMAIL_USER_ID,
-                            maxResults: pageSize,
-                            pageToken: String(page) // Use page as token to get different results
+                            maxResults: endIndex, // Fetch enough messages to cover this page
                         });
-                        return response.data.messages || [];
+                        
+                        // If we have enough messages, extract just the ones for this page
+                        const allMessages = response.data.messages || [];
+                        
+                        if (allMessages.length > startIndex) {
+                            // Extract just the messages for the current page
+                            return allMessages.slice(startIndex, endIndex);
+                        }
+                        return [];
                     } catch (error) {
                         log("Error fetching messages from Gmail:", error);
                         return [];
@@ -234,18 +247,17 @@ export async function GET(request: NextRequest) {
                 if (fetchedEmails.length > 0) {
                     log(`Fetched ${fetchedEmails.length} emails from Gmail API`);
                     
-                    // Query the newly fetched emails
+                    // Query the newly fetched emails for the current page
                     const updatedEmails = await prisma.email.findMany({
-                        where: {
-                            id: { in: fetchedEmails.map(e => e.id) },
-                            ...baseFilters
-                        },
+                        where: baseFilters,
                         ...queryOptions.select && { select: queryOptions.select },
-                        orderBy: { internalDate: 'desc' as const }
+                        orderBy: { internalDate: 'desc' as const },
+                        skip: skip,
+                        take: pageSize
                     });
                     
                     if (updatedEmails.length > 0) {
-                        log(`Retrieved ${updatedEmails.length} newly fetched emails`);
+                        log(`Retrieved ${updatedEmails.length} newly fetched emails for page ${page}`);
                         emails.splice(0, emails.length, ...updatedEmails);
                     }
                 }
@@ -336,20 +348,20 @@ async function checkForMissingEmails(
     accessToken: string | null,
     refreshToken: string | null
 ): Promise<{ id: string }[]> {
-    // Only check for missing emails on the first page
-    if (page > 1) return [];
-    
     try {
-        // Check Gmail for latest messages
+        // Calculate how many messages to retrieve based on the current page
+        const messagesNeeded = page * pageSize;
+        
+        // Check Gmail for messages for the requested page
         const missingIds = await withGmailApi(
             userId,
             accessToken,
             refreshToken,
             async (gmail) => {
-                // Get latest messages from Gmail
+                // Get messages from Gmail with pagination support
                 const response = await gmail.users.messages.list({
                     userId: GMAIL_USER_ID,
-                    maxResults: pageSize,
+                    maxResults: messagesNeeded, // Get enough messages to cover all pages up to the current one
                 });
                 
                 if (!response.data.messages) {
