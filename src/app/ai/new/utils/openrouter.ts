@@ -306,39 +306,6 @@ export async function extractContactInfo(email: Email): Promise<Record<string, s
 }
 
 /**
- * Helper function to extract and clean JSON from a response string
- */
-function extractJsonFromText(text: string): any | null {
-    // First try to extract JSON using regex
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-
-    if (jsonMatch) {
-        try {
-            // Clean up the JSON before parsing
-            let jsonStr = jsonMatch[0];
-
-            // Replace potential formatting issues from LLMs
-            jsonStr = jsonStr
-                // Fix unquoted property names
-                .replace(/(\s*?{\s*?|\s*?,\s*?)(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '$1"$3":')
-                // Fix single quotes to double quotes
-                .replace(/'/g, '"')
-                // Remove trailing commas before closing brackets
-                .replace(/,\s*}/g, "}")
-                .replace(/,\s*]/g, "]");
-
-            // Try parsing the cleaned JSON
-            return JSON.parse(jsonStr);
-        } catch (error) {
-            console.error("Error parsing cleaned JSON:", error);
-            return null;
-        }
-    }
-
-    return null;
-}
-
-/**
  * Process all AI enhancements for an email in a single call
  */
 export async function processEmail(email: Email) {
@@ -386,8 +353,7 @@ Remember to ONLY return a valid JSON object.`;
 
         // Try to extract JSON from the response
         try {
-            // Use our helper function for more robust extraction
-            const jsonObj = extractJsonFromText(result);
+            const jsonObj = JSON.parse(result);
 
             if (jsonObj) {
                 console.log("Successfully parsed JSON response");

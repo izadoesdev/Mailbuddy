@@ -32,7 +32,7 @@ export default function Home() {
 
     // Don't render the full page content during loading or if redirecting
     if (isLoading) {
-        return <Column fillWidth paddingTop="80" horizontal="center" flex={1}></Column>;
+        return <Column fillWidth paddingTop="80" horizontal="center" flex={1} />;
     }
 
     return (

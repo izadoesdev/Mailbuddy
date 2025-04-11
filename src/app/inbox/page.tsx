@@ -232,10 +232,6 @@ export default function InboxPage() {
                         onSelectEmail={handleEmailSelect}
                         onToggleStar={handleToggleStar}
                     />
-                </Column>
-
-                {/* Only show pagination for regular inbox, not for AI search results */}
-                {!isAISearchActive && (
                     <Pagination
                         page={page}
                         totalPages={totalPages}
@@ -245,7 +241,7 @@ export default function InboxPage() {
                         pageSize={pageSize}
                         totalCount={totalCount}
                     />
-                )}
+                </Column>
 
                 {/* Show a simple count for AI search results */}
                 {isAISearchActive && (

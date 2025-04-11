@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
         const result = {
             emails: allEmails,
             hasMore: skip + allEmails.length < totalCount,
-            totalCount: allEmails.length,
+            totalCount: totalCount,
             page,
             pageSize,
         };
