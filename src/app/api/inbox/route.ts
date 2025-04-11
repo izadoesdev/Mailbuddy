@@ -21,7 +21,7 @@ const activeUserFetches = new Map<string, { isActive: boolean }>();
 
 // Helper function to log messages
 const log = (message: string, ...args: any[]) => {
-    // console.log(`[Inbox API] ${message}`, ...args);
+    console.log(`[Inbox API] ${message}`, ...args);
 };
 
 /**
@@ -114,6 +114,11 @@ export async function GET(request: NextRequest) {
             skip,
             take: pageSize
         };
+        
+        // Add distinct option for thread view if needed
+        if (threadView) {
+            queryOptions.distinct = ['threadId'];
+        }
 
         // Message filter - just filter by userId for messages since they don't have labels
         const messageFilters = { userId };
@@ -131,7 +136,26 @@ export async function GET(request: NextRequest) {
         ]);
         
         log(`Retrieved ${emails.length} emails from database`);
-        log(`Total count: ${totalCount}`);
+        log(`Total count: ${typeof totalCount === 'number' ? totalCount : totalCount.length}`);
+        
+        // For debugging
+        if (emails.length === 0 && page > 1) {
+            // Check if we need to fetch more emails from previous pages
+            const checkPreviousEmails = await prisma.email.findMany({
+                where: baseFilters,
+                select: { id: true },
+                take: 5
+            });
+            log(`Database has ${checkPreviousEmails.length} emails with the current filters`);
+            
+            // Expand search for this page - remove skip to see if we have any results at all
+            const expandedSearch = await prisma.email.findMany({
+                where: baseFilters,
+                select: { id: true },
+                take: pageSize
+            });
+            log(`Found ${expandedSearch.length} emails when removing pagination skip`);
+        }
 
         // Check for missing emails that need to be fetched from Gmail
         const missingEmails = await checkForMissingEmails(
@@ -164,6 +188,67 @@ export async function GET(request: NextRequest) {
                 const updatedEmails = await prisma.email.findMany(updatedQueryOptions);
                 emails.splice(0, emails.length, ...updatedEmails);
                 log(`Updated emails array with ${emails.length} emails after Gmail fetch`);
+            }
+        }
+
+        // If we still have no emails for this page but we know there should be more
+        // (based on message count), try to fetch more from Gmail
+        const totalCountNumber = typeof totalCount === 'number' ? totalCount : totalCount.length;
+        if (emails.length === 0 && page > 1 && skip < totalCountNumber) {
+            log(`No emails found for page ${page}, but total count is ${totalCountNumber}. Attempting to fetch more.`);
+            
+            // Get the latest messages from Gmail for this page
+            const latestMessages = await withGmailApi(
+                userId,
+                session.user.accessToken ?? null,
+                session.user.refreshToken ?? null,
+                async (gmail) => {
+                    try {
+                        // Get a batch of messages from Gmail
+                        const response = await gmail.users.messages.list({
+                            userId: GMAIL_USER_ID,
+                            maxResults: pageSize,
+                            pageToken: String(page) // Use page as token to get different results
+                        });
+                        return response.data.messages || [];
+                    } catch (error) {
+                        log("Error fetching messages from Gmail:", error);
+                        return [];
+                    }
+                }
+            );
+            
+            if (latestMessages.length > 0) {
+                log(`Found ${latestMessages.length} messages from Gmail API for page ${page}`);
+                
+                // Fetch these specific messages
+                const fetchedEmails = await fetchMissingEmails(
+                    latestMessages.map((m: any) => m.id),
+                    userId,
+                    session.user.accessToken ?? null,
+                    session.user.refreshToken ?? null,
+                    0,
+                    userId
+                );
+                
+                if (fetchedEmails.length > 0) {
+                    log(`Fetched ${fetchedEmails.length} emails from Gmail API`);
+                    
+                    // Query the newly fetched emails
+                    const updatedEmails = await prisma.email.findMany({
+                        where: {
+                            id: { in: fetchedEmails.map(e => e.id) },
+                            ...baseFilters
+                        },
+                        ...queryOptions.select && { select: queryOptions.select },
+                        orderBy: { internalDate: 'desc' as const }
+                    });
+                    
+                    if (updatedEmails.length > 0) {
+                        log(`Retrieved ${updatedEmails.length} newly fetched emails`);
+                        emails.splice(0, emails.length, ...updatedEmails);
+                    }
+                }
             }
         }
 
@@ -255,17 +340,6 @@ async function checkForMissingEmails(
     if (page > 1) return [];
     
     try {
-        // Get the latest sync state to determine if we need to check for new emails
-        const syncState = await prisma.syncState.findUnique({
-            where: { userId },
-            select: { lastSyncTime: true }
-        });
-        
-        // If we've synced recently (less than 5 minutes ago), no need to check
-        if (syncState && Date.now() - syncState.lastSyncTime.getTime() < 5 * 60 * 1000) {
-            return [];
-        }
-        
         // Check Gmail for latest messages
         const missingIds = await withGmailApi(
             userId,
