@@ -70,7 +70,7 @@ export async function processBatchEmails(emails: Email[]) {
                     category: aiData.category || "Uncategorized",
                     priority: aiData.priority || "Medium",
                     summary: aiData.summary || "No summary available",
-                    modelUsed: "groq",
+                    modelUsed: "groq", 
                 };
 
                 // Add priorityExplanation if available

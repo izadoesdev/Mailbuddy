@@ -17,9 +17,15 @@ async function callOpenRouter(
         model?: string;
         temperature?: number;
         maxTokens?: number;
+        strict?: boolean; // New option to enforce strict validation
     } = {},
 ): Promise<string> {
-    const { model = DEFAULT_MODEL, temperature = 0.2, maxTokens = 150 } = options;
+    const { 
+        model = DEFAULT_MODEL, 
+        temperature = 0.2, 
+        maxTokens = 150,
+        strict = false 
+    } = options;
 
     // Ensure OpenRouter API key is available
     if (!process.env.OPENROUTER_API_KEY) {
@@ -145,78 +151,67 @@ export async function extractActionItems(email: Email): Promise<string[]> {
     EMAIL:
     ${emailText.substring(0, 3000)}
     
-    Format your response as a JSON array, with each item as a string. If no action items, return an empty array [].`;
+    Format your response as a JSON array, with each item as a string. If no action items, return an empty array [].
+    IMPORTANT: ONLY return the valid JSON array with no other text before or after.`;
 
-        const result = await callOpenRouter(prompt, { temperature: 0.2, maxTokens: 400 });
-
-        // Try to extract JSON array from response
-        try {
-            // First check for code block formatting (```json ... ```)
-            const codeBlockMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
-            if (codeBlockMatch?.[1]) {
-                // Extract the content inside code blocks
-                const cleanedResult = codeBlockMatch[1].trim();
-                
-                // Check if it's a valid JSON array
-                if (cleanedResult.startsWith('[') && cleanedResult.endsWith(']')) {
-                    const jsonArray = JSON.parse(cleanedResult);
-                    return Array.isArray(jsonArray) ? jsonArray : [];
-                }
-            }
+        // Maximum retries for getting valid JSON
+        const MAX_RETRIES = 3;
+        let retries = 0;
+        let actionItems: string[] = [];
         
-            // Traditional array extraction if no code blocks were found
-            const match = result.match(/\[([\s\S]*?)\]/);
-            if (match) {
-                // Clean up the JSON before parsing
-                let jsonStr = match[0];
-
-                // Replace potential formatting issues from Gemini model
-                jsonStr = jsonStr
-                    // Fix single quotes to double quotes
-                    .replace(/'/g, '"')
-                    // Remove trailing commas before closing brackets
-                    .replace(/,\s*]/g, "]");
-
-                // Try parsing the cleaned JSON
-                const jsonArray = JSON.parse(jsonStr);
-                return Array.isArray(jsonArray) ? jsonArray : [];
+        while (retries < MAX_RETRIES) {
+            const temperature = 0.2 + (retries * 0.1); // Increase temperature slightly on retries
+            const result = await callOpenRouter(prompt, { 
+                temperature, 
+                maxTokens: 400,
+                model: retries > 0 ? "mistralai/ministral-3b" : DEFAULT_MODEL // Try better model on retry
+            });
+            
+            // Try parsing as JSON
+            const parsedItems = tryParseJson<string[]>(result, 
+                (data) => Array.isArray(data) && data.every(item => typeof item === 'string')
+            );
+            
+            if (parsedItems !== null) {
+                return parsedItems;
             }
+            
+            // Fallback parsing if JSON parse failed
+            try {
+                // Traditional array extraction
+                const match = result.match(/\[([\s\S]*?)\]/);
+                if (match) {
+                    // Clean up the JSON before parsing
+                    const jsonStr = match[0]
+                        .replace(/'/g, '"')
+                        .replace(/,\s*]/g, "]");
 
-            // If response says "No action items"
-            if (result.includes("No action items")) {
-                return [];
+                    const jsonArray = JSON.parse(jsonStr);
+                    if (Array.isArray(jsonArray)) {
+                        return jsonArray.filter(item => typeof item === 'string');
+                    }
+                }
+                
+                // Fallback: extract bullet points or numbered items
+                const bulletItems = result.match(/(?:^|\n)[-*•]\s*(.+)(?:\n|$)/g);
+                if (bulletItems?.length) {
+                    actionItems = bulletItems.map((item) => item.replace(/^[-*•]\s*/, "").trim());
+                    return actionItems;
+                }
+
+                const numberedItems = result.match(/(?:^|\n)\d+\.\s*(.+)(?:\n|$)/g);
+                if (numberedItems?.length) {
+                    actionItems = numberedItems.map((item) => item.replace(/^\d+\.\s*/, "").trim());
+                    return actionItems;
+                }
+            } catch (error) {
+                console.error("Error in fallback parsing:", error);
             }
-
-            // Fallback: try to extract bullet points or numbered items if JSON parsing fails
-            const bulletItems = result.match(/(?:^|\n)[-*•]\s*(.+)(?:\n|$)/g);
-            if (bulletItems?.length) {
-                return bulletItems.map((item) => item.replace(/^[-*•]\s*/, "").trim());
-            }
-
-            const numberedItems = result.match(/(?:^|\n)\d+\.\s*(.+)(?:\n|$)/g);
-            if (numberedItems?.length) {
-                return numberedItems.map((item) => item.replace(/^\d+\.\s*/, "").trim());
-            }
-
-            // If we can't parse JSON but have text, return as single item
-            return result ? [result] : [];
-        } catch (error) {
-            console.error("Error parsing action items JSON:", error);
-            console.error("Raw result:", result);
-
-            // Fallback: try to extract bullet points or numbered items
-            const bulletItems = result.match(/(?:^|\n)[-*•]\s*(.+)(?:\n|$)/g);
-            if (bulletItems?.length) {
-                return bulletItems.map((item) => item.replace(/^[-*•]\s*/, "").trim());
-            }
-
-            const numberedItems = result.match(/(?:^|\n)\d+\.\s*(.+)(?:\n|$)/g);
-            if (numberedItems?.length) {
-                return numberedItems.map((item) => item.replace(/^\d+\.\s*/, "").trim());
-            }
-
-            return result ? [result] : [];
+            
+            retries++;
         }
+        
+        return actionItems;
     } catch (error) {
         console.error("Error extracting action items with OpenRouter:", error);
         return [];
@@ -238,39 +233,33 @@ export async function extractContactInfo(email: Email): Promise<Record<string, s
     EMAIL:
     ${emailText.substring(0, 3000)}
     
-    Format your response as a JSON object with contact details as key-value pairs. If no contact info, return an empty object {}.`;
+    Format your response as a JSON object with contact details as key-value pairs. If no contact info, return an empty object {}.
+    IMPORTANT: ONLY return the valid JSON object with no other text before or after.`;
 
-        const result = await callOpenRouter(prompt, { temperature: 0.1, maxTokens: 300 });
-
-        // Try to extract JSON object from response
-        try {
-            const match = result.match(/\{([\s\S]*?)\}/);
-            if (match) {
-                // Clean up the JSON before parsing
-                let jsonStr = match[0];
-
-                // Replace potential formatting issues from Gemini model
-                jsonStr = jsonStr
-                    // Fix unquoted property names
-                    .replace(/(\s*?{\s*?|\s*?,\s*?)(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '$1"$3":')
-                    // Fix single quotes to double quotes
-                    .replace(/'/g, '"')
-                    // Remove trailing commas before closing brackets
-                    .replace(/,\s*}/g, "}");
-
-                // Try parsing the cleaned JSON
-                const jsonObj = JSON.parse(jsonStr);
-                return typeof jsonObj === "object" ? jsonObj : {};
+        // Maximum retries for getting valid JSON
+        const MAX_RETRIES = 3;
+        let retries = 0;
+        
+        while (retries < MAX_RETRIES) {
+            const temperature = 0.1 + (retries * 0.1); // Increase temperature slightly on retries
+            const result = await callOpenRouter(prompt, { 
+                temperature, 
+                maxTokens: 300,
+                model: retries > 0 ? "mistralai/ministral-3b" : DEFAULT_MODEL // Try better model on retry
+            });
+            
+            // Try parsing as JSON
+            const parsedInfo = tryParseJson<Record<string, string>>(result, 
+                (data) => typeof data === 'object' && data !== null && !Array.isArray(data)
+            );
+            
+            if (parsedInfo !== null) {
+                return parsedInfo;
             }
-
-            // If response indicates no contact info
-            if (result.includes("No contact information")) {
-                return {};
-            }
-
-            // Fallback: try to extract key-value pairs if JSON parsing fails
+            
+            // If JSON parsing failed, try fallback extraction
             const contactInfo: Record<string, string> = {};
-
+            
             // Look for Email: something@example.com patterns
             const emailMatch = result.match(
                 /email:?\s*([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i,
@@ -288,31 +277,11 @@ export async function extractContactInfo(email: Email): Promise<Record<string, s
             if (Object.keys(contactInfo).length > 0) {
                 return contactInfo;
             }
-
-            return {};
-        } catch (error) {
-            console.error("Error parsing contact info JSON:", error);
-            console.error("Raw result:", result);
-
-            // Fallback: try to extract key-value pairs
-            const contactInfo: Record<string, string> = {};
-
-            // Look for Email: something@example.com patterns
-            const emailMatch = result.match(
-                /email:?\s*([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i,
-            );
-            if (emailMatch?.[1]) contactInfo.email = emailMatch[1].trim();
-
-            // Look for Phone: 123-456-7890 patterns
-            const phoneMatch = result.match(/phone:?\s*([\d\s+\-()]{7,})/i);
-            if (phoneMatch?.[1]) contactInfo.phone = phoneMatch[1].trim();
-
-            // Look for Name: John Doe patterns
-            const nameMatch = result.match(/name:?\s*([^:,\n]{2,})/i);
-            if (nameMatch?.[1]) contactInfo.name = nameMatch[1].trim();
-
-            return contactInfo;
+            
+            retries++;
         }
+        
+        return {}; // If all attempts fail, return empty object
     } catch (error) {
         console.error("Error extracting contact info with OpenRouter:", error);
         return {};
@@ -326,7 +295,6 @@ export async function processEmail(email: Email) {
     try {
         // Prepare email text once to avoid repetitive cleaning
         const emailText = cleanEmail(email);
-        console.log("Cleaned email text: ", emailText);
 
         if (!emailText || emailText.length < 30) {
             return {
@@ -355,111 +323,68 @@ IMPORTANT: Your output MUST follow this exact JSON format with all fields proper
 EMAIL:
 ${emailText.substring(0, 3000)}
 
-Remember to ONLY return a valid JSON object. The summary MUST use 'you' and 'your' to address the reader directly.`;
+You MUST ONLY return a valid JSON object without any other text before or after. This is critical - no explanatory text, just return the properly formatted JSON.`;
 
-        // Use a more powerful model for comprehensive analysis
-        const result = await callOpenRouter(prompt, {
-            model: "google/gemini-flash-1.5-8b",
-            // model: "qwen/qwen2.5-vl-72b-instruct:free",
-            temperature: 0.2,
-            maxTokens: 800,
-        });
-        // Try to extract JSON from the response
-        try {
-            // First check if response is wrapped in code blocks (```json ... ```)
-            let cleanedResult = result;
+        // Max retries for parsing the JSON response
+        const MAX_JSON_PARSING_RETRIES = 3;
+        let jsonParsingAttempts = 0;
+
+        // Loop until we get valid JSON or hit retry limit
+        while (jsonParsingAttempts < MAX_JSON_PARSING_RETRIES) {
+            // Increase temperature slightly on retries to get different responses
+            const retryTemperature = 0.2 + (jsonParsingAttempts * 0.1);
             
-            // Remove markdown code block formatting if present
-            const codeBlockMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
-            if (codeBlockMatch?.[1]) {
-                cleanedResult = codeBlockMatch[1].trim();
-                console.log("Extracted JSON from code block");
-            }
-            
-            const jsonObj = JSON.parse(cleanedResult);
+            // Use a more powerful model for comprehensive analysis
+            const result = await callOpenRouter(prompt, {
+                model: jsonParsingAttempts === 0 ? "google/gemini-flash-1.5-8b" : "mistralai/ministral-3b",
+                temperature: retryTemperature,
+                maxTokens: 800,
+            });
 
-            if (jsonObj) {
-                console.log("Successfully parsed JSON response");
-                return {
-                    category: jsonObj.category || "Uncategorized",
-                    priority: jsonObj.priority || "Medium",
-                    priorityExplanation: jsonObj.priorityExplanation || "",
-                    summary: jsonObj.summary || "No summary available",
-                    actionItems: Array.isArray(jsonObj.actionItems) ? jsonObj.actionItems : [],
-                    contactInfo: typeof jsonObj.contactInfo === "object" ? jsonObj.contactInfo : {},
-                };
-            }
-
-            // If no JSON could be extracted, try regex-based extraction as fallback
-            // Additional fallback - try to extract individual fields from the text response
-            const categoryMatch = result.match(/category["\s:]+([^"\n,]+)/i);
-            const priorityMatch = result.match(/priority["\s:]+([^"\n,]+)/i);
-            const summaryMatch = result.match(/summary["\s:]+([^"\n}]+)/i);
-
-            const extractedData: any = {};
-            if (categoryMatch?.[1]) extractedData.category = categoryMatch[1].trim();
-            if (priorityMatch?.[1]) extractedData.priority = priorityMatch[1].trim();
-            if (summaryMatch?.[1]) extractedData.summary = summaryMatch[1].trim();
-
-            if (Object.keys(extractedData).length > 0) {
-                console.log("Extracted partial data from text:", extractedData);
-                return {
-                    category: extractedData.category || "Uncategorized",
-                    priority: extractedData.priority || "Medium",
-                    priorityExplanation: "Extracted from malformed response",
-                    summary: extractedData.summary || "No summary available",
-                    actionItems: [],
-                    contactInfo: {},
-                };
-            }
-        } catch (error) {
-            console.error("Error parsing comprehensive email analysis JSON:", error);
-
-            // Try to extract JSON from code blocks before falling back to regex
+            // Try to extract JSON from the response
             try {
+                // First check if response is wrapped in code blocks (```json ... ```)
+                let cleanedResult = result;
+                
+                // Remove markdown code block formatting if present
                 const codeBlockMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
                 if (codeBlockMatch?.[1]) {
-                    const cleanedResult = codeBlockMatch[1].trim();
-                    console.log("Attempting to parse JSON from code block after initial failure");
-                    const jsonObj = JSON.parse(cleanedResult);
+                    cleanedResult = codeBlockMatch[1].trim();
+                }
+                
+                // Parse the JSON
+                const parsedData = JSON.parse(cleanedResult);
+                
+                // Validate required fields exist
+                if (!parsedData.category || !parsedData.priority || !parsedData.summary) {
+                    jsonParsingAttempts++;
+                } else {
+                    // Successfully parsed valid JSON with required fields
                     
+                    // If we successfully parsed JSON data, return it
                     return {
-                        category: jsonObj.category || "Uncategorized",
-                        priority: jsonObj.priority || "Medium",
-                        priorityExplanation: jsonObj.priorityExplanation || "",
-                        summary: jsonObj.summary || "No summary available",
-                        actionItems: Array.isArray(jsonObj.actionItems) ? jsonObj.actionItems : [],
-                        contactInfo: typeof jsonObj.contactInfo === "object" ? jsonObj.contactInfo : {},
+                        category: parsedData.category || "Uncategorized",
+                        priority: parsedData.priority || "Medium",
+                        priorityExplanation: parsedData.priorityExplanation || "",
+                        summary: parsedData.summary || "No summary available",
+                        actionItems: Array.isArray(parsedData.actionItems) ? parsedData.actionItems : [],
+                        contactInfo: typeof parsedData.contactInfo === "object" ? parsedData.contactInfo : {},
                     };
                 }
-            } catch (codeBlockError) {
-                console.error("Failed to parse code block JSON:", codeBlockError);
-            }
-
-            // Additional fallback - try to extract individual fields from the text response
-            const categoryMatch = result.match(/category["\s:]+([^"\n,]+)/i);
-            const priorityMatch = result.match(/priority["\s:]+([^"\n,]+)/i);
-            const summaryMatch = result.match(/summary["\s:]+([^"\n}]+)/i);
-
-            const extractedData: any = {};
-            if (categoryMatch?.[1]) extractedData.category = categoryMatch[1].trim();
-            if (priorityMatch?.[1]) extractedData.priority = priorityMatch[1].trim();
-            if (summaryMatch?.[1]) extractedData.summary = summaryMatch[1].trim();
-
-            if (Object.keys(extractedData).length > 0) {
-                console.log("Extracted partial data from text:", extractedData);
-                return {
-                    category: extractedData.category || "Uncategorized",
-                    priority: extractedData.priority || "Medium",
-                    priorityExplanation: "Extracted from malformed response",
-                    summary: extractedData.summary || "No summary available",
-                    actionItems: [],
-                    contactInfo: {},
-                };
+            } catch (error) {
+                console.error(`JSON parsing error on attempt ${jsonParsingAttempts + 1}:`, error);
+                jsonParsingAttempts++;
+                
+                // If we're at the last attempt, no need to log about retrying
+                if (jsonParsingAttempts < MAX_JSON_PARSING_RETRIES) {
+                    console.log("Retrying with different model/parameters...");
+                }
             }
         }
 
-        // Fallback to individual processing if batch processing fails
+        // If we couldn't get valid JSON after all retries, fall back to individual processing
+        console.log("Falling back to individual processing methods after JSON parsing failures");
+        
         // Get priority with explanation
         const priorityInfo = await getPriorityWithExplanation(email);
 
@@ -481,6 +406,32 @@ Remember to ONLY return a valid JSON object. The summary MUST use 'you' and 'you
             actionItems: [],
             contactInfo: {},
         };
+    }
+}
+
+/**
+ * Helper function to safely parse JSON with validation
+ */
+function tryParseJson<T>(jsonString: string, validator?: (data: any) => boolean): T | null {
+    try {
+        // Try to extract from code blocks first
+        let cleanedJson = jsonString;
+        const codeBlockMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (codeBlockMatch?.[1]) {
+            cleanedJson = codeBlockMatch[1].trim();
+        }
+        
+        // Parse JSON
+        const parsed = JSON.parse(cleanedJson);
+        
+        // Validate if validator function provided
+        if (validator && !validator(parsed)) {
+            return null;
+        }
+        
+        return parsed as T;
+    } catch (e) {
+        return null;
     }
 }
 
