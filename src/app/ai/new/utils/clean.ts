@@ -1,6 +1,6 @@
 import type { Email } from "@/app/inbox/types";
 import { convert } from "html-to-text";
-import { EMAIL_CLEANING, SIGNATURE_PATTERNS, REPLY_PATTERNS, CONTENT_TYPES } from "../constants";
+import { EMAIL_CLEANING, SIGNATURE_PATTERNS, REPLY_PATTERNS } from "../constants";
 
 /**
  * Clean email body text to remove signatures, quoted replies, etc.
@@ -13,15 +13,12 @@ function cleanEmailBody(body: string): string {
   // Convert HTML to text if needed
   let cleanedText = body;
   
-  // Check if this is HTML content
-  if (body.includes("<") && body.includes(">")) {
     try {
       cleanedText = convert(body);
     } catch (error) {
       console.error("[cleanEmailBody] HTML conversion error:", error);
       // Keep original if conversion fails
     }
-  }
   
   // Remove email signatures
   for (const pattern of SIGNATURE_PATTERNS) {
@@ -93,13 +90,11 @@ export function cleanMetadata(email: Email): Record<string, any> {
   }
   
   // Add createdAt as ISO string
-  if (email.createdAt) {
-    metadata.createdAt = typeof email.createdAt === 'string' 
-      ? email.createdAt 
-      : email.createdAt.toISOString();
-  } else {
-    metadata.createdAt = new Date().toISOString();
-  }
+  metadata.createdAt = email.createdAt instanceof Date 
+    ? email.createdAt.toISOString() 
+    : typeof email.createdAt === 'string'
+      ? email.createdAt
+      : new Date().toISOString();
   
   // Add from/to with length limits
   if (email.from) {
@@ -111,8 +106,7 @@ export function cleanMetadata(email: Email): Record<string, any> {
   }
   
   // Add labels if they exist (limit to prevent metadata size issues)
-  if (email.labels && Array.isArray(email.labels) && email.labels.length > 0) {
-    // Only include the first few labels to control metadata size
+  if (email.labels?.length) {
     metadata.labels = email.labels.slice(0, 5);
   }
   

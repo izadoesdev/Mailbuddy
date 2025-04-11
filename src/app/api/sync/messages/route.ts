@@ -3,6 +3,7 @@ import { auth } from "@/libs/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/libs/db";
 import env from "@/libs/env";
+import { withGmailApi } from "../../utils/withGmail";
 
 // Constants
 const DEFAULT_BATCH_SIZE = 500;
@@ -35,6 +36,7 @@ interface MessageData {
     id: string;
     threadId: string;
     userId: string;
+    internalDate?: string;
 }
 
 interface TransactionResult {
@@ -373,11 +375,11 @@ function createSyncStream(
 
                     try {
                         // Query Gmail API for messages
-                        const response = (await gmailClient.users.messages.list({
+                        const response = await gmailClient.users.messages.list({
                             userId: GMAIL_USER_ID,
                             maxResults: batchSize,
                             pageToken: pageToken || undefined,
-                        })) as any; // Type assertion to avoid circular reference
+                        });
 
                         // Reset retry count on successful request
                         retryCount = 0;
@@ -586,39 +588,100 @@ async function processMessageChunk(
     chunk: Array<{ id: string; threadId: string }>,
     userId: string,
 ): Promise<TransactionResult> {
-    // Create message data for upserting
-    const messageDataToUpsert: MessageData[] = chunk.map((msg) => ({
-        id: msg.id,
-        threadId: msg.threadId,
-        userId,
-    }));
-
-    // Perform database transaction
-    return await prisma.$transaction<TransactionResult>(async (tx: any) => {
-        // Find existing messages
-        const existingMessages = await tx.message.findMany({
+    try {
+        // Find account for API access
+        const account = await prisma.account.findFirst({
             where: {
-                id: {
-                    in: messageDataToUpsert.map((m) => m.id),
-                },
+                userId,
+                providerId: PROVIDER_ID,
             },
-            select: { id: true },
+            select: {
+                accessToken: true,
+                refreshToken: true,
+            },
         });
+        
+        if (!account?.accessToken) {
+            log(`No valid access token for user ${userId}`);
+            throw new Error("No valid access token");
+        }
+        
+        // Get additional metadata for messages in parallel
+        const messagePromises = chunk.map(msg => 
+            withGmailApi(
+                userId,
+                account.accessToken,
+                account.refreshToken,
+                async (gmail) => {
+                    try {
+                        const response = await gmail.users.messages.get({
+                            userId: GMAIL_USER_ID,
+                            id: msg.id,
+                            format: "minimal",
+                        });
+                        
+                        return {
+                            id: msg.id,
+                            threadId: msg.threadId,
+                            internalDate: response.data.internalDate,
+                        };
+                    } catch (error) {
+                        log(`Error fetching metadata for message ${msg.id}:`, error);
+                        return {
+                            id: msg.id,
+                            threadId: msg.threadId,
+                        };
+                    }
+                }
+            )
+        );
+        
+        const messageDetails = await Promise.all(messagePromises);
+        
+        // Create message data for upserting, filtering out nulls from failed API calls
+        const messageDataToUpsert: MessageData[] = messageDetails
+            .filter(Boolean)
+            .map((msg: any) => ({
+                id: msg.id,
+                threadId: msg.threadId,
+                userId,
+                internalDate: msg.internalDate,
+            }));
 
-        const existingIds = new Set(existingMessages.map((m: { id: string }) => m.id));
-        const newMessages = messageDataToUpsert.filter((m) => !existingIds.has(m.id));
-
-        // Create new messages
-        if (newMessages.length > 0) {
-            await tx.message.createMany({
-                data: newMessages,
-                skipDuplicates: true,
-            });
+        if (messageDataToUpsert.length === 0) {
+            return { created: 0, existing: chunk.length };
         }
 
-        return {
-            created: newMessages.length,
-            existing: existingIds.size,
-        };
-    });
+        // Perform database transaction
+        return await prisma.$transaction<TransactionResult>(async (tx: any) => {
+            // Find existing messages
+            const existingMessages = await tx.message.findMany({
+                where: {
+                    id: {
+                        in: messageDataToUpsert.map((m) => m.id),
+                    },
+                },
+                select: { id: true },
+            });
+
+            const existingIds = new Set(existingMessages.map((m: { id: string }) => m.id));
+            const newMessages = messageDataToUpsert.filter((m) => !existingIds.has(m.id));
+
+            // Create new messages
+            if (newMessages.length > 0) {
+                await tx.message.createMany({
+                    data: newMessages,
+                    skipDuplicates: true,
+                });
+            }
+
+            return {
+                created: newMessages.length,
+                existing: existingIds.size,
+            };
+        });
+    } catch (error) {
+        log(`Error in processMessageChunk:`, error);
+        return { created: 0, existing: chunk.length };
+    }
 }
