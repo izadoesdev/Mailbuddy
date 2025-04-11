@@ -278,7 +278,11 @@ export default function InboxPage() {
                         transition: "width 0.3s ease",
                     }}
                 >
-                    <EmailDetail email={selectedEmail} onClose={() => setSelectedEmail(null)} />
+                    <EmailDetail 
+                        email={selectedEmail} 
+                        onClose={() => setSelectedEmail(null)} 
+                        onToggleStar={handleToggleStar}
+                    />
                 </Column>
             )}
         </Row>

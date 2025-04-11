@@ -40,8 +40,8 @@ export function Pagination({
                     variant="secondary"
                     tooltip="Previous"
                     icon="chevronLeft"
-                    onClick={() => onPageChange(page - 1)}
-                    disabled={page === 1 || isLoading || isFetching}
+                    onClick={() => onPageChange(Math.max(1, page - 1))}
+                    disabled={page <= 1 || isLoading || isFetching}
                     aria-label="Previous page"
                 />
                 
@@ -73,7 +73,7 @@ export function Pagination({
                     variant="secondary"
                     tooltip="Next"
                     icon="chevronRight"
-                    onClick={() => onPageChange(page + 1)}
+                    onClick={() => onPageChange(Math.min(totalPages, page + 1))}
                     disabled={page >= totalPages || isLoading || isFetching}
                     aria-label="Next page"
                 />

@@ -17,16 +17,6 @@ const GMAIL_USER_ID = "me";
 const PAGE_SIZE = 20;
 const FETCH_BATCH_SIZE = 20;
 
-const activeUserFetches = new Map<string, { isActive: boolean }>();
-
-function isUserFetchActive(userId: string): boolean {
-    return activeUserFetches.get(userId)?.isActive || false;
-}
-
-function setUserFetchStatus(userId: string, isActive: boolean): void {
-    activeUserFetches.set(userId, { isActive });
-}
-
 /**
  * GET handler for inbox API
  */
@@ -37,12 +27,6 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = session.user.id;
-
-    if (isUserFetchActive(userId)) {
-        return NextResponse.json({ error: "Fetch already in progress" }, { status: 409 });
-    }
-
-    setUserFetchStatus(userId, true);
 
     try {
         const { searchParams } = new URL(request.url);
@@ -239,11 +223,8 @@ export async function GET(request: NextRequest) {
             pageSize,
         };
 
-        setUserFetchStatus(userId, false);
-
         return NextResponse.json(result);
     } catch (error) {
-        setUserFetchStatus(userId, false);
         return NextResponse.json(
             {
                 error: error instanceof Error ? error.message : "An unexpected error occurred",
@@ -408,9 +389,6 @@ async function fetchMissingEmails(
         return [];
     }
 
-    if (!isUserFetchActive(userId)) {
-        return [];
-    }
 
     try {
         const messageDetails = await prisma.message.findMany({
@@ -422,9 +400,6 @@ async function fetchMissingEmails(
         const fetchedEmails: any[] = [];
 
         for (let i = 0; i < missingIds.length; i += FETCH_BATCH_SIZE) {
-            if (!isUserFetchActive(userId)) {
-                return fetchedEmails;
-            }
 
             const batch = missingIds.slice(i, i + FETCH_BATCH_SIZE);
             let batchResults: any[] = [];
