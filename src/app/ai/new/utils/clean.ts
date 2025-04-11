@@ -50,7 +50,10 @@ function cleanEmailBody(body: string): string {
 export function cleanEmail(email: Email): string {
   // Clean the subject and body
   const subject = email.subject?.trim() || '';
-  const cleanedBody = cleanEmailBody(email.body || '');
+  let cleanedBody = cleanEmailBody(email.body || '');
+
+  // Remove all links
+  cleanedBody = cleanedBody.replace(/https?:\/\/[^\s]+/g, '');
   
   // Combine subject and cleaned body
   let content = '';

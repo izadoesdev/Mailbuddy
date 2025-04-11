@@ -30,9 +30,12 @@ export function Pagination({
     const endItem = Math.min(page * pageSize, totalCount || page * pageSize);
     const showCount = totalCount !== undefined;
 
+    // Generate page options for the dropdown
+    const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+
     return (
         <Column>
-            <Row paddingY="16" gap="8" horizontal="center">
+            <Row paddingY="16" gap="8" horizontal="center" wrap>
                 <Button
                     variant="secondary"
                     label="Previous"
@@ -54,6 +57,33 @@ export function Pagination({
                     disabled={page >= totalPages || isLoading || isFetching}
                     aria-label="Next page"
                 />
+
+                {totalPages > 3 && (
+                    <select
+                        value={page}
+                        onChange={(e) => {
+                            const value = Number.parseInt(e.target.value, 10);
+                            if (!Number.isNaN(value) && value >= 1 && value <= totalPages) {
+                                onPageChange(value);
+                            }
+                        }}
+                        disabled={isLoading || isFetching}
+                        style={{ 
+                            minWidth: '120px',
+                            padding: '8px',
+                            borderRadius: '4px',
+                            border: '1px solid #ccc',
+                            marginLeft: '8px'
+                        }}
+                        aria-label="Go to specific page"
+                    >
+                        {pageNumbers.map((num) => (
+                            <option key={num} value={num}>
+                                Page {num}
+                            </option>
+                        ))}
+                    </select>
+                )}
             </Row>
 
             {showCount && !isLoading && (

@@ -7,6 +7,7 @@
 
 // Import required functions for local use
 import { processEmail } from './utils/groq';
+import { processEmail as processEmailOpenRouter } from './utils/openrouter';
 import { storeEmail } from './utils/vectors';
 import { saveEmailAIMetadata, getEmailAIMetadata } from './utils/database';
 
@@ -94,8 +95,8 @@ export async function enhanceEmail(email: any) {
       };
     }
     
-    // Process the email with Groq to extract all AI metadata at once
-    const aiData = await processEmail(email);
+    // Process the email with OpenRouter to extract all AI metadata at once
+    const aiData = await processEmailOpenRouter(email);
     
     // Store the email in the vector database for future searches
     await storeEmail(email);
