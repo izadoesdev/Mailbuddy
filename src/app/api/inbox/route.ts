@@ -65,12 +65,13 @@ export async function GET(request: NextRequest) {
         const page = Number.parseInt(searchParams.get("page") || "1", 10);
         const pageSize = Number.parseInt(searchParams.get("pageSize") || PAGE_SIZE.toString(), 10);
         const threadView = searchParams.get("threadView") === "true";
+        const category = searchParams.get("category") || null;
 
         // Calculate offset based on page
         const skip = (page - 1) * pageSize;
 
         log(
-            `Fetching inbox for user: ${userId}, page: ${page}, pageSize: ${pageSize}, threadView: ${threadView}`,
+            `Fetching inbox for user: ${userId}, page: ${page}, pageSize: ${pageSize}, threadView: ${threadView}, category: ${category}`,
         );
 
         // Add performance metrics
@@ -81,7 +82,7 @@ export async function GET(request: NextRequest) {
         log(`Total thread count: ${totalCount}`);
 
         // Get message IDs
-        const messageIds = await getMessageIds(userId, threadView, pageSize, skip);
+        const messageIds = await getMessageIds(userId, pageSize, skip);
         log(`Retrieved ${messageIds.length} message IDs`);
 
         // Get existing emails from database
@@ -107,13 +108,38 @@ export async function GET(request: NextRequest) {
         log(`Successfully fetched ${fetchedEmails.length} emails from Gmail API`);
 
         // Process emails
-        const allEmails = processEmails(existingEmails, fetchedEmails, threadView);
-        log(`Total emails to display: ${allEmails.length}`);
+        let allEmails = processEmails(existingEmails, fetchedEmails, threadView);
+        
+        // Further filter by category if specified
+        if (category) {
+            allEmails = allEmails.filter(email => {
+                // Handle special case for starred emails
+                if (category.toUpperCase() === "STARRED") {
+                    return email.isStarred;
+                }
+                
+                // For other categories, check the labels array
+                if (!email.labels || email.labels.length === 0) {
+                    return false;
+                }
+                
+                // Convert category to uppercase and prefix with CATEGORY_ if needed
+                let labelToMatch = category.toUpperCase();
+                if (["SOCIAL", "UPDATES", "FORUMS", "PROMOTIONS", "PERSONAL"].includes(labelToMatch)) {
+                    labelToMatch = `CATEGORY_${labelToMatch}`;
+                }
+                
+                return email.labels.includes(labelToMatch);
+            });
+        }
+        
+        log(`Filtered to ${allEmails.length} emails after category filtering`);
+        
         // Return the results
         const result = {
             emails: allEmails,
             hasMore: skip + allEmails.length < totalCount,
-            totalCount,
+            totalCount: allEmails.length,
             page,
             pageSize,
         };
@@ -156,11 +182,9 @@ async function getTotalThreadCount(userId: string): Promise<number> {
  */
 async function getMessageIds(
     userId: string,
-    threadView: boolean,
     pageSize: number,
     skip: number,
 ): Promise<{ id: string }[]> {
-    if (threadView) {
         log(`Thread view: fetching threads with skip=${skip}, take=${pageSize}`);
 
         try {
@@ -223,26 +247,6 @@ async function getMessageIds(
             log("Error fetching thread messages:", error);
             return [];
         }
-    } else {
-        log(`Message view: fetching messages directly with skip=${skip}, take=${pageSize}`);
-
-        try {
-            // For non-thread view, get all message IDs with pagination
-            const messages = await prisma.message.findMany({
-                where: { userId },
-                select: { id: true },
-                orderBy: { createdAt: "desc" },
-                skip,
-                take: pageSize,
-            });
-
-            log(`Found ${messages.length} messages`);
-            return messages;
-        } catch (error) {
-            log("Error fetching direct messages:", error);
-            return [];
-        }
-    }
 }
 
 /**
@@ -547,12 +551,25 @@ function processEmails(existingEmails: any[], fetchedEmails: any[], threadView: 
         return [];
     }
 
+    // Filter out emails with certain labels that shouldn't appear in the main inbox
+    const filteredEmails = allEmails.filter(email => {
+        if (!email.labels || email.labels.length === 0) return true;
+        
+        // Keep emails if they don't have any of these labels
+        return !email.labels.some(
+            (label: string) => 
+                label === "TRASH" || 
+                label === "DRAFT" || 
+                label === "SPAM"
+        );
+    });
+
     // For thread view, we want to get the latest email from each thread
     if (threadView) {
         const threadMap = new Map();
 
         // Group by thread ID and keep the latest email in each thread
-        for (const email of allEmails) {
+        for (const email of filteredEmails) {
             const threadId = email.threadId;
             if (
                 !threadMap.has(threadId) ||
@@ -569,7 +586,7 @@ function processEmails(existingEmails: any[], fetchedEmails: any[], threadView: 
     }
 
     // Simple sort by date for non-thread view
-    return allEmails.sort(
+    return filteredEmails.sort(
         (a, b) => new Date(b.internalDate).getTime() - new Date(a.internalDate).getTime(),
     );
 }

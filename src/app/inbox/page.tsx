@@ -174,8 +174,6 @@ export default function InboxPage() {
                 <InboxControls
                     searchQuery={searchQuery}
                     onSearchChange={handleSearchChange}
-                    threadView={threadView}
-                    onThreadViewChange={handleThreadViewChange}
                     isLoading={isLoading}
                     isFetching={isFetching}
                     onRefresh={handleRefresh}

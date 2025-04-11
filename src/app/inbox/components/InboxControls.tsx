@@ -4,7 +4,6 @@ import {
     Text,
     Input,
     Icon,
-    Switch,
     Button,
     Select,
     Tooltip,
@@ -19,8 +18,6 @@ import {
 interface InboxControlsProps {
     searchQuery: string;
     onSearchChange: (value: string) => void;
-    threadView: boolean;
-    onThreadViewChange: (value: boolean) => void;
     pageSize: number;
     onPageSizeChange: (value: number) => void;
     onRefresh: () => void;
@@ -38,8 +35,6 @@ interface InboxControlsProps {
 export function InboxControls({
     searchQuery,
     onSearchChange,
-    threadView,
-    onThreadViewChange,
     pageSize,
     onPageSizeChange,
     onRefresh,
@@ -161,12 +156,6 @@ export function InboxControls({
                 )}
 
                 <Row gap="8" fillWidth horizontal="end">
-                    <Switch
-                        id="thread-toggle"
-                        label="Thread view"
-                        isChecked={threadView}
-                        onToggle={() => onThreadViewChange(!threadView)}
-                    />
                     <DropdownWrapper
                         trigger={
                             <Button

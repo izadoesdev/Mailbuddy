@@ -8,6 +8,7 @@ interface FetchEmailsParams {
     pageSize: number;
     threadView: boolean;
     searchQuery?: string;
+    category?: string;
     enabled?: boolean;
 }
 
@@ -17,13 +18,14 @@ interface FetchEmailsParams {
 const fetchEmails = async ({
     page,
     pageSize,
-    threadView,
     searchQuery,
+    category,
 }: Omit<FetchEmailsParams, "enabled">): Promise<InboxResponse> => {
     try {
         const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : "";
+        const categoryParam = category ? `&category=${encodeURIComponent(category)}` : "";
         const response = await fetch(
-            `/api/inbox?page=${page}&pageSize=${pageSize}&threadView=${threadView}${searchParam}`,
+            `/api/inbox?page=${page}&pageSize=${pageSize}${searchParam}${categoryParam}`,
         );
 
         // Special case: If we get a 404, it might just mean no emails yet
@@ -93,6 +95,7 @@ export function useInboxData({
     pageSize,
     threadView,
     searchQuery,
+    category,
     enabled = true,
 }: FetchEmailsParams) {
     const { addToast } = useToast();
@@ -101,8 +104,8 @@ export function useInboxData({
 
     // Define the query options
     const queryOptions: UseQueryOptions<InboxResponse, Error> = {
-        queryKey: ["emails", page, pageSize, threadView, searchQuery],
-        queryFn: () => fetchEmails({ page, pageSize, threadView, searchQuery }),
+        queryKey: ["emails", page, pageSize, threadView, searchQuery, category],
+        queryFn: () => fetchEmails({ page, pageSize, threadView, searchQuery, category }),
         staleTime: 60 * 1000, // 1 minute
         retry: false, // Disable retries to prevent multiple error messages
         enabled, // Only run the query when enabled is true

@@ -11,3 +11,17 @@ export interface InboxResponse {
     page: number;
     pageSize: number;
 }
+
+export type GmailLabel = 
+    | "INBOX" 
+    | "SENT" 
+    | "DRAFT" 
+    | "TRASH" 
+    | "SPAM" 
+    | "STARRED" 
+    | "IMPORTANT" 
+    | "CATEGORY_SOCIAL" 
+    | "CATEGORY_UPDATES" 
+    | "CATEGORY_FORUMS" 
+    | "CATEGORY_PROMOTIONS" 
+    | "CATEGORY_PERSONAL";
