@@ -12,7 +12,7 @@ import { useInboxData } from "./hooks/useInboxData";
 import { useEmailMutations } from "./hooks/useEmailMutations";
 import { useBackgroundSync } from "./hooks/useBackgroundSync";
 import { useAISearch } from "./hooks/useAISearch";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, Suspense } from "react";
 import { useUser } from "@/libs/auth/client";
 import { redirect, useRouter } from "next/navigation";
 import { createParser, useQueryState } from "nuqs";
@@ -44,7 +44,7 @@ const pageSizeParser = createParser({
     serialize: String,
 }).withDefault(20);
 
-export default function InboxPage() {
+function InboxPage() {
     // Authentication check
     const router = useRouter();
     const { user, isLoading: isAuthLoading } = useUser();
@@ -287,4 +287,12 @@ export default function InboxPage() {
             )}
         </Row>
     );
+}
+
+export default function Page() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <InboxPage />
+        </Suspense>
+    )
 }
