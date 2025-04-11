@@ -35,11 +35,7 @@ export interface EmailResponse {
  * @param skip Number of emails to skip (for pagination)
  * @returns Array of emails
  */
-export async function getExistingEmails(
-    userId: string,
-    limit = 20,
-    skip = 0,
-): Promise<any[]> {
+export async function getExistingEmails(userId: string, limit = 20, skip = 0): Promise<any[]> {
     return prisma.email.findMany({
         where: {
             userId,

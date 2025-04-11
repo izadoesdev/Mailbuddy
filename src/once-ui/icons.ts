@@ -86,7 +86,7 @@ export const iconLibrary: Record<string, IconType> = {
     sparkles: HiOutlineSparkles,
     star: HiOutlineStar,
     cloud: HiOutlineCloud,
-    list: HiOutlineListBullet
+    list: HiOutlineListBullet,
 };
 
 export type IconLibrary = typeof iconLibrary;

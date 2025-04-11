@@ -271,7 +271,9 @@ async function getExistingEmails(messageIds: { id: string }[]): Promise<any[]> {
         });
 
         // Log metadata status
-        log(`Retrieved ${emails.length} emails, ${emails.filter(e => e.aiMetadata).length} have AI metadata`);
+        log(
+            `Retrieved ${emails.length} emails, ${emails.filter((e) => e.aiMetadata).length} have AI metadata`,
+        );
 
         // Decrypt sensitive fields
         const decryptedEmails = emails.map((email) => {
@@ -427,11 +429,11 @@ async function storeEmailBatch(emails: any[]): Promise<void> {
         }
 
         log(`Successfully stored ${encryptedEmails.length} emails in database`);
-        
+
         // Store emails in vector database for AI search
         // Run this asynchronously without awaiting - don't block the API response
         setTimeout(() => {
-            processEmailsForVectorStorage(emails).catch(error => {
+            processEmailsForVectorStorage(emails).catch((error) => {
                 log("Background vector processing error:", error);
             });
         }, 100);
@@ -448,46 +450,46 @@ async function storeEmailBatch(emails: any[]): Promise<void> {
 async function processEmailsForVectorStorage(emails: any[]): Promise<void> {
     try {
         log(`Starting background vector processing for ${emails.length} emails`);
-        
+
         // Process emails in batches to avoid overwhelming the system
         const VECTOR_BATCH_SIZE = 5; // Smaller batch size to reduce memory pressure
-        
+
         for (let i = 0; i < emails.length; i += VECTOR_BATCH_SIZE) {
             const batch = emails.slice(i, i + VECTOR_BATCH_SIZE);
-            
+
             // Process emails in batch sequentially to avoid memory spikes
             for (const email of batch) {
                 try {
                     log(`Enhancing email ${email.id} for user ${email.userId}`);
-                    
+
                     // Dynamically import AI modules to avoid circular dependencies
                     // and ensure we're using the latest version of the module
-                    const ai = await import('@/app/ai/new/ai');
-                    
+                    const ai = await import("@/app/ai/new/ai");
+
                     // Use the enhanceEmail function which will:
                     // 1. Process with Groq to extract metadata
                     // 2. Store in vector database
                     // 3. Save metadata to database
                     const result = await ai.enhanceEmail(email);
-                    
+
                     if (!result.success) {
                         log(`Error enhancing email ${email.id}: ${result.error}`);
                     } else {
                         log(`Successfully enhanced email ${email.id} with AI metadata`);
                     }
-                    
+
                     // Add a small delay between emails to reduce CPU contention
-                    await new Promise(resolve => setTimeout(resolve, 50));
+                    await new Promise((resolve) => setTimeout(resolve, 50));
                 } catch (error) {
                     log(`Error processing email ${email.id}:`, error);
                     // Continue with other emails even if one fails
                 }
             }
-            
+
             // Add a small delay between batches
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise((resolve) => setTimeout(resolve, 100));
         }
-        
+
         log(`Successfully completed background vector processing for ${emails.length} emails`);
     } catch (error) {
         log("Error in background vector processing:", error);
@@ -552,7 +554,10 @@ function processEmails(existingEmails: any[], fetchedEmails: any[], threadView: 
         // Group by thread ID and keep the latest email in each thread
         for (const email of allEmails) {
             const threadId = email.threadId;
-            if (!threadMap.has(threadId) || new Date(email.internalDate) > new Date(threadMap.get(threadId).internalDate)) {
+            if (
+                !threadMap.has(threadId) ||
+                new Date(email.internalDate) > new Date(threadMap.get(threadId).internalDate)
+            ) {
                 threadMap.set(threadId, email);
             }
         }

@@ -36,18 +36,29 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
     const getPriorityColor = (priority?: string) => {
         if (!priority) return "neutral";
         switch (priority.toLowerCase()) {
-            case 'urgent': return "error";
-            case 'high': return "warning";
-            case 'medium': return "info";
-            case 'low': return "success";
-            default: return "neutral";
+            case "urgent":
+                return "error";
+            case "high":
+                return "warning";
+            case "medium":
+                return "info";
+            case "low":
+                return "success";
+            default:
+                return "neutral";
         }
     };
 
     return (
         <Column fill radius="xl" border="neutral-alpha-medium" overflow="hidden">
             <Column gap="24" fill>
-                <Row horizontal="space-between" vertical="center" paddingY="12" paddingX="24" borderBottom="neutral-alpha-medium" >
+                <Row
+                    horizontal="space-between"
+                    vertical="center"
+                    paddingY="12"
+                    paddingX="24"
+                    borderBottom="neutral-alpha-medium"
+                >
                     <Row gap="12" vertical="center">
                         <Heading variant="heading-strong-m">{email.subject}</Heading>
                         <IconButton
@@ -59,7 +70,13 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                             onClick={handleStarClick}
                         />
                     </Row>
-                    <IconButton tooltip="Close" tooltipPosition="left" variant="ghost" icon="close" onClick={onClose} />
+                    <IconButton
+                        tooltip="Close"
+                        tooltipPosition="left"
+                        variant="ghost"
+                        icon="close"
+                        onClick={onClose}
+                    />
                 </Row>
 
                 <Row gap="16" vertical="center" paddingX="24">
@@ -104,16 +121,18 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                                         </Row>
                                     </Heading>
                                 </Row>
-                                
+
                                 <Line />
-                                
+
                                 {email.aiMetadata.summary && (
                                     <Column gap="4">
                                         <Text variant="body-strong-s">Summary:</Text>
-                                        <Text variant="body-default-m">{email.aiMetadata.summary}</Text>
+                                        <Text variant="body-default-m">
+                                            {email.aiMetadata.summary}
+                                        </Text>
                                     </Column>
                                 )}
-                                
+
                                 <Row wrap gap="16">
                                     {email.aiMetadata.category && (
                                         <Column gap="4">
@@ -121,35 +140,45 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                                             <Tag label={email.aiMetadata.category} />
                                         </Column>
                                     )}
-                                    
+
                                     {email.aiMetadata.priority && (
                                         <Column gap="4">
                                             <Text variant="body-strong-s">Priority:</Text>
-                                            <Tag 
-                                                label={email.aiMetadata.priority} 
-                                                variant={getPriorityColor(email.aiMetadata.priority) as any}
+                                            <Tag
+                                                label={email.aiMetadata.priority}
+                                                variant={
+                                                    getPriorityColor(
+                                                        email.aiMetadata.priority,
+                                                    ) as any
+                                                }
                                             />
                                         </Column>
                                     )}
                                 </Row>
-                                
+
                                 {email.aiMetadata.priorityExplanation && (
                                     <Column gap="4">
                                         <Text variant="body-strong-s">Reasoning:</Text>
-                                        <Text variant="body-default-s">{email.aiMetadata.priorityExplanation}</Text>
+                                        <Text variant="body-default-s">
+                                            {email.aiMetadata.priorityExplanation}
+                                        </Text>
                                     </Column>
                                 )}
-                                
-                                {email.aiMetadata.keywords && email.aiMetadata.keywords.length > 0 && (
-                                    <Column gap="4">
-                                        <Text variant="body-strong-s">Key Points:</Text>
-                                        <Row gap="4" wrap>
-                                            {email.aiMetadata.keywords.map((keyword) => (
-                                                <Chip key={`keyword-${keyword}`} label={keyword} />
-                                            ))}
-                                        </Row>
-                                    </Column>
-                                )}
+
+                                {email.aiMetadata.keywords &&
+                                    email.aiMetadata.keywords.length > 0 && (
+                                        <Column gap="4">
+                                            <Text variant="body-strong-s">Key Points:</Text>
+                                            <Row gap="4" wrap>
+                                                {email.aiMetadata.keywords.map((keyword) => (
+                                                    <Chip
+                                                        key={`keyword-${keyword}`}
+                                                        label={keyword}
+                                                    />
+                                                ))}
+                                            </Row>
+                                        </Column>
+                                    )}
                             </Column>
                         </Card>
                     </Column>
@@ -160,11 +189,23 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                         dangerouslySetInnerHTML={{
                             __html: DOMPurify.sanitize(email.body || email.snippet || ""),
                         }}
-                        style={{ width: "100%", height: "100%", overflow: "auto", backgroundColor: "#fff", borderRadius: "12px" }}
+                        style={{
+                            width: "100%",
+                            height: "100%",
+                            overflow: "auto",
+                            backgroundColor: "#fff",
+                            borderRadius: "12px",
+                        }}
                     />
                 </Row>
 
-                <Row gap="8" horizontal="end" borderTop="neutral-alpha-medium" paddingY="8" paddingX="16">
+                <Row
+                    gap="8"
+                    horizontal="end"
+                    borderTop="neutral-alpha-medium"
+                    paddingY="8"
+                    paddingX="16"
+                >
                     <Button variant="secondary" label="Forward" prefixIcon="arrowRight" />
                     <Button label="Reply" prefixIcon="reply" />
                 </Row>

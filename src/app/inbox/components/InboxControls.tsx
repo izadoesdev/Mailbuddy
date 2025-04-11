@@ -1,5 +1,20 @@
 import React, { useState } from "react";
-import { Row, Text, Input, Icon, Switch, Button, Select, Tooltip, IconButton, DropdownWrapper, Dropdown, Option, Column, Avatar } from "@/once-ui/components";
+import {
+    Row,
+    Text,
+    Input,
+    Icon,
+    Switch,
+    Button,
+    Select,
+    Tooltip,
+    IconButton,
+    DropdownWrapper,
+    Dropdown,
+    Option,
+    Column,
+    Avatar,
+} from "@/once-ui/components";
 
 interface InboxControlsProps {
     searchQuery: string;
@@ -44,7 +59,7 @@ export function InboxControls({
     const handleSearchChange = (value: string) => {
         setLocalSearchQuery(value);
         onSearchChange(value);
-        
+
         // If AI search is active and the user is typing a new search query,
         // automatically clear the AI search results
         if (isAISearchActive && onClearAISearch) {
@@ -88,21 +103,29 @@ export function InboxControls({
                         onChange={(e) => handleSearchChange(e.target.value)}
                         hasPrefix={<Icon name="search" size="s" />}
                         hasSuffix={
-                            onAISearch && localSearchQuery.trim() && (
+                            onAISearch &&
+                            localSearchQuery.trim() && (
                                 <Button
                                     size="s"
                                     weight="default"
-                                    label={isAISearchLoading ? "Searching..." : isAISearchActive ? "AI Search Active" : "Find Similar"}
+                                    label={
+                                        isAISearchLoading
+                                            ? "Searching..."
+                                            : isAISearchActive
+                                              ? "AI Search Active"
+                                              : "Find Similar"
+                                    }
                                     prefixIcon="sparkles"
                                     variant={isAISearchActive ? "secondary" : "primary"}
                                     onClick={handleAISearchClick}
                                     disabled={!localSearchQuery.trim() || isAISearchLoading}
                                     loading={isAISearchLoading}
                                 />
-                            )}
+                            )
+                        }
                     />
                 </Row>
-                <Avatar/>
+                <Avatar />
             </Row>
 
             <Row paddingX="16" marginBottom="16" gap="8">
@@ -145,32 +168,32 @@ export function InboxControls({
                         onToggle={() => onThreadViewChange(!threadView)}
                     />
                     <DropdownWrapper
-                            trigger={
-                                <Button
-                                    size="s"
-                                    weight="default"
-                                    label={`${pageSize} per page`}
-                                    prefixIcon="list"
-                                    variant="secondary"
-                                />
-                            }
-                            onSelect={(value) => onPageSizeChange(Number(value))}
-                            dropdown={
-                                <Column padding="4" fillWidth>
-                                    <Option value="10" label="10 per page" />
-                                    <Option value="20" label="20 per page" />
-                                    <Option value="50" label="50 per page" />
-                                </Column>
-                            }
-                        />
-                        <IconButton
-                            size="m"
-                            icon="refresh"
-                            tooltip="Refresh"
-                            variant="secondary"
-                            onClick={onRefresh}
-                            disabled={isLoading || isFetching}
-                        />
+                        trigger={
+                            <Button
+                                size="s"
+                                weight="default"
+                                label={`${pageSize} per page`}
+                                prefixIcon="list"
+                                variant="secondary"
+                            />
+                        }
+                        onSelect={(value) => onPageSizeChange(Number(value))}
+                        dropdown={
+                            <Column padding="4" fillWidth>
+                                <Option value="10" label="10 per page" />
+                                <Option value="20" label="20 per page" />
+                                <Option value="50" label="50 per page" />
+                            </Column>
+                        }
+                    />
+                    <IconButton
+                        size="m"
+                        icon="refresh"
+                        tooltip="Refresh"
+                        variant="secondary"
+                        onClick={onRefresh}
+                        disabled={isLoading || isFetching}
+                    />
                 </Row>
             </Row>
         </>

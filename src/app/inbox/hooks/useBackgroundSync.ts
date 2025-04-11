@@ -51,7 +51,7 @@ export function useBackgroundSync({ enabled = true } = {}) {
             if (data.message === "Sync already in progress") {
                 return;
             }
-            
+
             addToast({
                 variant: "success",
                 message: "Sync successful. New messages will appear shortly.",

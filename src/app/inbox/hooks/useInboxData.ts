@@ -19,7 +19,7 @@ const fetchEmails = async ({
     pageSize,
     threadView,
     searchQuery,
-}: Omit<FetchEmailsParams, 'enabled'>): Promise<InboxResponse> => {
+}: Omit<FetchEmailsParams, "enabled">): Promise<InboxResponse> => {
     try {
         const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : "";
         const response = await fetch(
@@ -34,7 +34,7 @@ const fetchEmails = async ({
                 totalCount: 0,
                 page,
                 pageSize,
-                hasMore: false
+                hasMore: false,
             };
         }
 
@@ -47,7 +47,7 @@ const fetchEmails = async ({
                 totalCount: 0,
                 page,
                 pageSize,
-                hasMore: false
+                hasMore: false,
             };
         }
 
@@ -59,7 +59,7 @@ const fetchEmails = async ({
                 totalCount: 0,
                 page,
                 pageSize,
-                hasMore: false
+                hasMore: false,
             };
         }
 
@@ -80,7 +80,7 @@ const fetchEmails = async ({
             totalCount: 0,
             page,
             pageSize,
-            hasMore: false
+            hasMore: false,
         };
     }
 };
@@ -88,7 +88,13 @@ const fetchEmails = async ({
 /**
  * Hook for fetching and managing inbox data
  */
-export function useInboxData({ page, pageSize, threadView, searchQuery, enabled = true }: FetchEmailsParams) {
+export function useInboxData({
+    page,
+    pageSize,
+    threadView,
+    searchQuery,
+    enabled = true,
+}: FetchEmailsParams) {
     const { addToast } = useToast();
     const hasShownErrorToast = useRef(false);
     const isFirstLoad = useRef(true);
@@ -103,7 +109,7 @@ export function useInboxData({ page, pageSize, threadView, searchQuery, enabled 
     };
 
     const queryResult = useQuery<InboxResponse, Error>(queryOptions);
-    
+
     // Extract data from query result
     const { data, isLoading, isFetching, isError, error } = queryResult;
 

@@ -1,5 +1,16 @@
 import React from "react";
-import { Text, Row, Column, Chip, Line, IconButton, Avatar, Badge, Card, Tag } from "@/once-ui/components";
+import {
+    Text,
+    Row,
+    Column,
+    Chip,
+    Line,
+    IconButton,
+    Avatar,
+    Badge,
+    Card,
+    Tag,
+} from "@/once-ui/components";
 import type { Email } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
 
@@ -66,7 +77,9 @@ export function EmailItem({
                                 {senderName}
                             </Text>
                             <Row gap="8" vertical="center">
-                                {email.labels?.includes("IMPORTANT") && <Tag variant="neutral" label="Important"  />}
+                                {email.labels?.includes("IMPORTANT") && (
+                                    <Tag variant="neutral" label="Important" />
+                                )}
                                 <Text variant="label-default-s" onBackground="neutral-weak">
                                     {formatDate(email.createdAt)}
                                 </Text>
@@ -83,9 +96,7 @@ export function EmailItem({
                         >
                             {email.subject}
                             {email.aiMetadata && (
-                                <span style={{ marginLeft: "8px", color: "#0070f3" }}>
-                                    ✨
-                                </span>
+                                <span style={{ marginLeft: "8px", color: "#0070f3" }}>✨</span>
                             )}
                         </Text>
 
@@ -101,8 +112,9 @@ export function EmailItem({
                                 }}
                             >
                                 {(email as any).aiScore ? (
-                                    <span style={{ color: '#0070f3' }}>
-                                        AI Score: {((email as any).aiScore).toFixed(4)} - {email.snippet}
+                                    <span style={{ color: "#0070f3" }}>
+                                        AI Score: {(email as any).aiScore.toFixed(4)} -{" "}
+                                        {email.snippet}
                                     </span>
                                 ) : (
                                     email.snippet

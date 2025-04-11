@@ -88,7 +88,10 @@ export async function POST(request: Request) {
         // Check if a batch size is specified in the request
         const url = new URL(request.url);
         const batchSize = url.searchParams.get("batchSize")
-            ? Number.parseInt(url.searchParams.get("batchSize") || DEFAULT_BATCH_SIZE.toString(), 10)
+            ? Number.parseInt(
+                  url.searchParams.get("batchSize") || DEFAULT_BATCH_SIZE.toString(),
+                  10,
+              )
             : DEFAULT_BATCH_SIZE;
 
         // Get user from session
@@ -329,7 +332,7 @@ function createSyncStream(
 ): ReadableStream {
     // Store the gmail client in a mutable variable
     let gmailClient = gmail;
-    
+
     return new ReadableStream({
         async start(controller) {
             // Handle aborts from the AbortController
@@ -350,7 +353,7 @@ function createSyncStream(
                 let batchNumber = 1;
                 let retryCount = 0;
                 const MAX_RETRIES = 3;
-                
+
                 // Arrays to collect all messages before processing
                 let allMessages: Array<{
                     id: string;
@@ -421,7 +424,7 @@ function createSyncStream(
                         // Add this batch to our collection
                         if (messages.length > 0) {
                             allMessages = [...allMessages, ...messages];
-                            
+
                             // Send progress update for collection phase
                             sendMessage(
                                 controller,
@@ -430,10 +433,7 @@ function createSyncStream(
                                 {
                                     collectedMessages: allMessages.length,
                                     totalMessages: Math.max(totalMessages, allMessages.length),
-                                    progress: calculateProgress(
-                                        allMessages.length,
-                                        totalMessages,
-                                    ),
+                                    progress: calculateProgress(allMessages.length, totalMessages),
                                     phase: "collection",
                                 },
                             );
@@ -442,7 +442,6 @@ function createSyncStream(
                         // Get next page token for pagination
                         pageToken = nextPageToken || null;
                         count++;
-                        
                     } catch (error) {
                         // Check if we've been aborted
                         if (abortSignal.aborted) {
@@ -507,24 +506,26 @@ function createSyncStream(
                         }
                     }
                 } while (pageToken);
-                
+
                 // All batches have been collected
                 allBatchesComplete = true;
-                log(`Collected all ${allMessages.length} messages, now processing in reverse order`);
-                
+                log(
+                    `Collected all ${allMessages.length} messages, now processing in reverse order`,
+                );
+
                 // Reverse the messages so newest come first
                 allMessages = allMessages.reverse();
-                
+
                 sendMessage(
                     controller,
                     MESSAGE_TYPES.BATCH_COMPLETE,
                     `Completed collection phase. Found ${allMessages.length} messages.`,
-                    { 
+                    {
                         collectedMessages: allMessages.length,
-                        phase: "collection" 
+                        phase: "collection",
                     },
                 );
-                
+
                 // Second phase: Process messages in chunks (newest first)
                 sendMessage(
                     controller,
@@ -545,13 +546,13 @@ function createSyncStream(
                 for (let i = 0; i < messageChunks.length; i++) {
                     const chunk = messageChunks[i];
                     batchNumber = i + 1;
-                    
+
                     // Check for abort between chunks
                     if (abortSignal.aborted) {
                         log("Aborting chunks processing due to cancel request");
                         return;
                     }
-                    
+
                     // Send batch start notification
                     sendMessage(
                         controller,
@@ -572,10 +573,7 @@ function createSyncStream(
                     newMessageCount += result.created;
 
                     // Calculate progress
-                    const progress = calculateProgress(
-                        processedMessages,
-                        allMessages.length,
-                    );
+                    const progress = calculateProgress(processedMessages, allMessages.length);
 
                     // Send progress update
                     sendMessage(
@@ -603,16 +601,16 @@ function createSyncStream(
                             totalBatches: messageChunks.length,
                         },
                     );
-                    
+
                     // Send batch complete notification
                     sendMessage(
                         controller,
                         MESSAGE_TYPES.BATCH_COMPLETE,
                         `Completed batch ${batchNumber} of ${messageChunks.length}`,
-                        { 
+                        {
                             batchNumber,
                             totalBatches: messageChunks.length,
-                            phase: "processing" 
+                            phase: "processing",
                         },
                     );
                 }

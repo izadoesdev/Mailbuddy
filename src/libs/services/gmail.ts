@@ -231,7 +231,9 @@ export async function fetchEmailFromGmail(
 
         // Check if the error is due to invalid credentials
         if (error.message?.includes("Invalid Credentials")) {
-            console.log("[Gmail Service] Invalid credentials detected, attempting to refresh token");
+            console.log(
+                "[Gmail Service] Invalid credentials detected, attempting to refresh token",
+            );
 
             // Extract the actual user ID from the userId parameter (which might be 'me')
             const dbUserId = userId === "me" ? accessToken.split(".")[0] : userId;

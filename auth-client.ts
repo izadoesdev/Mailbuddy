@@ -2,7 +2,6 @@ import { createAuthClient } from "better-auth/react";
 import type { auth } from "./auth";
 import { customSessionClient, multiSessionClient } from "better-auth/client/plugins";
 
-
 // Create a singleton instance with the default configuration
 export const authClient = createAuthClient({
     baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL as string,

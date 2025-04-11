@@ -21,9 +21,9 @@ export default function InboxPage() {
     const router = useRouter();
     const { user, isLoading: isAuthLoading } = useUser();
 
-    if(!isAuthLoading && !user){
-        redirect('/login')
-    } 
+    if (!isAuthLoading && !user) {
+        redirect("/login");
+    }
 
     // State
     const [searchQuery, setSearchQuery] = useState("");
@@ -56,13 +56,8 @@ export default function InboxPage() {
     });
 
     // Use AI search hook
-    const { 
-        similarEmails, 
-        isAISearchActive, 
-        isAISearchLoading, 
-        performAISearch,
-        clearAISearch
-    } = useAISearch();
+    const { similarEmails, isAISearchActive, isAISearchLoading, performAISearch, clearAISearch } =
+        useAISearch();
 
     // Pass authentication state to hooks
     const { markAsRead, toggleStar } = useEmailMutations({ enabled: isAuthenticated });
@@ -105,13 +100,16 @@ export default function InboxPage() {
         setSearchQuery(query);
         setPage(1); // Reset to first page on new search
     }, []);
-    
+
     // Handle AI search
-    const handleAISearch = useCallback((query: string) => {
-        performAISearch(query);
-        // No need to update page since we're showing a different view
-    }, [performAISearch]);
-    
+    const handleAISearch = useCallback(
+        (query: string) => {
+            performAISearch(query);
+            // No need to update page since we're showing a different view
+        },
+        [performAISearch],
+    );
+
     // Handle clear AI search
     const handleClearAISearch = useCallback(() => {
         clearAISearch();
@@ -146,7 +144,7 @@ export default function InboxPage() {
 
     // Calculate width for main content
     const mainContentWidth = selectedEmail ? "50%" : "100%";
-    
+
     // Determine which emails to display based on AI search status
     const displayEmails = isAISearchActive ? similarEmails : emails;
     const displayTotalCount = isAISearchActive ? similarEmails.length : totalCount;
@@ -204,24 +202,24 @@ export default function InboxPage() {
 
                 {/* Only show pagination for regular inbox, not for AI search results */}
                 {!isAISearchActive && (
-                  <Pagination
-                      page={page}
-                      totalPages={totalPages}
-                      onPageChange={handlePageChange}
-                      isLoading={isLoading}
-                      isFetching={isFetching}
-                      pageSize={pageSize}
-                      totalCount={totalCount}
-                  />
+                    <Pagination
+                        page={page}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                        isLoading={isLoading}
+                        isFetching={isFetching}
+                        pageSize={pageSize}
+                        totalCount={totalCount}
+                    />
                 )}
-                
+
                 {/* Show a simple count for AI search results */}
                 {isAISearchActive && (
-                  <Row paddingX="16" marginTop="16" horizontal="center">
-                    <Text variant="body-default-m">
-                      Found {similarEmails.length} similar emails
-                    </Text>
-                  </Row>
+                    <Row paddingX="16" marginTop="16" horizontal="center">
+                        <Text variant="body-default-m">
+                            Found {similarEmails.length} similar emails
+                        </Text>
+                    </Row>
                 )}
             </Column>
 
@@ -233,8 +231,8 @@ export default function InboxPage() {
                         transition: "width 0.3s ease",
                     }}
                 >
-                    <EmailDetail 
-                        email={selectedEmail} 
+                    <EmailDetail
+                        email={selectedEmail}
                         onClose={() => setSelectedEmail(null)}
                         onToggleStar={handleToggleStar}
                     />

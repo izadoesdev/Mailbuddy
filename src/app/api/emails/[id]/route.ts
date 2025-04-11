@@ -2,10 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/libs/db";
 import { auth } from "@/libs/auth";
 import { headers } from "next/headers";
-import {
-    decodeEncryptedData,
-    decryptText,
-} from "@/libs/utils/encryption";
+import { decodeEncryptedData, decryptText } from "@/libs/utils/encryption";
 
 // Helper function to log messages
 const log = (message: string, ...args: any[]) => {
@@ -108,21 +105,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         // Mark as read if not already
         if (!email.isRead) {
             // Only update the database, don't wait for the operation
-            prisma.email.update({
-                where: { id },
-                data: { isRead: true },
-            }).catch(err => {
-                log(`Error marking email ${id} as read:`, err);
-            });
+            prisma.email
+                .update({
+                    where: { id },
+                    data: { isRead: true },
+                })
+                .catch((err) => {
+                    log(`Error marking email ${id} as read:`, err);
+                });
         }
 
         // Ensure the date is properly formatted
         const formattedEmail = {
             ...decryptedEmail,
             // Convert internalDate (if available) or use createdAt
-            createdAt: decryptedEmail.internalDate 
-                ? new Date(Number(decryptedEmail.internalDate)) 
-                : new Date(decryptedEmail.createdAt)
+            createdAt: decryptedEmail.internalDate
+                ? new Date(Number(decryptedEmail.internalDate))
+                : new Date(decryptedEmail.createdAt),
         };
 
         return NextResponse.json(formattedEmail);
@@ -135,4 +134,4 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             { status: 500 },
         );
     }
-} 
+}

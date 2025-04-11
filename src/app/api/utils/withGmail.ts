@@ -32,17 +32,13 @@ export async function refreshAccessToken(userId: string): Promise<string | null>
             },
         });
 
-
         if (!googleAccount?.refreshToken) {
             log(`No valid Google account found for user ${userId}`);
             return null;
         }
 
-        const oauth2Client = new google.auth.OAuth2(
-            env.GOOGLE_CLIENT_ID,
-            env.GOOGLE_CLIENT_SECRET
-        );
-        
+        const oauth2Client = new google.auth.OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
+
         oauth2Client.setCredentials({
             refresh_token: googleAccount.refreshToken,
         });
@@ -66,12 +62,12 @@ export async function refreshAccessToken(userId: string): Promise<string | null>
         return newAccessToken;
     } catch (error: any) {
         log(`Error refreshing token for user ${userId}: ${error.message}`);
-        
+
         if (error.message?.includes("invalid_grant")) {
             log(`Invalid grant error detected for user ${userId}`);
             // Token likely revoked - handle appropriately in your application
         }
-        
+
         return null;
     }
 }
@@ -88,10 +84,10 @@ export async function withGmailApi<T>(
     initialAccessToken: string | null,
     refreshToken: string | null,
     apiCall: (gmail: any) => Promise<T>,
-    retryCount = 0
+    retryCount = 0,
 ): Promise<T | null> {
     const MAX_RETRY_ATTEMPTS = 1;
-    
+
     if (retryCount > MAX_RETRY_ATTEMPTS) {
         log(`Exceeded max retry attempts for user ${userId}`);
         return null;
@@ -99,21 +95,18 @@ export async function withGmailApi<T>(
 
     try {
         let accessToken = initialAccessToken;
-        
+
         if (!accessToken) {
             accessToken = await refreshAccessToken(userId);
-            
+
             if (!accessToken) {
                 throw new Error("Failed to obtain access token");
             }
         }
 
-        const auth = new google.auth.OAuth2(
-            env.GOOGLE_CLIENT_ID, 
-            env.GOOGLE_CLIENT_SECRET
-        );
+        const auth = new google.auth.OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
         auth.setCredentials({ access_token: accessToken });
-        
+
         const gmail = google.gmail({
             version: "v1",
             auth,
@@ -127,7 +120,7 @@ export async function withGmailApi<T>(
             if (newToken) {
                 return withGmailApi(userId, newToken, refreshToken, apiCall, retryCount + 1);
             }
-            
+
             throw new Error("AUTH_REFRESH_FAILED");
         }
 

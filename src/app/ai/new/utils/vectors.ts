@@ -1,4 +1,4 @@
-'use server'
+"use server";
 
 import index from "../index";
 import { cleanEmail, cleanMetadata } from "./clean";
@@ -20,8 +20,8 @@ function getUserNamespace(userId: string): string {
 export async function storeEmail(email: Email) {
     try {
         // Skip if no valid user ID (security measure)
-        if (!email.userId || typeof email.userId !== 'string') {
-            throw new Error('Invalid userId for vector storage');
+        if (!email.userId || typeof email.userId !== "string") {
+            throw new Error("Invalid userId for vector storage");
         }
 
         // Get the user's namespace
@@ -29,10 +29,10 @@ export async function storeEmail(email: Email) {
 
         // Clean and prepare the email content
         const content = cleanEmail(email);
-        
+
         // Skip if content is too short to be meaningful
         if (!content || content.length < EMAIL_CLEANING.MIN_CONTENT_LENGTH) {
-            throw new Error('Email content too short for meaningful embedding');
+            throw new Error("Email content too short for meaningful embedding");
         }
 
         // Prepare metadata with security filtering
@@ -47,12 +47,14 @@ export async function storeEmail(email: Email) {
             try {
                 // Using namespace parameter for Upstash Vector
                 await index.index.upsert(
-                    [{
-                        id: email.id,
-                        data: content,
-                        metadata
-                    }],
-                    { namespace } // Pass as object property
+                    [
+                        {
+                            id: email.id,
+                            data: content,
+                            metadata,
+                        },
+                    ],
+                    { namespace }, // Pass as object property
                 );
                 success = true;
             } catch (error) {
@@ -60,18 +62,20 @@ export async function storeEmail(email: Email) {
                 attempts++;
                 if (attempts < VECTOR_CONFIG.RETRY_ATTEMPTS) {
                     // Wait before retrying
-                    await new Promise(resolve => setTimeout(resolve, VECTOR_CONFIG.RETRY_DELAY_MS));
+                    await new Promise((resolve) =>
+                        setTimeout(resolve, VECTOR_CONFIG.RETRY_DELAY_MS),
+                    );
                 }
             }
         }
 
         if (!success) {
-            throw lastError || new Error('Failed to store email after multiple attempts');
+            throw lastError || new Error("Failed to store email after multiple attempts");
         }
 
         return { success: true };
     } catch (error) {
-        console.error('Error storing email in vector database:', error);
+        console.error("Error storing email in vector database:", error);
         return { success: false, error: String(error) };
     }
 }
@@ -82,41 +86,44 @@ export async function storeEmail(email: Email) {
 export async function storeVector(id: string, content: string, metadata: Record<string, any>) {
     try {
         // Security validation
-        if (!id || typeof id !== 'string') {
-            throw new Error('Invalid vector ID');
+        if (!id || typeof id !== "string") {
+            throw new Error("Invalid vector ID");
         }
-        
-        if (!content || typeof content !== 'string' || content.length < EMAIL_CLEANING.MIN_CONTENT_LENGTH) {
-            throw new Error('Invalid or too short content for vector storage');
+
+        if (
+            !content ||
+            typeof content !== "string" ||
+            content.length < EMAIL_CLEANING.MIN_CONTENT_LENGTH
+        ) {
+            throw new Error("Invalid or too short content for vector storage");
         }
-        
+
         // Validate userId in metadata (security measure)
-        if (!metadata.userId || typeof metadata.userId !== 'string') {
-            throw new Error('Missing or invalid userId in vector metadata');
+        if (!metadata.userId || typeof metadata.userId !== "string") {
+            throw new Error("Missing or invalid userId in vector metadata");
         }
-        
+
         // Get the user's namespace
         const namespace = getUserNamespace(metadata.userId);
-        
+
         // Sanitize and limit metadata size
         const sanitizedMetadata: Record<string, any> = {};
         let totalSize = 0;
-        
+
         // Process and validate each metadata field
         for (const [key, value] of Object.entries(metadata)) {
             // Skip null or undefined values
             if (value === null || value === undefined) continue;
-            
+
             // Convert objects to strings with size limits
-            const stringValue = typeof value === 'object' 
-                ? JSON.stringify(value).substring(0, 100) 
-                : String(value);
-                
+            const stringValue =
+                typeof value === "object" ? JSON.stringify(value).substring(0, 100) : String(value);
+
             const fieldSize = key.length + stringValue.length;
-            
+
             // Skip if this field would exceed our size budget
             if (totalSize + fieldSize > EMAIL_CLEANING.MAX_METADATA_SIZE) break;
-            
+
             sanitizedMetadata[key] = value;
             totalSize += fieldSize;
         }
@@ -130,30 +137,34 @@ export async function storeVector(id: string, content: string, metadata: Record<
             try {
                 // Using namespace parameter for Upstash Vector
                 await index.index.upsert(
-                    [{
-                        id,
-                        data: content,
-                        metadata: sanitizedMetadata
-                    }],
-                    { namespace } // Pass as object property
+                    [
+                        {
+                            id,
+                            data: content,
+                            metadata: sanitizedMetadata,
+                        },
+                    ],
+                    { namespace }, // Pass as object property
                 );
                 success = true;
             } catch (error) {
                 lastError = error;
                 attempts++;
                 if (attempts < VECTOR_CONFIG.RETRY_ATTEMPTS) {
-                    await new Promise(resolve => setTimeout(resolve, VECTOR_CONFIG.RETRY_DELAY_MS));
+                    await new Promise((resolve) =>
+                        setTimeout(resolve, VECTOR_CONFIG.RETRY_DELAY_MS),
+                    );
                 }
             }
         }
 
         if (!success) {
-            throw lastError || new Error('Failed to store vector after multiple attempts');
+            throw lastError || new Error("Failed to store vector after multiple attempts");
         }
 
         return { success: true };
     } catch (error) {
-        console.error('Error in storeVector:', error);
+        console.error("Error in storeVector:", error);
         return { success: false, error: String(error) };
     }
 }
@@ -161,59 +172,68 @@ export async function storeVector(id: string, content: string, metadata: Record<
 /**
  * Query vectors with security filtering by userId
  */
-export async function queryVector(query: string, userId: string, options: { topK?: number; includeMetadata?: boolean } = {}) {
+export async function queryVector(
+    query: string,
+    userId: string,
+    options: { topK?: number; includeMetadata?: boolean } = {},
+) {
     try {
         // Security validation
-        if (!query || typeof query !== 'string') {
-            throw new Error('Invalid query for vector search');
+        if (!query || typeof query !== "string") {
+            throw new Error("Invalid query for vector search");
         }
-        
-        if (!userId || typeof userId !== 'string') {
-            throw new Error('Invalid userId for vector search');
+
+        if (!userId || typeof userId !== "string") {
+            throw new Error("Invalid userId for vector search");
         }
-        
+
         const { topK = 10, includeMetadata = true } = options;
-        
+
         // Get the user's namespace for isolation
         const namespace = getUserNamespace(userId);
-        
+
         // Perform search with retry logic
         let attempts = 0;
         let success = false;
         let lastError = null;
         let results = null;
-        
+
         while (attempts < VECTOR_CONFIG.RETRY_ATTEMPTS && !success) {
             try {
                 // Query using namespace parameter instead of filter
-                results = await index.index.query({
-                    data: query,
-                    topK,
-                    includeMetadata
-                }, { namespace }); // Pass as object property
-                
+                results = await index.index.query(
+                    {
+                        data: query,
+                        topK,
+                        includeMetadata,
+                    },
+                    { namespace },
+                ); // Pass as object property
+
                 success = true;
             } catch (error) {
                 lastError = error;
                 attempts++;
                 if (attempts < VECTOR_CONFIG.RETRY_ATTEMPTS) {
-                    await new Promise(resolve => setTimeout(resolve, VECTOR_CONFIG.RETRY_DELAY_MS));
+                    await new Promise((resolve) =>
+                        setTimeout(resolve, VECTOR_CONFIG.RETRY_DELAY_MS),
+                    );
                 }
             }
         }
-        
+
         if (!success) {
             console.error("Error in queryVector after retries:", lastError);
-            return { 
-                success: false, 
+            return {
+                success: false,
                 error: String(lastError),
-                results: [] 
+                results: [],
             };
         }
 
         return { success: true, results: results || [] };
     } catch (error) {
-        console.error('Error in queryVector:', error);
+        console.error("Error in queryVector:", error);
         return { success: false, error: String(error), results: [] };
     }
 }
@@ -225,23 +245,23 @@ export async function deleteVectors(ids: string[], userId: string) {
     try {
         // Security validation
         if (!Array.isArray(ids) || ids.length === 0) {
-            throw new Error('Invalid vector IDs for deletion');
+            throw new Error("Invalid vector IDs for deletion");
         }
-        
-        if (!userId || typeof userId !== 'string') {
-            throw new Error('Invalid userId for vector deletion');
+
+        if (!userId || typeof userId !== "string") {
+            throw new Error("Invalid userId for vector deletion");
         }
-        
+
         // Get the user's namespace
         const namespace = getUserNamespace(userId);
-        
+
         // Delete vectors directly from the user's namespace
         // This is secure because it only affects vectors in this user's namespace
         await index.index.delete(ids, { namespace });
-        
+
         return { success: true, deletedCount: ids.length };
     } catch (error) {
-        console.error('Error in deleteVectors:', error);
+        console.error("Error in deleteVectors:", error);
         return { success: false, error: String(error), deletedCount: 0 };
     }
 }
@@ -249,26 +269,28 @@ export async function deleteVectors(ids: string[], userId: string) {
 /**
  * Batch store multiple vectors with security validation
  */
-export async function batchStoreVectors(vectors: Array<{id: string, content: string, metadata: Record<string, any>}>) {
+export async function batchStoreVectors(
+    vectors: Array<{ id: string; content: string; metadata: Record<string, any> }>,
+) {
     try {
         if (!Array.isArray(vectors) || vectors.length === 0) {
-            throw new Error('Invalid or empty vectors array');
+            throw new Error("Invalid or empty vectors array");
         }
-        
+
         // Group vectors by user ID to store in correct namespaces
         const vectorsByUser: Record<string, any[]> = {};
-        
+
         // Validate and group vectors by userId
         for (const v of vectors) {
             // Skip invalid vectors
             if (!v.id || !v.content || !v.metadata?.userId) continue;
-            
+
             const userId = v.metadata.userId;
-            
+
             if (!vectorsByUser[userId]) {
                 vectorsByUser[userId] = [];
             }
-            
+
             // Prepare the vector for the group
             vectorsByUser[userId].push({
                 id: v.id,
@@ -276,26 +298,31 @@ export async function batchStoreVectors(vectors: Array<{id: string, content: str
                 metadata: {
                     userId: v.metadata.userId,
                     // Add other sanitized metadata with size limits
-                    ...(v.metadata.subject && { subject: String(v.metadata.subject).substring(0, EMAIL_CLEANING.TRUNCATE_SUBJECT) }),
+                    ...(v.metadata.subject && {
+                        subject: String(v.metadata.subject).substring(
+                            0,
+                            EMAIL_CLEANING.TRUNCATE_SUBJECT,
+                        ),
+                    }),
                     ...(v.metadata.createdAt && { createdAt: v.metadata.createdAt }),
-                }
+                },
             });
         }
-        
+
         let successCount = 0;
         const errors: string[] = [];
-        
+
         // Process each user's vectors in batches
         for (const userId in vectorsByUser) {
             const userVectors = vectorsByUser[userId];
             const namespace = getUserNamespace(userId);
-            
+
             // Process in batches to avoid rate limits
             const batches = [];
             for (let i = 0; i < userVectors.length; i += VECTOR_CONFIG.UPSTASH_BATCH_SIZE) {
                 batches.push(userVectors.slice(i, i + VECTOR_CONFIG.UPSTASH_BATCH_SIZE));
             }
-            
+
             // Process each batch
             for (const batch of batches) {
                 try {
@@ -309,16 +336,21 @@ export async function batchStoreVectors(vectors: Array<{id: string, content: str
                 }
             }
         }
-        
-        return { 
-            success: successCount > 0, 
-            totalCount: vectors.length, 
+
+        return {
+            success: successCount > 0,
+            totalCount: vectors.length,
             successCount,
-            errors: errors.length > 0 ? errors : undefined
+            errors: errors.length > 0 ? errors : undefined,
         };
     } catch (error) {
-        console.error('Error in batchStoreVectors:', error);
-        return { success: false, error: String(error), totalCount: vectors.length, successCount: 0 };
+        console.error("Error in batchStoreVectors:", error);
+        return {
+            success: false,
+            error: String(error),
+            totalCount: vectors.length,
+            successCount: 0,
+        };
     }
 }
 
@@ -329,16 +361,16 @@ export async function batchStoreVectors(vectors: Array<{id: string, content: str
 export async function listNamespaces() {
     try {
         const namespaces = await index.index.listNamespaces();
-        return { 
-            success: true, 
-            namespaces 
+        return {
+            success: true,
+            namespaces,
         };
     } catch (error) {
-        console.error('Error listing namespaces:', error);
-        return { 
-            success: false, 
+        console.error("Error listing namespaces:", error);
+        return {
+            success: false,
             error: String(error),
-            namespaces: [] 
+            namespaces: [],
         };
     }
 }
@@ -350,27 +382,27 @@ export async function listNamespaces() {
 export async function deleteUserNamespace(userId: string) {
     try {
         if (!userId) {
-            throw new Error('Invalid user ID for namespace deletion');
+            throw new Error("Invalid user ID for namespace deletion");
         }
-        
+
         const namespace = getUserNamespace(userId);
-        
+
         // Don't allow deleting the default namespace
         if (namespace === "") {
-            throw new Error('Cannot delete the default namespace');
+            throw new Error("Cannot delete the default namespace");
         }
-        
+
         await index.index.deleteNamespace(namespace);
-        
-        return { 
-            success: true, 
-            message: `Successfully deleted namespace for user ${userId}` 
+
+        return {
+            success: true,
+            message: `Successfully deleted namespace for user ${userId}`,
         };
     } catch (error) {
-        console.error('Error deleting namespace:', error);
-        return { 
-            success: false, 
-            error: String(error) 
+        console.error("Error deleting namespace:", error);
+        return {
+            success: false,
+            error: String(error),
         };
     }
 }

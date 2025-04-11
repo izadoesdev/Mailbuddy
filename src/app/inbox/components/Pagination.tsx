@@ -68,12 +68,12 @@ export function Pagination({
                             }
                         }}
                         disabled={isLoading || isFetching}
-                        style={{ 
-                            minWidth: '120px',
-                            padding: '8px',
-                            borderRadius: '4px',
-                            border: '1px solid #ccc',
-                            marginLeft: '8px'
+                        style={{
+                            minWidth: "120px",
+                            padding: "8px",
+                            borderRadius: "4px",
+                            border: "1px solid #ccc",
+                            marginLeft: "8px",
                         }}
                         aria-label="Go to specific page"
                     >

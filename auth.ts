@@ -20,7 +20,6 @@ export const auth = betterAuth({
             ],
             accessType: "offline",
             prompt: "consent",
-            
         },
     },
     session: {

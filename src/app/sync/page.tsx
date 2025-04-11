@@ -385,7 +385,7 @@ export default function SyncPage() {
                 while (true) {
                     newlineIndex = buffer.indexOf("\n");
                     if (newlineIndex === -1) break;
-                    
+
                     // Process each line as a JSON object
                     const line = buffer.slice(0, newlineIndex).trim();
                     buffer = buffer.slice(newlineIndex + 1);
@@ -579,11 +579,11 @@ export default function SyncPage() {
         if (remainingMs < 60000) {
             return `${Math.ceil(remainingMs / 1000)} seconds`;
         }
-        
+
         if (remainingMs < 3600000) {
             return `${Math.ceil(remainingMs / 60000)} minutes`;
         }
-        
+
         return `${Math.ceil(remainingMs / 3600000)} hours`;
     };
 

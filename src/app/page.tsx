@@ -32,14 +32,18 @@ export default function Home() {
 
     // Don't render the full page content during loading or if redirecting
     if (isLoading) {
-        return (
-            <Column fillWidth paddingTop="80" horizontal="center" flex={1}>
-            </Column>
-        );
+        return <Column fillWidth paddingTop="80" horizontal="center" flex={1}></Column>;
     }
 
     return (
-        <Column fillWidth paddingTop="80" paddingBottom="48" paddingX="s" horizontal="center" flex={1}>
+        <Column
+            fillWidth
+            paddingTop="80"
+            paddingBottom="48"
+            paddingX="s"
+            horizontal="center"
+            flex={1}
+        >
             <Background
                 position="absolute"
                 pointerEvents="none"
@@ -96,8 +100,20 @@ export default function Home() {
                     <Row gap="8" vertical="center">
                         <Logo size="s" icon={true} href="/" />
                         <Row paddingLeft="24" gap="8">
-                            <Button weight="default" size="s" href="/features" label="Features" variant="tertiary" />
-                            <Button weight="default" size="s" href="/pricing" label="Pricing" variant="tertiary" />
+                            <Button
+                                weight="default"
+                                size="s"
+                                href="/features"
+                                label="Features"
+                                variant="tertiary"
+                            />
+                            <Button
+                                weight="default"
+                                size="s"
+                                href="/pricing"
+                                label="Pricing"
+                                variant="tertiary"
+                            />
                         </Row>
                     </Row>
                     <Row gap="8" hide="s">
@@ -181,7 +197,13 @@ export default function Home() {
                         }}
                     />
 
-                    <Column maxWidth={64} horizontal="center" gap="32" padding="32" position="relative">
+                    <Column
+                        maxWidth={64}
+                        horizontal="center"
+                        gap="32"
+                        padding="32"
+                        position="relative"
+                    >
                         <Heading
                             wrap="balance"
                             variant="display-strong-xl"
@@ -190,7 +212,12 @@ export default function Home() {
                         >
                             Your AI-powered email companion
                         </Heading>
-                        <Text wrap="balance" variant="heading-default-xl" align="center" marginBottom="32">
+                        <Text
+                            wrap="balance"
+                            variant="heading-default-xl"
+                            align="center"
+                            marginBottom="32"
+                        >
                             Mailbuddy is your secure, privacy-focused email companion that makes
                             managing Gmail simple and efficient
                         </Text>
@@ -215,7 +242,7 @@ export default function Home() {
                     horizontal="center"
                     position="relative"
                 >
-                    <Background mask={{x:50, y:0, radius:50}}>
+                    <Background mask={{ x: 50, y: 0, radius: 50 }}>
                         <Line maxWidth="l" background="neutral-alpha-medium" />
                     </Background>
 
@@ -237,7 +264,11 @@ export default function Home() {
                                 <Heading as="h3" variant="heading-strong-m">
                                     Privacy First
                                 </Heading>
-                                <Text variant="body-default-s" onBackground="neutral-weak" wrap="balance">
+                                <Text
+                                    variant="body-default-s"
+                                    onBackground="neutral-weak"
+                                    wrap="balance"
+                                >
                                     End-to-end encryption keeps your emails secure and private, with
                                     zero access to your data.
                                 </Text>
@@ -255,8 +286,13 @@ export default function Home() {
                                 <Heading as="h3" variant="heading-strong-m">
                                     Lightning Fast
                                 </Heading>
-                                <Text variant="body-default-s" onBackground="neutral-weak" wrap="balance">
-                                    Optimized performance for quick loading and responsiveness even with thousands of emails.
+                                <Text
+                                    variant="body-default-s"
+                                    onBackground="neutral-weak"
+                                    wrap="balance"
+                                >
+                                    Optimized performance for quick loading and responsiveness even
+                                    with thousands of emails.
                                 </Text>
                             </Card>
 
@@ -272,7 +308,11 @@ export default function Home() {
                                 <Heading as="h3" variant="heading-strong-m">
                                     Intuitive Interface
                                 </Heading>
-                                <Text variant="body-default-s" onBackground="neutral-weak" wrap="balance">
+                                <Text
+                                    variant="body-default-s"
+                                    onBackground="neutral-weak"
+                                    wrap="balance"
+                                >
                                     Clean, modern design that makes email management feel effortless
                                     and enjoyable.
                                 </Text>
@@ -291,7 +331,7 @@ export default function Home() {
                     position="relative"
                     background="overlay"
                 >
-                    <Background mask={{x:50, y:0, radius:50}}>
+                    <Background mask={{ x: 50, y: 0, radius: 50 }}>
                         <Line maxWidth="l" background="neutral-alpha-medium" />
                     </Background>
                     <Column fillWidth gap="32" horizontal="center" maxWidth="l">
@@ -324,7 +364,12 @@ export default function Home() {
                                         Connect Your Gmail
                                     </Heading>
                                 </Row>
-                                <Text variant="body-default-s" marginLeft="64" onBackground="neutral-weak" wrap="balance">
+                                <Text
+                                    variant="body-default-s"
+                                    marginLeft="64"
+                                    onBackground="neutral-weak"
+                                    wrap="balance"
+                                >
                                     Securely link your Gmail account with read-only access. We never
                                     store your password.
                                 </Text>
@@ -348,7 +393,12 @@ export default function Home() {
                                         Encrypt Your Data
                                     </Heading>
                                 </Row>
-                                <Text variant="body-default-s" marginLeft="64" onBackground="neutral-weak" wrap="balance">
+                                <Text
+                                    variant="body-default-s"
+                                    marginLeft="64"
+                                    onBackground="neutral-weak"
+                                    wrap="balance"
+                                >
                                     Your emails are automatically encrypted with keys only you
                                     control.
                                 </Text>
@@ -372,7 +422,12 @@ export default function Home() {
                                         Enjoy Your Inbox
                                     </Heading>
                                 </Row>
-                                <Text variant="body-default-s" marginLeft="64" onBackground="neutral-weak" wrap="balance">
+                                <Text
+                                    variant="body-default-s"
+                                    marginLeft="64"
+                                    onBackground="neutral-weak"
+                                    wrap="balance"
+                                >
                                     Browse, search, and manage your emails with confidence and peace
                                     of mind.
                                 </Text>
@@ -394,7 +449,13 @@ export default function Home() {
                         <Heading as="h2" variant="display-strong-l" align="center">
                             Ready to Take Control of Your Email?
                         </Heading>
-                        <Text variant="heading-default-xl" align="center" marginBottom="16" onBackground="neutral-weak" wrap="balance">
+                        <Text
+                            variant="heading-default-xl"
+                            align="center"
+                            marginBottom="16"
+                            onBackground="neutral-weak"
+                            wrap="balance"
+                        >
                             Join thousands of users who have made email secure and simple again.
                         </Text>
                         <Button
@@ -409,7 +470,7 @@ export default function Home() {
                 </Column>
             </Column>
 
-            <Background mask={{x:50, y:0, radius:50}} maxWidth="l" height="1">
+            <Background mask={{ x: 50, y: 0, radius: 50 }} maxWidth="l" height="1">
                 <Line background="neutral-alpha-medium" />
             </Background>
 
@@ -429,52 +490,115 @@ export default function Home() {
                         Your secure email companion that makes managing Gmail simple and efficient.
                     </Text>
                     <Row gap="8" data-border="rounded">
-                    <IconButton
-                        href="https://www.twitter.com/mailbuddy"
-                        icon="twitter"
-                        variant="tertiary"
-                        aria-label="Twitter"
-                    />
-                    <IconButton
-                        href="https://www.linkedin.com/company/mailbuddy/"
-                        icon="linkedin"
-                        variant="tertiary"
-                        aria-label="LinkedIn"
-                    />
-                    <IconButton
-                        href="https://github.com/mailbuddy"
-                        icon="github"
-                        variant="tertiary"
-                        aria-label="GitHub"
-                    />
-                </Row>
+                        <IconButton
+                            href="https://www.twitter.com/mailbuddy"
+                            icon="twitter"
+                            variant="tertiary"
+                            aria-label="Twitter"
+                        />
+                        <IconButton
+                            href="https://www.linkedin.com/company/mailbuddy/"
+                            icon="linkedin"
+                            variant="tertiary"
+                            aria-label="LinkedIn"
+                        />
+                        <IconButton
+                            href="https://github.com/mailbuddy"
+                            icon="github"
+                            variant="tertiary"
+                            aria-label="GitHub"
+                        />
+                    </Row>
                 </Column>
 
                 <Row gap="64" fillWidth mobileDirection="column" data-border="rounded">
                     <Column gap="8" fillWidth>
-                        <Heading as="h3" variant="heading-strong-s" marginLeft="12" marginBottom="24">
+                        <Heading
+                            as="h3"
+                            variant="heading-strong-s"
+                            marginLeft="12"
+                            marginBottom="24"
+                        >
                             Product
                         </Heading>
-                        <Button size="s" weight="default" label="Features" href="/features" variant="tertiary" />
-                        <Button size="s" weight="default" label="Pricing" href="/pricing" variant="tertiary" />
-                        <Button size="s" weight="default" label="Security" href="/security" variant="tertiary" />
+                        <Button
+                            size="s"
+                            weight="default"
+                            label="Features"
+                            href="/features"
+                            variant="tertiary"
+                        />
+                        <Button
+                            size="s"
+                            weight="default"
+                            label="Pricing"
+                            href="/pricing"
+                            variant="tertiary"
+                        />
+                        <Button
+                            size="s"
+                            weight="default"
+                            label="Security"
+                            href="/security"
+                            variant="tertiary"
+                        />
                     </Column>
 
                     <Column gap="8" fillWidth>
-                        <Heading as="h3" variant="heading-strong-s" marginLeft="12" marginBottom="24">
+                        <Heading
+                            as="h3"
+                            variant="heading-strong-s"
+                            marginLeft="12"
+                            marginBottom="24"
+                        >
                             Company
                         </Heading>
-                        <Button size="s" weight="default" label="About" href="/about" variant="tertiary" />
-                        <Button size="s" weight="default" label="Blog" href="/blog" variant="tertiary" />
-                        <Button size="s" weight="default" label="Contact" href="/contact" variant="tertiary" />
+                        <Button
+                            size="s"
+                            weight="default"
+                            label="About"
+                            href="/about"
+                            variant="tertiary"
+                        />
+                        <Button
+                            size="s"
+                            weight="default"
+                            label="Blog"
+                            href="/blog"
+                            variant="tertiary"
+                        />
+                        <Button
+                            size="s"
+                            weight="default"
+                            label="Contact"
+                            href="/contact"
+                            variant="tertiary"
+                        />
                     </Column>
 
                     <Column gap="8" fillWidth>
-                        <Heading as="h3" variant="heading-strong-s" marginLeft="12" marginBottom="24">
+                        <Heading
+                            as="h3"
+                            variant="heading-strong-s"
+                            marginLeft="12"
+                            marginBottom="24"
+                        >
                             Legal
                         </Heading>
-                        <Button size="s" weight="default" label="Terms" href="/terms" variant="tertiary" />
-                        <Button size="s" weight="default" label="Privacy" href="/privacy" variant="tertiary" />
+                        <Button
+                            size="s"
+                            weight="default"
+                            label="Terms"
+                            href="/terms"
+                            variant="tertiary"
+                        />
+                        <Button
+                            size="s"
+                            weight="default"
+                            label="Privacy"
+                            href="/privacy"
+                            variant="tertiary"
+                        />
                     </Column>
                 </Row>
             </Row>

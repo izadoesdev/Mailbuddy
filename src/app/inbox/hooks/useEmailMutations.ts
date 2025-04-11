@@ -92,7 +92,7 @@ export function useEmailMutations({ enabled = true } = {}) {
                 return await markAsRead.mutateAsync(emailId);
             }
             return emailId;
-        }
+        },
     };
 
     const safeToggleStar = {
@@ -107,7 +107,7 @@ export function useEmailMutations({ enabled = true } = {}) {
                 return await toggleStar.mutateAsync(params);
             }
             return params;
-        }
+        },
     };
 
     return {

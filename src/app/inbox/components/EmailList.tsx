@@ -36,9 +36,7 @@ export function EmailList({
         return (
             <Column fill center padding="64" horizontal="center" vertical="center" gap="16">
                 <Icon name="inbox" size="m" />
-                <Text variant="heading-strong-m">
-                    Your inbox is empty
-                </Text>
+                <Text variant="heading-strong-m">Your inbox is empty</Text>
                 {searchQuery && (
                     <Text variant="body-default-m" onBackground="neutral-weak">
                         Try adjusting your search query
@@ -50,9 +48,7 @@ export function EmailList({
 
     // Render list of emails
     return (
-        <Column fill overflowY="auto"
-            radius="l"
-            border="neutral-alpha-medium">
+        <Column fill overflowY="auto" radius="l" border="neutral-alpha-medium">
             {emails.map((email, index) => (
                 <Column fillWidth key={email.id}>
                     <EmailItem
@@ -64,7 +60,7 @@ export function EmailList({
                         onSelect={onSelectEmail}
                         onToggleStar={onToggleStar}
                     />
-                    {index < emails.length - 1 && <Line/>}
+                    {index < emails.length - 1 && <Line />}
                 </Column>
             ))}
         </Column>

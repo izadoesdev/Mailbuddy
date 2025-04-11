@@ -21,7 +21,6 @@ export default function LoginPage() {
     const { addToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
 
-
     const handleGoogleLogin = () => {
         setIsLoading(true);
         signIn.social({
@@ -35,7 +34,7 @@ export default function LoginPage() {
                     router.push("/inbox");
                 },
                 onError: () => {
-                    setIsLoading(false)
+                    setIsLoading(false);
                     addToast({
                         variant: "danger",
                         message: "Google login failed. Please try again.",
@@ -44,7 +43,6 @@ export default function LoginPage() {
             },
         });
     };
-
 
     return (
         <Column fillWidth paddingY="80" paddingX="s" horizontal="center" flex={1}>
@@ -99,10 +97,19 @@ export default function LoginPage() {
                         >
                             <Column fillWidth gap="8" horizontal="center">
                                 <Logo size="s" icon={false} href="/" />
-                                <Heading as="h1" variant="display-strong-xs" align="center" marginTop="24">
+                                <Heading
+                                    as="h1"
+                                    variant="display-strong-xs"
+                                    align="center"
+                                    marginTop="24"
+                                >
                                     Welcome back
                                 </Heading>
-                                <Text onBackground="neutral-medium" marginBottom="24" align="center">
+                                <Text
+                                    onBackground="neutral-medium"
+                                    marginBottom="24"
+                                    align="center"
+                                >
                                     Log in to your account
                                 </Text>
                                 <Button
@@ -115,7 +122,6 @@ export default function LoginPage() {
                                     onClick={handleGoogleLogin}
                                     disabled={isLoading}
                                 />
-                               
                             </Column>
                         </Column>
                     </Row>

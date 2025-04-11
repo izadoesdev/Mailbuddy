@@ -175,30 +175,31 @@ async function fetchAllMessages(gmail: any) {
     let allMessages: any[] = [];
     let pageToken: string | null = null;
     let batchCount = 0;
-    
+
     do {
         batchCount++;
         log(`Fetching batch #${batchCount}, current count: ${allMessages.length}`);
-        
+
         const response: GaxiosResponse<any> = await gmail.users.messages.list({
             userId: GMAIL_USER_ID,
             maxResults: FULL_SYNC_BATCH_SIZE,
             pageToken: pageToken || undefined,
         });
-        
+
         const messages = response.data.messages || [];
         allMessages = [...allMessages, ...messages];
-        
+
         // Get next page token
         pageToken = response.data.nextPageToken || null;
-        
+
         // Log progress
-        log(`Batch #${batchCount} complete, fetched ${messages.length} messages. Total: ${allMessages.length}`);
-        
+        log(
+            `Batch #${batchCount} complete, fetched ${messages.length} messages. Total: ${allMessages.length}`,
+        );
     } while (pageToken);
-    
+
     log(`All batches complete. Total messages: ${allMessages.length}`);
-    
+
     // Reverse the list so newest messages come first
     return allMessages.reverse();
 }
@@ -206,45 +207,52 @@ async function fetchAllMessages(gmail: any) {
 /**
  * Store messages in the database
  */
-async function storeMessagesInDb(messages: any[], userId: string): Promise<{ created: number; existing: number }> {
+async function storeMessagesInDb(
+    messages: any[],
+    userId: string,
+): Promise<{ created: number; existing: number }> {
     // Prepare message data for database (messages should already be reversed)
-    const messageData = messages.map(msg => ({
+    const messageData = messages.map((msg) => ({
         id: msg.id,
         threadId: msg.threadId,
         userId,
         // We don't have internalDate from list API, so use current timestamp
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
     }));
-    
+
     log(`Preparing to store ${messageData.length} messages in the database`);
-    
+
     try {
         // Split into chunks for better performance
         const chunkSize = 1000;
         let created = 0;
         let existing = 0;
-        
+
         for (let i = 0; i < messageData.length; i += chunkSize) {
             const chunk = messageData.slice(i, i + chunkSize);
-            log(`Processing chunk ${Math.floor(i/chunkSize) + 1}/${Math.ceil(messageData.length/chunkSize)}`);
-            
+            log(
+                `Processing chunk ${Math.floor(i / chunkSize) + 1}/${Math.ceil(messageData.length / chunkSize)}`,
+            );
+
             // Perform database transaction for each chunk
             const result = await prisma.$transaction(async (tx: any) => {
                 // Find existing messages
                 const existingMessages = await tx.message.findMany({
                     where: {
                         id: {
-                            in: chunk.map(m => m.id),
+                            in: chunk.map((m) => m.id),
                         },
                     },
                     select: { id: true },
                 });
 
                 const existingIds = new Set(existingMessages.map((m: { id: string }) => m.id));
-                const newMessages = chunk.filter(m => !existingIds.has(m.id));
+                const newMessages = chunk.filter((m) => !existingIds.has(m.id));
 
-                log(`Found ${existingIds.size} existing messages, will create ${newMessages.length} new messages`);
-                
+                log(
+                    `Found ${existingIds.size} existing messages, will create ${newMessages.length} new messages`,
+                );
+
                 // Create new messages
                 if (newMessages.length > 0) {
                     await tx.message.createMany({
@@ -258,14 +266,14 @@ async function storeMessagesInDb(messages: any[], userId: string): Promise<{ cre
                     existing: existingIds.size,
                 };
             });
-            
+
             created += result.created;
             existing += result.existing;
         }
 
         return { created, existing };
     } catch (error) {
-        log('Error storing messages in database:', error);
+        log("Error storing messages in database:", error);
         throw error;
     }
 }
@@ -273,75 +281,75 @@ async function storeMessagesInDb(messages: any[], userId: string): Promise<{ cre
 /**
  * Perform a full initial sync for a user
  */
-async function performFullSync(userId: string, accessToken: string, refreshToken: string | null): Promise<boolean> {
+async function performFullSync(
+    userId: string,
+    accessToken: string,
+    refreshToken: string | null,
+): Promise<boolean> {
     try {
         log(`Starting full sync for user ${userId}`);
-        
+
         // Use the withGmailApi helper to handle token refreshes
-        const allMessages = await withGmailApi(
-            userId,
-            accessToken,
-            refreshToken,
-            async (gmail) => {
+        const allMessages =
+            (await withGmailApi(userId, accessToken, refreshToken, async (gmail) => {
                 return fetchAllMessages(gmail);
-            }
-        ) || [];
-        
+            })) || [];
+
         if (allMessages.length === 0) {
             log(`No messages found for user ${userId}`);
             return true;
         }
-        
+
         log(`Fetched ${allMessages.length} messages for user ${userId}, storing in database`);
-        
+
         // Store messages in DB
         const { created, existing } = await storeMessagesInDb(allMessages, userId);
         log(`Stored messages in database: ${created} created, ${existing} existing`);
-        
+
         // Process a subset of full messages for the newest messages (e.g. the last 50)
         const messagesToProcess = allMessages.slice(0, 50);
         log(`Processing ${messagesToProcess.length} newest messages to extract full content`);
-        
+
         const gmail = initializeGmailClient(accessToken);
         let processedCount = 0;
-        
+
         // Process in batches
         for (let i = 0; i < messagesToProcess.length; i += SYNC_BATCH_SIZE) {
             const batch = messagesToProcess.slice(i, i + SYNC_BATCH_SIZE);
-            
+
             // Process batch in parallel
             const results = await Promise.allSettled(
                 batch.map((msg) => processMessage(gmail, msg.id, userId)),
             );
-            
+
             // Count successful operations
             processedCount += results.filter(
                 (result) => result.status === "fulfilled" && result.value === true,
             ).length;
         }
-        
+
         log(`Processed ${processedCount}/${messagesToProcess.length} full message details`);
-        
+
         // Get Gmail profile to obtain current historyId for future incremental syncs
         const profile = await gmail.users.getProfile({
             userId: GMAIL_USER_ID,
         });
-        
+
         const newHistoryId = profile.data.historyId;
-        
+
         // Update sync state with the new history ID
         if (newHistoryId) {
             await prisma.syncState.update({
                 where: { userId },
-                data: { 
+                data: {
                     historyId: newHistoryId,
-                    lastSyncTime: new Date()
+                    lastSyncTime: new Date(),
                 },
             });
-            
+
             log(`Updated history ID to ${newHistoryId} for user ${userId}`);
         }
-        
+
         return true;
     } catch (error) {
         log(`Error performing full sync for user ${userId}:`, error);
@@ -640,7 +648,7 @@ export async function POST(request: Request) {
         // Check if this is a full sync request
         const url = new URL(request.url);
         const fullSync = url.searchParams.get("fullSync") === "true";
-        
+
         // Authenticate user
         const session = await auth.api.getSession({ headers: await headers() });
         if (!session?.user) {
@@ -704,7 +712,7 @@ export async function POST(request: Request) {
                 } else {
                     // Get or create sync state for incremental sync
                     const { historyId } = await getOrCreateSyncState(userId);
-                    
+
                     // Process changes
                     await processUserChanges(userId, account.accessToken || "", historyId || null);
                 }
@@ -736,7 +744,9 @@ export async function POST(request: Request) {
         // Return immediately to the client
         return NextResponse.json({
             success: true,
-            message: fullSync ? "Full background sync initiated (newest messages first)" : "Incremental background sync initiated",
+            message: fullSync
+                ? "Full background sync initiated (newest messages first)"
+                : "Incremental background sync initiated",
         });
     } catch (error) {
         log("Error in user-triggered sync:", error);
