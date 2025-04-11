@@ -151,6 +151,20 @@ export async function extractActionItems(email: Email): Promise<string[]> {
 
         // Try to extract JSON array from response
         try {
+            // First check for code block formatting (```json ... ```)
+            const codeBlockMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (codeBlockMatch?.[1]) {
+                // Extract the content inside code blocks
+                const cleanedResult = codeBlockMatch[1].trim();
+                
+                // Check if it's a valid JSON array
+                if (cleanedResult.startsWith('[') && cleanedResult.endsWith(']')) {
+                    const jsonArray = JSON.parse(cleanedResult);
+                    return Array.isArray(jsonArray) ? jsonArray : [];
+                }
+            }
+        
+            // Traditional array extraction if no code blocks were found
             const match = result.match(/\[([\s\S]*?)\]/);
             if (match) {
                 // Clean up the JSON before parsing
@@ -350,10 +364,20 @@ Remember to ONLY return a valid JSON object. The summary MUST use 'you' and 'you
             temperature: 0.2,
             maxTokens: 800,
         });
-
+        console.log("OpenRouter response: ", result);
         // Try to extract JSON from the response
         try {
-            const jsonObj = JSON.parse(result);
+            // First check if response is wrapped in code blocks (```json ... ```)
+            let cleanedResult = result;
+            
+            // Remove markdown code block formatting if present
+            const codeBlockMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (codeBlockMatch?.[1]) {
+                cleanedResult = codeBlockMatch[1].trim();
+                console.log("Extracted JSON from code block");
+            }
+            
+            const jsonObj = JSON.parse(cleanedResult);
 
             if (jsonObj) {
                 console.log("Successfully parsed JSON response");
@@ -392,6 +416,27 @@ Remember to ONLY return a valid JSON object. The summary MUST use 'you' and 'you
         } catch (error) {
             console.error("Error parsing comprehensive email analysis JSON:", error);
             console.error("Raw result:", result);
+
+            // Try to extract JSON from code blocks before falling back to regex
+            try {
+                const codeBlockMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
+                if (codeBlockMatch?.[1]) {
+                    const cleanedResult = codeBlockMatch[1].trim();
+                    console.log("Attempting to parse JSON from code block after initial failure");
+                    const jsonObj = JSON.parse(cleanedResult);
+                    
+                    return {
+                        category: jsonObj.category || "Uncategorized",
+                        priority: jsonObj.priority || "Medium",
+                        priorityExplanation: jsonObj.priorityExplanation || "",
+                        summary: jsonObj.summary || "No summary available",
+                        actionItems: Array.isArray(jsonObj.actionItems) ? jsonObj.actionItems : [],
+                        contactInfo: typeof jsonObj.contactInfo === "object" ? jsonObj.contactInfo : {},
+                    };
+                }
+            } catch (codeBlockError) {
+                console.error("Failed to parse code block JSON:", codeBlockError);
+            }
 
             // Additional fallback - try to extract individual fields from the text response
             const categoryMatch = result.match(/category["\s:]+([^"\n,]+)/i);
