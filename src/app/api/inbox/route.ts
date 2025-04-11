@@ -8,9 +8,7 @@ import {
     decodeEncryptedData,
     decryptText,
 } from "@/libs/utils/encryption";
-import { google } from "googleapis";
 import { extractContentFromParts } from "@/libs/utils/email-content";
-import env from "@/libs/env";
 import { withGmailApi } from "../utils/withGmail";
 
 // For API requests
@@ -41,9 +39,11 @@ function setUserFetchStatus(userId: string, isActive: boolean): void {
 }
 
 /**
- * GET handler for inbox API
+ * GET handler for inbox API - Optimized version
  */
 export async function GET(request: NextRequest) {
+    const startTime = Date.now();
+    
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -66,80 +66,159 @@ export async function GET(request: NextRequest) {
         const pageSize = Number.parseInt(searchParams.get("pageSize") || PAGE_SIZE.toString(), 10);
         const threadView = searchParams.get("threadView") === "true";
         const category = searchParams.get("category") || null;
-
-        // Calculate offset based on page
         const skip = (page - 1) * pageSize;
 
-        log(
-            `Fetching inbox for user: ${userId}, page: ${page}, pageSize: ${pageSize}, threadView: ${threadView}, category: ${category}`,
-        );
+        log(`Fetching inbox for user: ${userId}, page: ${page}, pageSize: ${pageSize}, threadView: ${threadView}, category: ${category}`);
 
-        // Add performance metrics
-        const startTime = Date.now();
-
-        // Get total thread count
-        const totalCount = await getTotalThreadCount(userId);
-        log(`Total thread count: ${totalCount}`);
-
-        // Get message IDs
-        const messageIds = await getMessageIds(userId, pageSize, skip);
-        log(`Retrieved ${messageIds.length} message IDs`);
-
-        // Get existing emails from database
-        const existingEmails = await getExistingEmails(messageIds);
-        log(`Found ${existingEmails.length} existing emails in database`);
-
-        // Find missing emails
-        const existingEmailIds = new Set(existingEmails.map((e) => e.id));
-        const missingMessageIds = messageIds
-            .map((m) => m.id)
-            .filter((id) => !existingEmailIds.has(id));
-        log(`Need to fetch ${missingMessageIds.length} emails from Gmail API`);
-
-        // Fetch missing emails from Gmail
-        const fetchedEmails = await fetchMissingEmails(
-            missingMessageIds,
-            userId,
-            session.user.accessToken ?? null,
-            session.user.refreshToken ?? null,
-            0,
-            userId, // Pass the account user ID for token refresh
-        );
-        log(`Successfully fetched ${fetchedEmails.length} emails from Gmail API`);
-
-        // Process emails
-        let allEmails = processEmails(existingEmails, fetchedEmails, threadView);
+        // Build the base query filters
+        const baseFilters: any = { userId };
         
-        // Further filter by category if specified
+        // Add category filtering to the database query if applicable
         if (category) {
-            allEmails = allEmails.filter(email => {
-                // Handle special case for starred emails
-                if (category.toUpperCase() === "STARRED") {
-                    return email.isStarred;
-                }
-                
-                // For other categories, check the labels array
-                if (!email.labels || email.labels.length === 0) {
-                    return false;
-                }
-                
-                // Convert category to uppercase and prefix with CATEGORY_ if needed
+            if (category.toUpperCase() === "STARRED") {
+                baseFilters.isStarred = true;
+            } else {
+                // For other categories, handle the CATEGORY_ prefix
                 let labelToMatch = category.toUpperCase();
                 if (["SOCIAL", "UPDATES", "FORUMS", "PROMOTIONS", "PERSONAL"].includes(labelToMatch)) {
                     labelToMatch = `CATEGORY_${labelToMatch}`;
                 }
-                
-                return email.labels.includes(labelToMatch);
-            });
+                baseFilters.labels = { has: labelToMatch };
+            }
         }
         
-        log(`Filtered to ${allEmails.length} emails after category filtering`);
+        // Exclude emails that shouldn't appear in the main inbox
+        baseFilters.NOT = {
+            labels: {
+                hasSome: ["TRASH", "DRAFT", "SPAM"]
+            }
+        };
+
+        // Build query options based on thread view
+        const queryOptions: any = {
+            where: baseFilters,
+            select: {
+                id: true,
+                threadId: true,
+                subject: true,
+                from: true,
+                to: true,
+                snippet: true,
+                isRead: true,
+                isStarred: true,
+                labels: true,
+                internalDate: true,
+                aiMetadata: true,
+            },
+            orderBy: { internalDate: 'desc' as const },
+            skip,
+            take: pageSize
+        };
         
-        // Return the results
+        // Add distinct option for thread view if needed
+        if (threadView) {
+            queryOptions.distinct = ['threadId'];
+        }
+
+        // Execute queries in parallel to improve performance
+        const [emails, totalCount] = await Promise.all([
+            prisma.email.findMany(queryOptions),
+            threadView 
+                ? prisma.email.groupBy({ 
+                    by: ['threadId'],
+                    where: baseFilters,
+                    _count: true
+                  })
+                : prisma.email.count({ where: baseFilters })
+        ]);
+        
+        log(`Retrieved ${emails.length} emails from database`);
+        log(`Total count: ${totalCount}`);
+
+        // Check for missing emails that need to be fetched from Gmail
+        const missingEmails = await checkForMissingEmails(
+            userId,
+            page,
+            pageSize,
+            session.user.accessToken ?? null,
+            session.user.refreshToken ?? null
+        );
+        
+        if (missingEmails.length > 0) {
+            log(`Found ${missingEmails.length} missing emails to fetch from Gmail`);
+            
+            // Fetch missing emails and merge with existing results
+            const fetchedEmails = await fetchMissingEmails(
+                missingEmails.map(m => m.id),
+                userId,
+                session.user.accessToken ?? null,
+                session.user.refreshToken ?? null,
+                0,
+                userId
+            );
+            
+            log(`Successfully fetched ${fetchedEmails.length} emails from Gmail API`);
+            
+            // Append fetched emails to our results if within the current page bounds
+            if (fetchedEmails.length > 0) {
+                // For simplicity, we'll re-query to get updated results rather than merging
+                const updatedQueryOptions = { ...queryOptions }; // Clone the options
+                const updatedEmails = await prisma.email.findMany(updatedQueryOptions);
+                emails.splice(0, emails.length, ...updatedEmails);
+                log(`Updated emails array with ${emails.length} emails after Gmail fetch`);
+            }
+        }
+
+        // Decrypt only necessary fields for display
+        const decryptedEmails = emails.map(email => {
+            // Create a copy without decryption first
+            const decryptedEmail = { ...email };
+            
+            // Only decrypt subject and snippet for the inbox view
+            if (email.subject) {
+                try {
+                    const { encryptedData, iv, authTag } = decodeEncryptedData(email.subject);
+                    decryptedEmail.subject = decryptText(encryptedData, iv, authTag);
+                } catch (error) {
+                    decryptedEmail.subject = "[Subject decryption failed]";
+                }
+            }
+            
+            if (email.snippet) {
+                try {
+                    const { encryptedData, iv, authTag } = decodeEncryptedData(email.snippet);
+                    decryptedEmail.snippet = decryptText(encryptedData, iv, authTag);
+                } catch (error) {
+                    decryptedEmail.snippet = "[Snippet decryption failed]";
+                }
+            }
+            
+            return decryptedEmail;
+        });
+
+        // Handle thread view grouping if needed
+        const processedEmails = threadView 
+            ? processThreadView(decryptedEmails)
+            : decryptedEmails;
+        
+        // Queue emails missing AI metadata for background processing
+        // Don't wait for this to complete
+        const emailsNeedingMetadata = emails.filter(email => {
+            const metadata = email as unknown as { aiMetadata?: { summary?: string, category?: string } };
+            return !metadata.aiMetadata || 
+                  (metadata.aiMetadata && (!metadata.aiMetadata.summary || !metadata.aiMetadata.category));
+        });
+        
+        if (emailsNeedingMetadata.length > 0) {
+            log(`Queueing ${emailsNeedingMetadata.length} emails for background AI processing`);
+            queueBackgroundAIProcessing(emailsNeedingMetadata);
+        }
+
+        // Prepare and return the result
         const result = {
-            emails: allEmails,
-            hasMore: skip + allEmails.length < totalCount,
-            totalCount: totalCount,
+            emails: processedEmails,
+            hasMore: skip + processedEmails.length < (typeof totalCount === 'number' ? totalCount : totalCount.length),
+            totalCount: typeof totalCount === 'number' ? totalCount : totalCount.length,
             page,
             pageSize,
         };
@@ -164,131 +243,152 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Count total threads for a user
+ * Check for emails that might be missing from the database
+ * This optimized version only runs when necessary
  */
-async function getTotalThreadCount(userId: string): Promise<number> {
-    // Count distinct thread IDs for the user
-    const result = await prisma.message.groupBy({
-        by: ["threadId"],
-        where: { userId },
-        _count: true,
-    });
-
-    return result.length;
-}
-
-/**
- * Get message IDs based on view type and pagination
- */
-async function getMessageIds(
+async function checkForMissingEmails(
     userId: string,
+    page: number,
     pageSize: number,
-    skip: number,
+    accessToken: string | null,
+    refreshToken: string | null
 ): Promise<{ id: string }[]> {
-        log(`Thread view: fetching threads with skip=${skip}, take=${pageSize}`);
-
-        try {
-            // First try to get thread data from the emails table which is faster
-            // and includes more details like internalDate for better sorting
-            const threadsFromEmails = await prisma.email.findMany({
-                where: { userId },
-                select: {
-                    id: true,
-                    threadId: true,
-                    internalDate: true,
-                    createdAt: true,
-                },
-                distinct: ["threadId"],
-                orderBy: [
-                    // First try to sort by internalDate (Gmail's timestamp) if available
-                    { internalDate: "desc" },
-                    // Otherwise fall back to our database timestamp
-                    { createdAt: "desc" },
-                ],
-                // Apply pagination at the database level
-                skip,
-                take: pageSize,
-            });
-
-            log(`Found ${threadsFromEmails.length} threads from emails table`);
-
-            if (threadsFromEmails.length > 0) {
-                // Return email IDs for the paginated threads
-                return threadsFromEmails.map((email) => ({ id: email.id }));
-            }
-
-            // Fallback: If no emails are found, try messages table
-            log("No emails found in emails table, falling back to messages table");
-
-            // Get all thread IDs for this user with a reasonable limit
-            const allThreads = await prisma.message.findMany({
-                where: { userId },
-                select: {
-                    id: true,
-                    threadId: true,
-                    createdAt: true,
-                },
-                distinct: ["threadId"],
-                orderBy: { createdAt: "desc" },
-                // Apply pagination at the database level
-                skip,
-                take: pageSize,
-            });
-
-            log(`Found ${allThreads.length} thread messages from fallback messages table`);
-
-            if (allThreads.length === 0) {
-                return [];
-            }
-
-            // Return just the IDs
-            return allThreads.map((msg) => ({ id: msg.id }));
-        } catch (error) {
-            log("Error fetching thread messages:", error);
+    // Only check for missing emails on the first page
+    if (page > 1) return [];
+    
+    try {
+        // Get the latest sync state to determine if we need to check for new emails
+        const syncState = await prisma.syncState.findUnique({
+            where: { userId },
+            select: { lastSyncTime: true }
+        });
+        
+        // If we've synced recently (less than 5 minutes ago), no need to check
+        if (syncState && Date.now() - syncState.lastSyncTime.getTime() < 5 * 60 * 1000) {
             return [];
         }
+        
+        // Check Gmail for latest messages
+        const missingIds = await withGmailApi(
+            userId,
+            accessToken,
+            refreshToken,
+            async (gmail) => {
+                // Get latest messages from Gmail
+                const response = await gmail.users.messages.list({
+                    userId: GMAIL_USER_ID,
+                    maxResults: pageSize,
+                });
+                
+                if (!response.data.messages) {
+                    return [];
+                }
+                
+                // Get message IDs from Gmail
+                const gmailIds = response.data.messages?.map((m: any) => m.id) || [];
+                
+                // Check which ones exist in our database
+                const existingEmails = await prisma.email.findMany({
+                    where: { 
+                        id: { in: gmailIds },
+                        userId 
+                    },
+                    select: { id: true }
+                });
+                
+                // Create a set of existing IDs for faster lookups
+                const existingIdSet = new Set(existingEmails.map(e => e.id));
+                
+                // Return IDs that don't exist in our database
+                return gmailIds
+                    .filter((id: string) => !existingIdSet.has(id))
+                    .map((id: string) => ({ id }));
+            }
+        );
+        
+        // Update the sync state
+        await prisma.syncState.upsert({
+            where: { userId },
+            update: { lastSyncTime: new Date() },
+            create: { 
+                userId,
+                lastSyncTime: new Date(),
+                syncInProgress: false
+            }
+        });
+        
+        return missingIds || [];
+    } catch (error) {
+        log("Error checking for missing emails:", error);
+        return [];
+    }
 }
 
 /**
- * Get existing emails from the database
+ * Process emails for thread view
  */
-async function getExistingEmails(messageIds: { id: string }[]): Promise<any[]> {
-    if (messageIds.length === 0) {
-        return [];
+function processThreadView(emails: any[]): any[] {
+    if (emails.length === 0) return [];
+    
+    const threadMap = new Map();
+    
+    // Group by thread ID and keep the latest email in each thread
+    for (const email of emails) {
+        const threadId = email.threadId;
+        if (
+            !threadMap.has(threadId) ||
+            new Date(email.internalDate) > new Date(threadMap.get(threadId).internalDate)
+        ) {
+            threadMap.set(threadId, email);
+        }
     }
+    
+    // Convert to array and sort by internalDate
+    return Array.from(threadMap.values()).sort(
+        (a, b) => new Date(b.internalDate).getTime() - new Date(a.internalDate).getTime()
+    );
+}
 
-    try {
-        // Get existing emails from the database
-        const emails = await prisma.email.findMany({
-            where: {
-                id: {
-                    in: messageIds.map((m) => m.id),
-                },
-            },
-            include: {
-                // Include AI metadata if available
-                aiMetadata: true,
-            },
-            orderBy: {
-                internalDate: "desc",
-            },
-        });
-
-        // Log metadata status
-        log(
-            `Retrieved ${emails.length} emails, ${emails.filter((e) => e.aiMetadata).length} have AI metadata`,
-        );
-
-        // Decrypt sensitive fields
-        const decryptedEmails = emails.map((email) => {
-            return decryptEmail(email);
-        });
-
-        return decryptedEmails;
-    } catch (error) {
-        log("Error fetching existing emails from database:", error);
-        throw error;
-    }
+/**
+ * Queue emails for background AI processing
+ */
+function queueBackgroundAIProcessing(emails: any[]): void {
+    if (emails.length === 0) return;
+    
+    // Start background processing without waiting
+    setTimeout(async () => {
+        try {
+            // Process emails in batches
+            const BATCH_SIZE = 5;
+            
+            for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+                const batch = emails.slice(i, i + BATCH_SIZE);
+                
+                // Process each email in the batch
+                for (const email of batch) {
+                    try {
+                        log(`Processing AI metadata for email ${email.id}`);
+                        
+                        // Dynamically import AI modules to avoid circular dependencies
+                        const ai = await import("@/app/ai/new/ai");
+                        
+                        // Use the enhanceEmail function to process the email
+                        await ai.enhanceEmail(email);
+                        
+                        // Add a small delay between emails to reduce CPU contention
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    } catch (error) {
+                        log(`Error processing AI metadata for email ${email.id}:`, error);
+                    }
+                }
+                
+                // Add a delay between batches
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        } catch (error) {
+            log("Error in background AI processing:", error);
+        }
+    }, 100);
 }
 
 /**
@@ -539,231 +639,4 @@ function encryptEmailFields(emailData: any) {
         subject: encryptedSubject,
         snippet: encryptedSnippet,
     };
-}
-
-/**
- * Process emails for display, merging and formatting as needed
- */
-function processEmails(existingEmails: any[], fetchedEmails: any[], threadView: boolean): any[] {
-    // Combine existing and fetched emails
-    const allEmails = [...existingEmails, ...fetchedEmails];
-
-    if (allEmails.length === 0) {
-        return [];
-    }
-    
-    // Queue emails without AI metadata for background processing
-    queueMissingAIMetadata(allEmails);
-
-    // Filter out emails with certain labels that shouldn't appear in the main inbox
-    const filteredEmails = allEmails.filter(email => {
-        if (!email.labels || email.labels.length === 0) return true;
-        
-        // Keep emails if they don't have any of these labels
-        return !email.labels.some(
-            (label: string) => 
-                label === "TRASH" || 
-                label === "DRAFT" || 
-                label === "SPAM"
-        );
-    });
-
-    // For thread view, we want to get the latest email from each thread
-    if (threadView) {
-        const threadMap = new Map();
-
-        // Group by thread ID and keep the latest email in each thread
-        for (const email of filteredEmails) {
-            const threadId = email.threadId;
-            if (
-                !threadMap.has(threadId) ||
-                new Date(email.internalDate) > new Date(threadMap.get(threadId).internalDate)
-            ) {
-                threadMap.set(threadId, email);
-            }
-        }
-
-        // Sort threads by most recent email
-        return Array.from(threadMap.values()).sort(
-            (a, b) => new Date(b.internalDate).getTime() - new Date(a.internalDate).getTime(),
-        );
-    }
-
-    // Simple sort by date for non-thread view
-    return filteredEmails.sort(
-        (a, b) => new Date(b.internalDate).getTime() - new Date(a.internalDate).getTime(),
-    );
-}
-
-/**
- * Queue emails without AI metadata for background processing
- */
-async function queueMissingAIMetadata(emails: any[]): Promise<void> {
-    try {
-        // Filter emails that need AI processing
-        const emailsNeedingMetadata = emails.filter(email => 
-            !email.aiMetadata || 
-            !email.aiMetadata.summary || 
-            !email.aiMetadata.category
-        );
-
-        if (emailsNeedingMetadata.length === 0) {
-            return;
-        }
-
-        log(`Queueing ${emailsNeedingMetadata.length} emails for AI metadata generation`);
-
-        // Process in background to avoid blocking the API response
-        setTimeout(async () => {
-            try {
-                // Process emails in batches to avoid overwhelming the system
-                const BATCH_SIZE = 5;
-                
-                for (let i = 0; i < emailsNeedingMetadata.length; i += BATCH_SIZE) {
-                    const batch = emailsNeedingMetadata.slice(i, i + BATCH_SIZE);
-                    
-                    // Process each email in the batch
-                    for (const email of batch) {
-                        try {
-                            log(`Processing AI metadata for email ${email.id}`);
-                            
-                            // Dynamically import AI modules to avoid circular dependencies
-                            const ai = await import("@/app/ai/new/ai");
-                            
-                            // Use the enhanceEmail function to process the email
-                            const result = await ai.enhanceEmail(email);
-                            
-                            if (result.success) {
-                                log(`Successfully generated AI metadata for email ${email.id}`);
-                            } else {
-                                // If processing failed, don't save the failed result
-                                log(`Failed to generate AI metadata for email ${email.id}, result discarded: ${result.error}`);
-                            }
-                            
-                            // Add a small delay between emails
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                        } catch (error) {
-                            log(`Error processing AI metadata for email ${email.id}, result discarded:`, error);
-                            // Continue with next email without storing the failed result
-                        }
-                    }
-                    
-                    // Add a delay between batches
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                }
-                
-                log(`Completed background AI metadata processing for ${emailsNeedingMetadata.length} emails`);
-            } catch (error) {
-                log("Error in background AI metadata processing:", error);
-            }
-        }, 100);
-    } catch (error) {
-        log("Error queueing emails for AI metadata:", error);
-    }
-}
-
-/**
- * Decrypts an email from the database
- */
-function decryptEmail(email: any) {
-    const decryptedEmail = { ...email };
-
-    // Decrypt body if it exists
-    if (email.body) {
-        try {
-            const { encryptedData, iv, authTag } = decodeEncryptedData(email.body);
-            decryptedEmail.body = decryptText(encryptedData, iv, authTag);
-        } catch (error) {
-            log(`Error decrypting email body ${email.id}:`, error);
-            decryptedEmail.body = "[Content decryption failed]";
-        }
-    }
-
-    // Decrypt subject if it exists
-    if (email.subject) {
-        try {
-            const { encryptedData, iv, authTag } = decodeEncryptedData(email.subject);
-            decryptedEmail.subject = decryptText(encryptedData, iv, authTag);
-        } catch (error) {
-            log(`Error decrypting email subject ${email.id}:`, error);
-            decryptedEmail.subject = "[Subject decryption failed]";
-        }
-    }
-
-    // Decrypt snippet if it exists
-    if (email.snippet) {
-        try {
-            const { encryptedData, iv, authTag } = decodeEncryptedData(email.snippet);
-            decryptedEmail.snippet = decryptText(encryptedData, iv, authTag);
-        } catch (error) {
-            log(`Error decrypting email snippet ${email.id}:`, error);
-            decryptedEmail.snippet = "[Snippet decryption failed]";
-        }
-    }
-
-    // Ensure AI metadata is preserved (it's not encrypted so we don't need to decrypt)
-    if (email.aiMetadata) {
-        decryptedEmail.aiMetadata = email.aiMetadata;
-    }
-
-    return decryptedEmail;
-}
-
-/**
- * Refresh access token for a user
- */
-async function refreshAccessToken(userId: string): Promise<string | null> {
-    try {
-        // Find the user
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            include: { accounts: true },
-        });
-        console.log(user);
-
-        if (!user || !user.accounts || user.accounts.length === 0) {
-            log(`No accounts found for user ${userId}`);
-            return null;
-        }
-        console.log(user.accounts);
-
-        // Get the Google account
-        const googleAccount = user.accounts.find((account) => account.providerId === "google");
-        if (!googleAccount || !googleAccount.refreshToken) {
-            log(`No Google account or refresh token found for user ${userId}`);
-            return null;
-        }
-        console.log(googleAccount);
-
-        // Set up OAuth2 client
-        const oauth2Client = new google.auth.OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
-
-        // Set refresh token
-        oauth2Client.setCredentials({
-            refresh_token: googleAccount.refreshToken,
-        });
-
-        // Refresh the token
-        const { credentials } = await oauth2Client.refreshAccessToken();
-        const newAccessToken = credentials.access_token;
-
-        if (!newAccessToken) {
-            log(`Failed to refresh access token for user ${userId}`);
-            return null;
-        }
-
-        // Update the access token in the database
-        await prisma.account.update({
-            where: { id: googleAccount.id },
-            data: {
-                accessToken: newAccessToken,
-            },
-        });
-
-        log(`Successfully refreshed access token for user ${userId}`);
-        return newAccessToken;
-    } catch (error) {
-        log(`Error refreshing access token for user ${userId}:`, error);
-        return null;
-    }
 }
