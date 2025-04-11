@@ -326,10 +326,15 @@ async function getExistingEmails(messageIds: { id: string }[]): Promise<any[]> {
             },
         });
 
+        // Log metadata status
+        log(`Retrieved ${emails.length} emails, ${emails.filter(e => e.aiMetadata).length} have AI metadata`);
+
         // Decrypt sensitive fields
-        return emails.map((email) => {
+        const decryptedEmails = emails.map((email) => {
             return decryptEmail(email);
         });
+
+        return decryptedEmails;
     } catch (error) {
         log("Error fetching existing emails from database:", error);
         throw error;
@@ -491,7 +496,7 @@ async function storeEmailBatch(emails: any[]): Promise<void> {
 }
 
 /**
- * Process emails for vector storage in the background
+ * Process emails for vector storage and AI metadata generation in the background
  * This runs asynchronously after the API has already sent its response
  */
 async function processEmailsForVectorStorage(emails: any[]): Promise<void> {
@@ -507,12 +512,26 @@ async function processEmailsForVectorStorage(emails: any[]): Promise<void> {
             // Process emails in batch sequentially to avoid memory spikes
             for (const email of batch) {
                 try {
-                    await enhanceEmail(email);
+                    // Use the enhanceEmail function which will:
+                    // 1. Process with Groq to extract metadata
+                    // 2. Store in vector database
+                    // 3. Save metadata to database
+                    await import('@/app/ai/new/ai').then(ai => {
+                        return ai.enhanceEmail(email);
+                    }).catch(e => {
+                        log(`Error enhancing email ${email.id}:`, e);
+                        // Fallback to just storing in vector database if enhanceEmail fails
+                        return import('@/app/ai/new/ai').then(ai => {
+                            return ai.storeEmail(email);
+                        }).catch(vectorError => {
+                            log(`Error storing email in vector database: ${email.id}`, vectorError);
+                        });
+                    });
                     
                     // Add a small delay between emails to reduce CPU contention
                     await new Promise(resolve => setTimeout(resolve, 50));
-                } catch (vectorError) {
-                    log(`Error storing email in vector database: ${email.id}`, vectorError);
+                } catch (error) {
+                    log(`Error processing email ${email.id}:`, error);
                     // Continue with other emails
                 }
             }
@@ -639,6 +658,11 @@ function decryptEmail(email: any) {
             log(`Error decrypting email snippet ${email.id}:`, error);
             decryptedEmail.snippet = "[Snippet decryption failed]";
         }
+    }
+
+    // Ensure AI metadata is preserved (it's not encrypted so we don't need to decrypt)
+    if (email.aiMetadata) {
+        decryptedEmail.aiMetadata = email.aiMetadata;
     }
 
     return decryptedEmail;

@@ -82,6 +82,11 @@ export function EmailItem({
                             }}
                         >
                             {email.subject}
+                            {email.aiMetadata && (
+                                <span style={{ marginLeft: "8px", color: "#0070f3" }}>
+                                    ✨
+                                </span>
+                            )}
                         </Text>
 
                         <Row fillWidth horizontal="space-between">

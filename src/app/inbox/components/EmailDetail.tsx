@@ -32,6 +32,18 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
         }
     };
 
+    // Helper function to get the appropriate color for priority
+    const getPriorityColor = (priority?: string) => {
+        if (!priority) return "neutral";
+        switch (priority.toLowerCase()) {
+            case 'urgent': return "error";
+            case 'high': return "warning";
+            case 'medium': return "info";
+            case 'low': return "success";
+            default: return "neutral";
+        }
+    };
+
     return (
         <Column fill radius="xl" border="neutral-alpha-medium" overflow="hidden">
             <Column gap="24" fill>
@@ -78,6 +90,69 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                                 <Tag size="m" key={label} label={label.replace("CATEGORY_", "")} />
                             ))}
                     </Row>
+                )}
+
+                {/* AI Metadata Card */}
+                {email.aiMetadata && (
+                    <Column paddingX="24" gap="12">
+                        <Card fill padding="16" radius="l">
+                            <Column gap="12">
+                                <Row horizontal="space-between" vertical="center">
+                                    <Heading variant="heading-strong-s">
+                                        <Row gap="8" vertical="center">
+                                            <span>✨ AI Analysis</span>
+                                        </Row>
+                                    </Heading>
+                                </Row>
+                                
+                                <Line />
+                                
+                                {email.aiMetadata.summary && (
+                                    <Column gap="4">
+                                        <Text variant="body-strong-s">Summary:</Text>
+                                        <Text variant="body-default-m">{email.aiMetadata.summary}</Text>
+                                    </Column>
+                                )}
+                                
+                                <Row wrap gap="16">
+                                    {email.aiMetadata.category && (
+                                        <Column gap="4">
+                                            <Text variant="body-strong-s">Category:</Text>
+                                            <Tag label={email.aiMetadata.category} />
+                                        </Column>
+                                    )}
+                                    
+                                    {email.aiMetadata.priority && (
+                                        <Column gap="4">
+                                            <Text variant="body-strong-s">Priority:</Text>
+                                            <Tag 
+                                                label={email.aiMetadata.priority} 
+                                                variant={getPriorityColor(email.aiMetadata.priority) as any}
+                                            />
+                                        </Column>
+                                    )}
+                                </Row>
+                                
+                                {email.aiMetadata.priorityExplanation && (
+                                    <Column gap="4">
+                                        <Text variant="body-strong-s">Reasoning:</Text>
+                                        <Text variant="body-default-s">{email.aiMetadata.priorityExplanation}</Text>
+                                    </Column>
+                                )}
+                                
+                                {email.aiMetadata.keywords && email.aiMetadata.keywords.length > 0 && (
+                                    <Column gap="4">
+                                        <Text variant="body-strong-s">Key Points:</Text>
+                                        <Row gap="4" wrap>
+                                            {email.aiMetadata.keywords.map((keyword) => (
+                                                <Chip key={`keyword-${keyword}`} label={keyword} />
+                                            ))}
+                                        </Row>
+                                    </Column>
+                                )}
+                            </Column>
+                        </Card>
+                    </Column>
                 )}
 
                 <Row fill paddingX="8">
