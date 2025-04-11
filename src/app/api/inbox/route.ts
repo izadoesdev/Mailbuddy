@@ -11,7 +11,8 @@ import {
 import { google } from "googleapis";
 import { extractContentFromParts } from "@/libs/utils/email-content";
 import env from "@/libs/env";
-import { storeEmail } from "@/app/ai/new/ai";
+// import { storeEmail } from "@/app/ai/new/ai";
+import { enhanceEmail } from "@/app/ai/new/ai";
 
 // For API requests
 const GMAIL_USER_ID = "me";
@@ -506,7 +507,7 @@ async function processEmailsForVectorStorage(emails: any[]): Promise<void> {
             // Process emails in batch sequentially to avoid memory spikes
             for (const email of batch) {
                 try {
-                    await storeEmail(email);
+                    await enhanceEmail(email);
                     
                     // Add a small delay between emails to reduce CPU contention
                     await new Promise(resolve => setTimeout(resolve, 50));

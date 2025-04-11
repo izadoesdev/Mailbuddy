@@ -33,12 +33,25 @@ export async function saveEmailAIMetadata({
   importance?: string;
   requiresResponse?: boolean;
   responseTimeframe?: string;
-  keywords?: string[];
+  keywords?: string[] | any[];
   processingTime?: number;
   modelUsed?: string;
   tokensUsed?: number;
 }) {
   try {
+    // Ensure keywords is always an array of strings
+    const processedKeywords = Array.isArray(keywords) 
+      ? keywords.map(k => {
+          // If keyword is an object with task property, convert to string
+          if (typeof k === 'object' && k !== null && 'task' in k) {
+            const deadline = k.deadline ? ` (Due: ${k.deadline})` : '';
+            return `${k.task}${deadline}`;
+          }
+          // Otherwise convert to string directly
+          return String(k);
+        }) 
+      : [];
+
     // Use upsert to handle both insert and update cases
     const result = await prisma.emailAIMetadata.upsert({
       where: {
@@ -55,7 +68,7 @@ export async function saveEmailAIMetadata({
         importance,
         requiresResponse,
         responseTimeframe,
-        keywords: keywords || [],
+        keywords: processedKeywords,
         processingTime,
         modelUsed,
         tokensUsed
@@ -72,7 +85,7 @@ export async function saveEmailAIMetadata({
         importance,
         requiresResponse,
         responseTimeframe,
-        keywords: keywords || [],
+        keywords: processedKeywords,
         processingTime,
         modelUsed,
         tokensUsed
