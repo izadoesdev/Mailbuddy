@@ -1,7 +1,7 @@
-# Mailer
+# Mailbuddy - Your Secure AI Email Companion
 
 <div align="center">
-  <img src="public/images/cover.jpg" alt="Mailer - Secure Email Client" width="800"/>
+  <img src="public/images/cover.jpg" alt="Mailbuddy - Secure Email Client" width="800"/>
   <p><em>A modern, secure, and privacy-focused email client with Gmail integration</em></p>
   <p>
     <a href="#key-features">Features</a> •
@@ -15,9 +15,9 @@
 
 ## 🌟 Overview
 
-Mailer is a sophisticated email client focusing on security, privacy, and user experience. It combines Gmail's powerful API with client-side encryption to ensure your emails remain private while providing a clean, intuitive interface.
+Mailbuddy is a sophisticated email client focusing on security, privacy, and user experience. It combines Gmail's powerful API with client-side encryption to ensure your emails remain private while providing a clean, intuitive interface.
 
-### Why Mailer?
+### Why Mailbuddy?
 
 - **Privacy First**: Your emails are encrypted with keys only you can access
 - **Modern Interface**: Clean, fast UI built with Next.js and Once UI
@@ -81,10 +81,10 @@ Our architecture is designed to help maintain compliance with:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/mailer.git
+git clone https://github.com/your-username/Mailbuddy.git
 
 # Navigate to project directory
-cd mailer
+cd Mailbuddy
 
 # Install dependencies
 npm install
@@ -180,7 +180,7 @@ ENCRYPTION_KEY=your_fallback_encryption_key
 - [ ] **Enhanced Search**: Full-text and semantic search capabilities
 - [ ] **Mobile Applications**: Native apps for iOS and Android
 - [ ] **Offline Mode**: Full functionality without internet connection
-- [ ] **End-to-End Encryption**: Secure email sending between Mailer users
+- [ ] **End-to-End Encryption**: Secure email sending between Mailbuddy users
 - [ ] **Calendar Integration**: View and manage events alongside emails
 
 ## 👥 Contributing
@@ -207,7 +207,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 ---
 
 <div align="center">
-  <p>Made with ❤️ by the Mailer Team</p>
+  <p>Made with ❤️ by the Mailbuddy Team</p>
   <p>
     <a href="https://github.com/izadoesdev/mailer/issues">Report Bug</a> •
     <a href="https://github.com/izadoesdev/mailer/issues">Request Feature</a>
