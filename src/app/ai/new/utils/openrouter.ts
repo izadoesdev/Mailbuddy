@@ -378,7 +378,8 @@ Remember to ONLY return a valid JSON object.`;
 
         // Use a more powerful model for comprehensive analysis
         const result = await callOpenRouter(prompt, {
-            model: "google/gemini-flash-1.5-8b",
+            // model: "google/gemini-flash-1.5-8b",
+            model: "qwen/qwen2.5-vl-72b-instruct:free",
             temperature: 0.2,
             maxTokens: 800,
         });
