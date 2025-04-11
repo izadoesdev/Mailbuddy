@@ -48,11 +48,12 @@ export function EmailList({
 
     // Render list of emails
     return (
-        <Column fill overflowY="auto" radius="l" border="neutral-alpha-medium">
-            {emails.map((email, index) => (
-                <Column fillWidth key={email.id}>
-                    <EmailItem
-                        key={email.id}
+        <Column fill overflow="hidden" radius="m" border="neutral-alpha-medium">
+            <Column fill overflowY="auto">
+                {emails.map((email, index) => (
+                    <Column fillWidth key={email.id}>
+                        <EmailItem
+                            key={email.id}
                         email={email}
                         index={index}
                         isSelected={selectedEmailId === email.id}
@@ -60,9 +61,9 @@ export function EmailList({
                         onSelect={onSelectEmail}
                         onToggleStar={onToggleStar}
                     />
-                    {index < emails.length - 1 && <Line />}
                 </Column>
             ))}
+            </Column>
         </Column>
     );
 }

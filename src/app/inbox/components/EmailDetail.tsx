@@ -51,7 +51,7 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
 
     return (
         <Column fill radius="xl" border="neutral-alpha-medium" overflow="hidden">
-            <Column gap="24" fill>
+            <Column fill>
                 <Row
                     horizontal="space-between"
                     vertical="center"
@@ -78,8 +78,8 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                         onClick={onClose}
                     />
                 </Row>
-
-                <Row gap="16" vertical="center" paddingX="24">
+                <Column fill overflowY="auto" paddingY="12" gap="16">
+                <Row gap="16" vertical="center" paddingX="24" fillWidth fitHeight>
                     <Avatar size="l" value={getInitials(senderName)} />
                     <Column gap="4">
                         <Text variant="body-strong-m">{senderName}</Text>
@@ -112,7 +112,7 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                 {/* AI Metadata Card */}
                 {email.aiMetadata && (
                     <Column paddingX="24" gap="12">
-                        <Card fill padding="16" radius="l">
+                        <Row fill padding="16" radius="l" border="neutral-alpha-medium">
                             <Column gap="12">
                                 <Row horizontal="space-between" vertical="center">
                                     <Heading variant="heading-strong-s">
@@ -173,34 +173,20 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                                         </Row>
                                     </Column>
                                 )}
-
-                                {email.aiMetadata.keywords &&
-                                    email.aiMetadata.keywords.length > 0 && (
-                                        <Column gap="4">
-                                            <Text variant="body-strong-s">Key Points:</Text>
-                                            <Row gap="4" wrap>
-                                                {email.aiMetadata.keywords.map((keyword: string) => (
-                                                    <Chip
-                                                        key={`keyword-${keyword}`}
-                                                        label={keyword}
-                                                    />
-                                                ))}
-                                            </Row>
-                                        </Column>
-                                    )}
                             </Column>
-                        </Card>
+                        </Row>
                     </Column>
                 )}
 
-                <Row fill paddingX="8">
+                <Row fillWidth fitHeight paddingX="8">
                     <div
                         dangerouslySetInnerHTML={{
                             __html: DOMPurify.sanitize(email.body || email.snippet || ""),
                         }}
-                        style={{ width: "100%", height: "100%", overflow: "auto", borderRadius: "12px", background: "var(--neutral-alpha-weak)", padding: "var(--static-space-20)" }}
+                        style={{ width: "100%", height: "100%", borderRadius: "12px", background: "var(--static-white)", padding: "var(--static-space-20)", color: "var(--static-black)" }}
                     />
                 </Row>
+                </Column>
 
                 <Row
                     gap="8"

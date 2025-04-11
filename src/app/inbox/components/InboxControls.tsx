@@ -161,31 +161,6 @@ export function InboxControls({
                 )}
 
                 <Row gap="8" fillWidth horizontal="end">
-                    <Switch
-                        id="thread-toggle"
-                        label="Thread view"
-                        isChecked={threadView}
-                        onToggle={() => onThreadViewChange(!threadView)}
-                    />
-                    <DropdownWrapper
-                        trigger={
-                            <Button
-                                size="s"
-                                weight="default"
-                                label={`${pageSize} per page`}
-                                prefixIcon="list"
-                                variant="secondary"
-                            />
-                        }
-                        onSelect={(value) => onPageSizeChange(Number(value))}
-                        dropdown={
-                            <Column padding="4" fillWidth>
-                                <Option value="10" label="10 per page" />
-                                <Option value="20" label="20 per page" />
-                                <Option value="50" label="50 per page" />
-                            </Column>
-                        }
-                    />
                     <IconButton
                         size="m"
                         icon="refresh"

@@ -60,13 +60,10 @@ export function EmailItem({
                         >
                             <Icon size="s" onBackground={email.isStarred ? "warning-weak" : "neutral-medium"} name={email.isStarred ? "starFill" : "star"} />
                         </IconButton>
-                        <Avatar size="m" value={getInitials(senderName)} />
-                    </Row>
-
-                    <Column gap="4" fill>
-                        <Row fillWidth horizontal="space-between">
+                        <Row width={8}>
                             <Text
-                                variant={email.isRead ? "body-default-m" : "body-strong-m"}
+                                variant={email.isRead ? "body-default-s" : "body-strong-s"}
+                                onBackground={email.isRead ? "neutral-weak" : "neutral-strong"}
                                 style={{
                                     overflow: "hidden",
                                     textOverflow: "ellipsis",
@@ -75,14 +72,14 @@ export function EmailItem({
                             >
                                 {senderName}
                             </Text>
-                            <Row gap="8" vertical="center">
-                                {email.labels?.includes("IMPORTANT") && (
-                                    <Tag variant="neutral" label="Important" />
-                                )}
-                                <Text variant="label-default-s" onBackground="neutral-weak">
-                                    {formatDate(email.createdAt)}
-                                </Text>
-                            </Row>
+                        </Row>
+                    </Row>
+
+                    <Column gap="4" fill>
+                        <Row fillWidth horizontal="space-between">
+                            <Text variant="label-default-s" onBackground="neutral-weak">
+                                {formatDate(email.createdAt)}
+                            </Text>
                         </Row>
 
                         <Text
@@ -134,7 +131,7 @@ export function EmailItem({
                                             )
                                             .slice(0, 2)
                                             .map((label: string) => (
-                                                <Chip
+                                                <Tag
                                                     key={label}
                                                     label={label.replace("CATEGORY_", "")}
                                                 />
