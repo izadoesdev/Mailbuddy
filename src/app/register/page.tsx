@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -17,7 +17,13 @@ import {
     OTPInput,
     useToast,
 } from "@/once-ui/components";
-import { signIn, signUp } from "@/libs/auth/client";
+import { authClient, signIn, signUp } from "@/libs/auth/client";
+
+// Types for error handling
+interface ApiError {
+    message?: string;
+    [key: string]: any;
+}
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -30,10 +36,12 @@ export default function RegisterPage() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [otp, setOtp] = useState("");
     
-    // View states
-    const [view, setView] = useState<"register" | "otp" | "magic">("register");
-    const [registerMethod, setRegisterMethod] = useState<"password" | "magic" | "">("");
+    // View state - consolidated to a single state
+    const [view, setView] = useState<"options" | "password" | "magic" | "otp" | "magic-sent">("options");
 
+    /**
+     * Handle Google sign up
+     */
     const handleGoogleSignup = () => {
         setIsLoading(true);
         signIn.social({
@@ -57,7 +65,10 @@ export default function RegisterPage() {
         });
     };
 
-    const handleEmailPasswordSignup = async (e: React.FormEvent) => {
+    /**
+     * Handle email/password signup
+     */
+    const handleEmailPasswordSignup = async (e: FormEvent) => {
         e.preventDefault();
 
         if (!email || !password) {
@@ -79,9 +90,10 @@ export default function RegisterPage() {
         setIsLoading(true);
         
         try {
-            await signUp.credentials({
+            await signUp.email({
                 email,
                 password,
+                name: email.split('@')[0], // Default name from email
                 fetchOptions: {
                     onSuccess: () => {
                         setIsLoading(false);
@@ -91,7 +103,7 @@ export default function RegisterPage() {
                         });
                         setView("otp");
                     },
-                    onError: (error) => {
+                    onError: (error: ApiError) => {
                         setIsLoading(false);
                         addToast({
                             variant: "danger",
@@ -109,7 +121,56 @@ export default function RegisterPage() {
         }
     };
 
-    const handleVerifyOTP = async (e: React.FormEvent) => {
+    /**
+     * Handle magic link signup
+     */
+    const handleMagicLinkSignup = async (e: FormEvent) => {
+        e.preventDefault();
+        
+        if (!email) {
+            addToast({
+                variant: "danger",
+                message: "Please enter your email address",
+            });
+            return;
+        }
+
+        setIsLoading(true);
+        
+        try {
+            await signIn.magicLink({
+                email,
+                fetchOptions: {
+                    onSuccess: () => {
+                        setIsLoading(false);
+                        addToast({
+                            variant: "success",
+                            message: "Magic link sent! Please check your email.",
+                        });
+                        setView("magic-sent");
+                    },
+                    onError: (error: ApiError) => {
+                        setIsLoading(false);
+                        addToast({
+                            variant: "danger",
+                            message: error?.message || "Failed to send magic link. Please try again.",
+                        });
+                    },
+                },
+            });
+        } catch (error) {
+            setIsLoading(false);
+            addToast({
+                variant: "danger",
+                message: "Failed to send magic link. Please try again.",
+            });
+        }
+    };
+
+    /**
+     * Handle OTP verification
+     */
+    const handleVerifyOTP = async (e: FormEvent) => {
         e.preventDefault();
         
         if (!otp || otp.length < 6) {
@@ -123,7 +184,7 @@ export default function RegisterPage() {
         setIsLoading(true);
         
         try {
-            await signUp.verifyOTP({
+            await authClient.emailOtp.verifyEmail({
                 email,
                 otp,
                 fetchOptions: {
@@ -134,7 +195,7 @@ export default function RegisterPage() {
                         });
                         router.push("/inbox");
                     },
-                    onError: (error) => {
+                    onError: (error: ApiError) => {
                         setIsLoading(false);
                         addToast({
                             variant: "danger",
@@ -152,12 +213,16 @@ export default function RegisterPage() {
         }
     };
 
+    /**
+     * Resend OTP code
+     */
     const resendOTP = async () => {
         setIsLoading(true);
         
         try {
-            await signUp.resendOTP({
+            await authClient.emailOtp.sendVerificationOtp({
                 email,
+                type: "email-verification",
                 fetchOptions: {
                     onSuccess: () => {
                         setIsLoading(false);
@@ -166,7 +231,7 @@ export default function RegisterPage() {
                             message: "New verification code sent to your email.",
                         });
                     },
-                    onError: (error) => {
+                    onError: (error: ApiError) => {
                         setIsLoading(false);
                         addToast({
                             variant: "danger",
@@ -181,6 +246,256 @@ export default function RegisterPage() {
                 variant: "danger",
                 message: "Failed to resend code. Please try again.",
             });
+        }
+    };
+
+    // Render different forms based on the current view
+    const renderForm = () => {
+        switch(view) {
+            case "password":
+                return (
+                    <form onSubmit={handleEmailPasswordSignup} style={{ width: "100%" }}>
+                        <Column gap="16" fillWidth>
+                            <Input
+                                id="email"
+                                label="Email address"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                            <PasswordInput
+                                id="password"
+                                label="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                            <PasswordInput
+                                id="confirmPassword"
+                                label="Confirm password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                required
+                            />
+                            <Button
+                                label="Create account"
+                                fillWidth
+                                variant="primary"
+                                size="l"
+                                type="submit"
+                                loading={isLoading}
+                                disabled={isLoading}
+                            />
+                            <Button
+                                label="Back"
+                                variant="tertiary"
+                                onClick={() => setView("options")}
+                                type="button"
+                            />
+                        </Column>
+                    </form>
+                );
+                
+            case "magic":
+                return (
+                    <form onSubmit={handleMagicLinkSignup} style={{ width: "100%" }}>
+                        <Column gap="16" fillWidth>
+                            <Input
+                                id="email"
+                                label="Email address"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                            <Text variant="body-default-s" align="center">
+                                We'll send a magic link to your email that will let you sign up instantly.
+                            </Text>
+                            <Button
+                                label="Send magic link"
+                                fillWidth
+                                variant="primary"
+                                size="l"
+                                type="submit"
+                                loading={isLoading}
+                                disabled={isLoading}
+                            />
+                            <Button
+                                label="Back"
+                                variant="tertiary"
+                                onClick={() => setView("options")}
+                                type="button"
+                            />
+                        </Column>
+                    </form>
+                );
+                
+            case "otp":
+                return (
+                    <form onSubmit={handleVerifyOTP} style={{ width: "100%" }}>
+                        <Column gap="16" fillWidth>
+                            <Text variant="body-default-m" align="center">
+                                We've sent a verification code to <strong>{email}</strong>
+                            </Text>
+                            <OTPInput
+                                length={6}
+                                onComplete={(newOtp) => setOtp(newOtp)}
+                                autoFocus
+                            />
+                            <Button
+                                label="Verify email"
+                                fillWidth
+                                variant="primary"
+                                size="l"
+                                type="submit"
+                                loading={isLoading}
+                                disabled={isLoading}
+                            />
+                            <Button
+                                label="Resend code"
+                                variant="tertiary"
+                                onClick={resendOTP}
+                                type="button"
+                                disabled={isLoading}
+                            />
+                        </Column>
+                    </form>
+                );
+                
+            case "magic-sent":
+                return (
+                    <Column gap="24" fillWidth horizontal="center">
+                        <div className="magic-link-icon" style={{ fontSize: "48px", color: "var(--brand-solid-medium)" }}>
+                            ✉️
+                        </div>
+                        <Text variant="body-strong-m" align="center">
+                            Check your email
+                        </Text>
+                        <Text variant="body-default-m" align="center">
+                            We've sent a magic link to <strong>{email}</strong>
+                        </Text>
+                        <Text variant="body-default-s" align="center" onBackground="neutral-medium">
+                            Click the link in your email to complete your registration
+                        </Text>
+                        <Column paddingTop="16">
+                            <Button
+                                label="Back to sign-up options"
+                                variant="secondary"
+                                onClick={() => setView("options")}
+                                type="button"
+                            />
+                        </Column>
+                    </Column>
+                );
+                
+            default: // options
+                return (
+                    <Column gap="16" fillWidth>
+                        <Button
+                            label="Sign up with email"
+                            fillWidth
+                            variant="primary"
+                            size="l"
+                            onClick={() => setView("password")}
+                            prefixIcon="mail"
+                        />
+                        <Button
+                            label="Sign up with magic link"
+                            fillWidth
+                            variant="secondary"
+                            size="l"
+                            onClick={() => setView("magic")}
+                            prefixIcon="link"
+                        />
+                        
+                        <Row paddingY="16" fillWidth>
+                            <Column fillWidth>
+                                <Row horizontal="center" gap="16" vertical="center">
+                                    <div style={{ height: 1, background: "var(--neutral-alpha-medium)", flex: 1 }} />
+                                    <Text variant="label-default-s" onBackground="neutral-medium">OR</Text>
+                                    <div style={{ height: 1, background: "var(--neutral-alpha-medium)", flex: 1 }} />
+                                </Row>
+                            </Column>
+                        </Row>
+                        
+                        <Button
+                            label="Continue with Google"
+                            fillWidth
+                            variant="secondary"
+                            prefixIcon="google"
+                            size="l"
+                            onClick={handleGoogleSignup}
+                            disabled={isLoading}
+                        />
+                    </Column>
+                );
+        }
+    };
+
+    // Page title and header content based on current view
+    const getHeaderContent = () => {
+        switch(view) {
+            case "otp":
+                return (
+                    <>
+                        <Heading
+                            as="h1"
+                            variant="display-strong-xs"
+                            align="center"
+                            marginTop="24"
+                        >
+                            Verify your email
+                        </Heading>
+                        <Text
+                            onBackground="neutral-medium"
+                            marginBottom="24"
+                            align="center"
+                        >
+                            Enter the verification code
+                        </Text>
+                    </>
+                );
+            case "magic-sent":
+                return (
+                    <>
+                        <Heading
+                            as="h1"
+                            variant="display-strong-xs"
+                            align="center"
+                            marginTop="24"
+                        >
+                            Magic link sent
+                        </Heading>
+                        <Text
+                            onBackground="neutral-medium"
+                            marginBottom="24"
+                            align="center"
+                        >
+                            Follow the instructions in your email
+                        </Text>
+                    </>
+                );
+            default:
+                return (
+                    <>
+                        <Heading
+                            as="h1"
+                            variant="display-strong-xs"
+                            align="center"
+                            marginTop="24"
+                        >
+                            Create an account
+                        </Heading>
+                        <Text
+                            onBackground="neutral-medium"
+                            marginBottom="24"
+                            align="center"
+                        >
+                            Join Mailer and start managing emails
+                        </Text>
+                    </>
+                );
         }
     };
 
@@ -201,11 +516,9 @@ export default function RegisterPage() {
                     horizontal="center"
                     gap="48"
                     radius="xl"
-                    paddingTop="80"
                     position="relative"
                 >
                     <Row
-                        marginY="32"
                         background="overlay"
                         fillWidth
                         radius="xl"
@@ -238,257 +551,20 @@ export default function RegisterPage() {
                             <Column fillWidth gap="8" horizontal="center">
                                 <Logo size="s" icon={false} href="/" />
                                 
-                                {view === "register" && (
-                                    <>
-                                        <Heading
-                                            as="h1"
-                                            variant="display-strong-xs"
-                                            align="center"
-                                            marginTop="24"
-                                        >
-                                            Create an account
-                                        </Heading>
-                                        <Text
-                                            onBackground="neutral-medium"
-                                            marginBottom="24"
-                                            align="center"
-                                        >
-                                            Sign up to get started
+                                {getHeaderContent()}
+                                
+                                {renderForm()}
+
+                                {view !== "otp" && view !== "magic-sent" && (
+                                    <Row paddingTop="32" horizontal="center">
+                                        <Text variant="body-default-s" onBackground="neutral-medium">
+                                            Already have an account?&nbsp;
                                         </Text>
-
-                                        {registerMethod === "password" ? (
-                                            <form onSubmit={handleEmailPasswordSignup} style={{ width: "100%" }}>
-                                                <Column gap="16" fillWidth>
-                                                    <Input
-                                                        id="email"
-                                                        label="Email address"
-                                                        type="email"
-                                                        value={email}
-                                                        onChange={(e) => setEmail(e.target.value)}
-                                                        required
-                                                        placeholder="your@email.com"
-                                                        fillWidth
-                                                    />
-                                                    <PasswordInput
-                                                        id="password"
-                                                        label="Password"
-                                                        value={password}
-                                                        onChange={(e) => setPassword(e.target.value)}
-                                                        required
-                                                        fillWidth
-                                                    />
-                                                    <PasswordInput
-                                                        id="confirmPassword"
-                                                        label="Confirm Password"
-                                                        value={confirmPassword}
-                                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                                        required
-                                                        fillWidth
-                                                    />
-                                                    <Button
-                                                        label="Create account"
-                                                        fillWidth
-                                                        variant="primary"
-                                                        weight="default"
-                                                        size="l"
-                                                        type="submit"
-                                                        loading={isLoading}
-                                                        disabled={isLoading}
-                                                    />
-                                                    <Button
-                                                        label="Back to options"
-                                                        variant="link"
-                                                        onClick={() => setRegisterMethod("")}
-                                                        type="button"
-                                                    />
-                                                </Column>
-                                            </form>
-                                        ) : registerMethod === "magic" ? (
-                                            <form onSubmit={handleMagicLinkSignup} style={{ width: "100%" }}>
-                                                <Column gap="16" fillWidth>
-                                                    <Input
-                                                        id="email"
-                                                        label="Email address"
-                                                        type="email"
-                                                        value={email}
-                                                        onChange={(e) => setEmail(e.target.value)}
-                                                        required
-                                                        placeholder="your@email.com"
-                                                        fillWidth
-                                                    />
-                                                    <Button
-                                                        label="Continue with Magic Link"
-                                                        fillWidth
-                                                        variant="primary"
-                                                        weight="default"
-                                                        size="l"
-                                                        type="submit"
-                                                        loading={isLoading}
-                                                        disabled={isLoading}
-                                                    />
-                                                    <Button
-                                                        label="Back to options"
-                                                        variant="link"
-                                                        onClick={() => setRegisterMethod("")}
-                                                        type="button"
-                                                    />
-                                                </Column>
-                                            </form>
-                                        ) : (
-                                            <>
-                                                <Column gap="16" fillWidth>
-                                                    <Button
-                                                        label="Email & Password"
-                                                        fillWidth
-                                                        variant="secondary"
-                                                        weight="default"
-                                                        size="l"
-                                                        onClick={() => setRegisterMethod("password")}
-                                                    />
-                                                    <Button
-                                                        label="Magic Link"
-                                                        fillWidth
-                                                        variant="secondary"
-                                                        weight="default"
-                                                        size="l"
-                                                        onClick={() => setRegisterMethod("magic")}
-                                                    />
-                                                </Column>
-
-                                                <Row padding="24" marginY="16" fillWidth>
-                                                    <Column fillWidth>
-                                                        <Row horizontal="center" gap="16" vertical="center">
-                                                            <Text variant="label-default-s" onBackground="neutral-medium">Or continue with</Text>
-                                                        </Row>
-                                                    </Column>
-                                                </Row>
-
-                                                <Button
-                                                    label="Continue with Google"
-                                                    fillWidth
-                                                    variant="secondary"
-                                                    weight="default"
-                                                    prefixIcon="google"
-                                                    size="l"
-                                                    onClick={handleGoogleSignup}
-                                                    disabled={isLoading}
-                                                />
-                                            </>
-                                        )}
-                                    </>
+                                        <Link href="/login" style={{ textDecoration: 'none' }}>
+                                            <Text variant="body-strong-s" onBackground="brand-strong">Sign in</Text>
+                                        </Link>
+                                    </Row>
                                 )}
-
-                                {view === "otp" && (
-                                    <>
-                                        <Heading
-                                            as="h1"
-                                            variant="display-strong-xs"
-                                            align="center"
-                                            marginTop="24"
-                                        >
-                                            Verify your email
-                                        </Heading>
-                                        <Text
-                                            onBackground="neutral-medium"
-                                            marginBottom="12"
-                                            align="center"
-                                        >
-                                            We've sent a verification code to
-                                        </Text>
-                                        <Text
-                                            variant="body-strong-m"
-                                            marginBottom="24"
-                                            align="center"
-                                        >
-                                            {email}
-                                        </Text>
-
-                                        <form onSubmit={handleVerifyOTP} style={{ width: "100%" }}>
-                                            <Column gap="24" fillWidth>
-                                                <OTPInput
-                                                    value={otp}
-                                                    onChange={setOtp}
-                                                    numInputs={6}
-                                                    onComplete={(code) => setOtp(code)}
-                                                />
-                                                <Button
-                                                    label="Verify Email"
-                                                    fillWidth
-                                                    variant="primary"
-                                                    weight="default"
-                                                    size="l"
-                                                    type="submit"
-                                                    loading={isLoading}
-                                                    disabled={isLoading || otp.length < 6}
-                                                />
-                                            </Column>
-                                        </form>
-
-                                        <Row paddingTop="24" horizontal="center" gap="8">
-                                            <Text variant="body-default-s" onBackground="neutral-medium">
-                                                Didn't receive a code?
-                                            </Text>
-                                            <Button
-                                                variant="link"
-                                                label="Resend"
-                                                size="s"
-                                                onClick={resendOTP}
-                                                disabled={isLoading}
-                                            />
-                                        </Row>
-                                    </>
-                                )}
-
-                                {view === "magic" && (
-                                    <>
-                                        <Heading
-                                            as="h1"
-                                            variant="display-strong-xs"
-                                            align="center"
-                                            marginTop="24"
-                                        >
-                                            Check your email
-                                        </Heading>
-                                        <Text
-                                            onBackground="neutral-medium"
-                                            marginBottom="12"
-                                            align="center"
-                                        >
-                                            We've sent a magic link to
-                                        </Text>
-                                        <Text
-                                            variant="body-strong-m"
-                                            marginBottom="24"
-                                            align="center"
-                                        >
-                                            {email}
-                                        </Text>
-                                        <Text
-                                            onBackground="neutral-medium"
-                                            marginBottom="24"
-                                            align="center"
-                                        >
-                                            Click the link in your email to complete registration.
-                                        </Text>
-                                        <Button
-                                            label="Back to sign up"
-                                            variant="secondary"
-                                            onClick={() => {
-                                                setView("register");
-                                                setRegisterMethod("");
-                                            }}
-                                        />
-                                    </>
-                                )}
-
-                                <Row paddingTop="32" horizontal="center">
-                                    <Text variant="body-default-s" onBackground="neutral-medium">
-                                        Already have an account?&nbsp;
-                                    </Text>
-                                    <Link href="/login" style={{ textDecoration: 'none' }}>
-                                        <Text variant="body-strong-s" onBackground="brand-strong">Log in</Text>
-                                    </Link>
-                                </Row>
                             </Column>
                         </Column>
                     </Row>

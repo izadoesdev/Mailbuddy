@@ -26,7 +26,7 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [view, setView] = useState<"options" | "password" | "magic" | "forgot">("options");
+    const [view, setView] = useState<"options" | "password" | "magic" | "forgot" | "magic-sent">("options");
     const [verifyingToken, setVerifyingToken] = useState(false);
 
     // Check for magic link token in URL
@@ -148,6 +148,7 @@ export default function LoginPage() {
                         variant: "success",
                         message: "Magic link sent! Please check your email.",
                     });
+                    setView("magic-sent");
                 },
                 onError: (error) => {
                     setIsLoading(false);
@@ -327,6 +328,32 @@ export default function LoginPage() {
                     </form>
                 );
                 
+            case "magic-sent":
+                return (
+                    <Column gap="24" fillWidth horizontal="center">
+                        <div className="magic-link-icon" style={{ fontSize: "48px", color: "var(--brand-solid-medium)" }}>
+                            ✉️
+                        </div>
+                        <Text variant="body-strong-m" align="center">
+                            Check your email
+                        </Text>
+                        <Text variant="body-default-m" align="center">
+                            We've sent a magic link to <strong>{email}</strong>
+                        </Text>
+                        <Text variant="body-default-s" align="center" onBackground="neutral-medium">
+                            Click the link in your email to sign in instantly
+                        </Text>
+                        <Column paddingTop="16">
+                            <Button
+                                label="Back to sign-in options"
+                                variant="secondary"
+                                onClick={() => setView("options")}
+                                type="button"
+                            />
+                        </Column>
+                    </Column>
+                );
+                
             default: // options
                 return (
                     <Column gap="16" fillWidth>
@@ -367,6 +394,72 @@ export default function LoginPage() {
                             disabled={isLoading}
                         />
                     </Column>
+                );
+        }
+    };
+
+    // Page title and header content based on current view
+    const getHeaderContent = () => {
+        switch(view) {
+            case "forgot":
+                return (
+                    <>
+                        <Heading
+                            as="h1"
+                            variant="display-strong-xs"
+                            align="center"
+                            marginTop="24"
+                        >
+                            Reset your password
+                        </Heading>
+                        <Text
+                            onBackground="neutral-medium"
+                            marginBottom="24"
+                            align="center"
+                        >
+                            We'll send instructions to your email
+                        </Text>
+                    </>
+                );
+            case "magic-sent":
+                return (
+                    <>
+                        <Heading
+                            as="h1"
+                            variant="display-strong-xs"
+                            align="center"
+                            marginTop="24"
+                        >
+                            Magic link sent
+                        </Heading>
+                        <Text
+                            onBackground="neutral-medium"
+                            marginBottom="24"
+                            align="center"
+                        >
+                            Follow the instructions in your email
+                        </Text>
+                    </>
+                );
+            default:
+                return (
+                    <>
+                        <Heading
+                            as="h1"
+                            variant="display-strong-xs"
+                            align="center"
+                            marginTop="24"
+                        >
+                            Welcome back
+                        </Heading>
+                        <Text
+                            onBackground="neutral-medium"
+                            marginBottom="24"
+                            align="center"
+                        >
+                            Log in to your account
+                        </Text>
+                    </>
                 );
         }
     };
@@ -422,32 +515,21 @@ export default function LoginPage() {
                         >
                             <Column fillWidth gap="8" horizontal="center">
                                 <Logo size="s" icon={false} href="/" />
-                                <Heading
-                                    as="h1"
-                                    variant="display-strong-xs"
-                                    align="center"
-                                    marginTop="24"
-                                >
-                                    Welcome back
-                                </Heading>
-                                <Text
-                                    onBackground="neutral-medium"
-                                    marginBottom="24"
-                                    align="center"
-                                >
-                                    Log in to your account
-                                </Text>
+                                
+                                {getHeaderContent()}
 
                                 {renderForm()}
 
-                                <Row paddingTop="32" horizontal="center">
-                                    <Text variant="body-default-s" onBackground="neutral-medium">
-                                        Don't have an account?&nbsp;
-                                    </Text>
-                                    <Link href="/register" style={{ textDecoration: 'none' }}>
-                                        <Text variant="body-strong-s" onBackground="brand-strong">Sign up</Text>
-                                    </Link>
-                                </Row>
+                                {view !== "magic-sent" && (
+                                    <Row paddingTop="32" horizontal="center">
+                                        <Text variant="body-default-s" onBackground="neutral-medium">
+                                            Don't have an account?&nbsp;
+                                        </Text>
+                                        <Link href="/register" style={{ textDecoration: 'none' }}>
+                                            <Text variant="body-strong-s" onBackground="brand-strong">Sign up</Text>
+                                        </Link>
+                                    </Row>
+                                )}
                             </Column>
                         </Column>
                     </Row>
