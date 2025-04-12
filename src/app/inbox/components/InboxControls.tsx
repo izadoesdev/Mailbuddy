@@ -244,6 +244,7 @@ export function InboxControls({
                         {/* Simple category buttons row */}
                         {categoryOptions.length > 0 && onCategoryChange && (
                             <Row fillWidth horizontal="center">
+                            <Row maxWidth={40} horizontal="center" radius="full" overflow="hidden">
                                 <Scroller fitWidth>
                                     <Row gap="4">
                                         {categoryOptions.map((option) => (
@@ -258,6 +259,7 @@ export function InboxControls({
                                         ))}
                                     </Row>
                                 </Scroller>
+                            </Row>
                             </Row>
                         )}
 
