@@ -123,7 +123,6 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             <Flex
                 direction="column"
                 gap="8"
-                style={style}
                 fillWidth
                 fitHeight
                 className={classNames(className, {
@@ -137,6 +136,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                     background="neutral-alpha-weak"
                     overflow="hidden"
                     vertical="stretch"
+                    style={style}
                     className={classNames(
                         styles.base,
                         {

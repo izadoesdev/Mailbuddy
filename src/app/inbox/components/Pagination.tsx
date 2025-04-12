@@ -36,6 +36,10 @@ export function Pagination({
     const maxPage = hasMore ? Math.max(totalPages, page + 1) : totalPages;
     const pageNumbers = Array.from({ length: maxPage }, (_, i) => i + 1);
 
+    if (totalPages <= 1) {
+        return null;
+    }
+
     return (
         <Row fillWidth horizontal="space-between" vertical="center" paddingX="24" paddingTop="8">
             <Row gap="8" vertical="center">

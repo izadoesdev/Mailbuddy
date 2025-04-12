@@ -1,17 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import {
   Button,
-  Card,
   Column,
   Input,
   Row,
   Text,
   IconButton,
   useToast,
-  Dropdown,
-  DropdownWrapper,
-  Chip,
-  Icon,
+  Line,
 } from "@/once-ui/components";
 import { useEmailMutations } from "../hooks/useEmailMutations";
 
@@ -241,17 +237,20 @@ export function ComposeEmail({
   };
 
   return (
-    <Card
+    <Row
       padding="0"
-      fitWidth
-      fitHeight
-      background="surface"
+      maxWidth={40}
+      height={48}
+      overflow="hidden"
+      background="neutral-weak"
       border="neutral-alpha-medium"
-      radius="l"
-      shadow="xl"
-      style={{ position: "fixed", bottom: "24px", right: "24px", width: "600px", maxHeight: "80vh", zIndex: 100 }}
+      radius="m"
+      position="fixed"
+      bottom="8"
+      right="8"
+      zIndex={9}
     >
-      <form onSubmit={handleSubmit} style={{ height: "100%" }}>
+      <form onSubmit={handleSubmit} style={{ height: "100%", width: "100%" }}>
         <Column fill>
           <Row
             horizontal="space-between"
@@ -261,7 +260,7 @@ export function ComposeEmail({
             background="neutral-alpha-weak"
             borderBottom="neutral-alpha-medium"
           >
-            <Text variant="heading-strong-s">New Email</Text>
+            <Text variant="heading-strong-s">New email</Text>
             <IconButton
               tooltip="Close"
               tooltipPosition="left"
@@ -271,228 +270,82 @@ export function ComposeEmail({
             />
           </Row>
 
-          <Column fillWidth padding="20" gap="16" overflow="auto">
-            <Input 
+          <Input 
+              style={{ border: "1px solid transparent" }}
               id="to"
               label="To"
+              radius="none"
               value={to}
+              labelAsPlaceholder
+              hasSuffix={
+                !showCcBcc && (
+                    <Button
+                        data-border="rounded"
+                        variant="secondary"
+                        prefixIcon="plus"
+                        label="Add people"
+                        size="s"
+                        onClick={() => setShowCcBcc(true)}
+                    />
+                )
+            }
               onChange={(e) => setTo(e.target.value)}
               required
-              placeholder="recipient@example.com"
-              hasPrefix={<Icon name="person" size="s" />}
             />
+
+            <Line background="neutral-alpha-medium"/>
 
             {showCcBcc && (
               <>
                 <Input 
+                  radius="none"
+                  style={{ border: "1px solid transparent" }}
                   id="cc"
                   label="Cc"
                   value={cc}
+                  labelAsPlaceholder
                   onChange={(e) => setCc(e.target.value)}
-                  placeholder="cc@example.com"
-                  hasPrefix={<Icon name="person" size="s" />}
                 />
+                <Line background="neutral-alpha-medium"/>
                 <Input 
+                  radius="none"
+                  style={{ border: "1px solid transparent" }}
                   id="bcc"
                   label="Bcc"
                   value={bcc}
+                  labelAsPlaceholder
                   onChange={(e) => setBcc(e.target.value)}
-                  placeholder="bcc@example.com"
-                  hasPrefix={<Icon name="person" size="s" />}
                 />
+                <Line background="neutral-alpha-medium"/>
               </>
             )}
 
-            {!showCcBcc && (
-              <Row horizontal="end">
-                <Button
-                  variant="tertiary"
-                  label="Add Cc/Bcc"
-                  size="s"
-                  prefixIcon="plus"
-                  onClick={() => setShowCcBcc(true)}
-                />
-              </Row>
-            )}
-
             <Input 
+              radius="none"
+              style={{ border: "1px solid transparent" }}
               id="subject"
               label="Subject"
               value={subject}
+              labelAsPlaceholder
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="Subject"
-              hasPrefix={<Icon name="tag" size="s" />}
             />
 
+            <Line background="neutral-alpha-medium"/>
+
+          <Column fill overflow="auto">
             <Column fillWidth fitHeight>
-              <Row horizontal="space-between" vertical="center" marginBottom="8">
-                <Text variant="label-strong-s">Message</Text>
-                
-                {enhancedContent ? (
-                  <Card padding="8" background="success-alpha-weak" border="success-alpha-medium" radius="m">
-                    <Row gap="8" vertical="center">
-                      <Icon name="checkCircle" color="success" size="s" />
-                      <Text variant="label-strong-s" color="success">Changes ready</Text>
-                      <Button
-                        variant="primary"
-                        size="s"
-                        label="Apply"
-                        onClick={applyEnhancement}
-                      />
-                      <IconButton
-                        variant="ghost"
-                        icon="close"
-                        tooltip="Dismiss"
-                        onClick={dismissEnhancement}
-                      />
-                    </Row>
-                  </Card>
-                ) : showEnhancementOptions ? (
-                  <Row gap="8">
-                    <DropdownWrapper
-                      trigger={
-                        <Button
-                          variant="secondary"
-                          size="s"
-                          label={enhancementType === "improve" ? "Improve" : 
-                                 enhancementType === "shorten" ? "Shorten" :
-                                 enhancementType === "formal" ? "Make Formal" : "Make Friendly"}
-                          suffixIcon="chevronDown"
-                        />
-                      }
-                      dropdown={
-                        <Card padding="0" shadow="xl" radius="m">
-                          <Column padding="8" gap="4">
-                            <Button
-                              variant={enhancementType === "improve" ? "primary" : "tertiary"}
-                              size="s"
-                              label="Improve writing"
-                              prefixIcon="sparkles"
-                              onClick={() => setEnhancementType("improve")}
-                              fillWidth
-                              justifyContent="start"
-                            />
-                            <Button
-                              variant={enhancementType === "shorten" ? "primary" : "tertiary"}
-                              size="s"
-                              label="Make concise"
-                              prefixIcon="scissors"
-                              onClick={() => setEnhancementType("shorten")}
-                              fillWidth
-                              justifyContent="start"
-                            />
-                            <Button
-                              variant={enhancementType === "formal" ? "primary" : "tertiary"}
-                              size="s"
-                              label="Make formal"
-                              prefixIcon="briefcase"
-                              onClick={() => setEnhancementType("formal")}
-                              fillWidth
-                              justifyContent="start"
-                            />
-                            <Button
-                              variant={enhancementType === "friendly" ? "primary" : "tertiary"}
-                              size="s"
-                              label="Make friendly"
-                              prefixIcon="smile"
-                              onClick={() => setEnhancementType("friendly")}
-                              fillWidth
-                              justifyContent="start"
-                            />
-                          </Column>
-                        </Card>
-                      }
-                    />
-                    
-                    <Button
-                      variant="primary"
-                      size="s"
-                      label="Enhance"
-                      prefixIcon="sparkles"
-                      loading={isEnhancing}
-                      disabled={isEnhancing}
-                      onClick={handleEnhance}
-                    />
-                    
-                    <IconButton
-                      variant="ghost"
-                      icon="close"
-                      tooltip="Cancel"
-                      onClick={() => {
-                        setShowEnhancementOptions(false);
-                        setSelectedText("");
-                      }}
-                    />
-                  </Row>
-                ) : (
-                  <Button
-                    variant="tertiary"
-                    size="s"
-                    label="Enhance writing"
-                    prefixIcon="sparkles"
-                    onClick={() => setShowEnhancementOptions(true)}
-                  />
-                )}
-              </Row>
-              
-              <Card
-                padding="0"
-                radius="m"
-                border="neutral-alpha-medium"
-                style={{ minHeight: "200px" }}
-              >
-                <div
-                  ref={bodyRef}
-                  onInput={handleBodyChange}
-                  onMouseUp={handleTextSelection}
-                  onKeyUp={handleTextSelection}
-                  style={{
-                    minHeight: "200px",
-                    padding: "16px",
-                    outline: "none",
-                    overflowY: "auto",
-                    backgroundColor: "var(--color-bg-default)",
-                    borderRadius: "var(--radius-m)",
-                  }}
-                />
-              </Card>
-              
-              {selectedText && (
-                <Row gap="4" marginTop="8" vertical="center">
-                  <Icon name="search" size="xs" color="neutral" />
-                  <Text variant="label-default-xs" color="neutral">
-                    {selectedText.length} characters selected
-                  </Text>
-                </Row>
-              )}
-              
-              {enhancedContent && (
-                <Card 
-                  fillWidth 
-                  marginTop="16" 
-                  border="neutral-alpha-medium" 
-                  background="neutral-alpha-weak" 
-                  radius="m" 
-                  padding="16"
-                >
-                  <Row gap="8" vertical="center" marginBottom="8">
-                    <Icon name="sparkles" color="brand" size="s" />
-                    <Text variant="label-strong-s" color="brand">Enhanced version</Text>
-                  </Row>
-                  <Card
-                    background="surface"
-                    border="neutral-alpha-medium"
-                    radius="m"
-                    padding="16"
-                    style={{
-                      maxHeight: "150px",
-                      overflowY: "auto"
-                    }}
-                  >
-                    {enhancedContent}
-                  </Card>
-                </Card>
-              )}
+              <div
+                ref={bodyRef}
+                onInput={handleBodyChange}
+                style={{
+                  minHeight: "200px",
+                  border: "1px solid var(--color-neutral-alpha-medium)",
+                  borderRadius: "var(--radius-m)",
+                  padding: "12px",
+                  outline: "none",
+                  overflowY: "auto",
+                }}
+              />
             </Column>
           </Column>
 
@@ -504,23 +357,20 @@ export function ComposeEmail({
             paddingX="20"
             background="neutral-alpha-weak"
           >
-            <Button 
-              variant="tertiary" 
-              label="Cancel" 
-              onClick={onClose} 
-              disabled={isSending} 
-            />
-            <Button 
-              type="submit" 
-              label="Send" 
-              prefixIcon="send" 
-              loading={isSending}
-              disabled={isSending || !to.trim()} 
-              variant="primary"
-            />
+            <Row maxWidth={6}>
+              <Button
+                fillWidth
+                suffixIcon={isSending ? "" : "send"}
+                data-border="rounded"
+                type="submit" 
+                label={isSending ? "" : "Send"}
+                loading={isSending}
+                disabled={isSending || !to.trim()} 
+              />
+            </Row>
           </Row>
         </Column>
       </form>
-    </Card>
+    </Row>
   );
 } 

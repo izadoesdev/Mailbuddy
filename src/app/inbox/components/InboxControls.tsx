@@ -5,13 +5,8 @@ import {
     Input,
     Icon,
     Button,
-    Tooltip,
-    IconButton,
-    DropdownWrapper,
-    Column,
     Avatar,
-    Card,
-    Badge,
+    Scroller,
 } from "@/once-ui/components";
 
 interface CategoryOption {
@@ -193,11 +188,10 @@ export function InboxControls({
                 <Text variant="heading-strong-l">
                     {isAISearchActive ? "AI Search Results" : "Inbox"}
                 </Text>
-                <Row maxWidth={24}>
+                <Row maxWidth={24} data-border="rounded">
                     <Input
-                        data-border="rounded"
                         id="search-emails"
-                        label={isAISearchActive ? "Type to search with AI..." : "Search emails"}
+                        label={isAISearchActive ? "Search with AI..." : "Search emails"}
                         labelAsPlaceholder
                         value={localSearchQuery}
                         onChange={(e) => handleSearchChange(e.target.value)}
@@ -228,7 +222,7 @@ export function InboxControls({
                 <Avatar />
             </Row>
 
-            <Row paddingX="16" marginBottom="16" gap="8">
+            <Row paddingX="8" paddingY="8" gap="24" data-border="rounded" background="neutral-alpha-weak" topRadius="m" borderTop="neutral-alpha-medium" borderLeft="neutral-alpha-medium" borderRight="neutral-alpha-medium">
                 {isAISearchActive && onClearAISearch ? (
                     <Button
                         label="Return to inbox"
@@ -240,222 +234,51 @@ export function InboxControls({
                         {onNewEmail && (
                             <Button
                                 size="s"
-                                weight="default"
                                 label="Compose"
                                 prefixIcon="plus"
-                                variant="primary"
                                 onClick={onNewEmail}
                             />
                         )}
+
+                        {/* Simple category buttons row */}
+                        {categoryOptions.length > 0 && onCategoryChange && (
+                            <Row fillWidth horizontal="center">
+                                <Scroller fitWidth>
+                                    <Row gap="4">
+                                        {categoryOptions.map((option) => (
+                                            <Button
+                                                key={option.value}
+                                                weight="default"
+                                                onClick={() => handleCategoryChange(option.value)}
+                                                variant={currentCategory === option.value ? "primary" : "secondary"}
+                                                label={option.label}
+                                                size="s"
+                                            />
+                                        ))}
+                                    </Row>
+                                </Scroller>
+                            </Row>
+                        )}
+
                         
                         {onSync && (
-                            <Button
-                                size="s"
-                                weight="default"
-                                label="Sync & Refresh"
-                                prefixIcon="refresh"
-                                variant="secondary"
-                                onClick={() => {
-                                    onSync();
-                                    onRefresh();
-                                }}
-                                disabled={isLoading || isFetching || isSyncing}
-                                loading={isSyncing}
-                            />
-                        )}
+                                <Button
+                                    size="s"
+                                    weight="default"
+                                    label="Sync"
+                                    prefixIcon="refresh"
+                                    variant="secondary"
+                                    onClick={() => {
+                                        onSync();
+                                        onRefresh();
+                                    }}
+                                    disabled={isLoading || isFetching || isSyncing}
+                                    loading={isSyncing}
+                                />
+                            )}
                     </>
                 )}
             </Row>
-
-            {!isAISearchActive && categoryOptions.length > 0 && onCategoryChange && (
-                <Column fillWidth>
-                    {/* Tabs for category types */}
-                    <Card padding="16" marginX="16" marginBottom="12" background="surface">
-                        <Row gap="16" horizontal="center" marginBottom="16">
-                            <Button 
-                                variant={categoryTab === 'standard' ? 'primary' : 'tertiary'}
-                                size="s"
-                                label="Standard"
-                                prefixIcon="inbox"
-                                onClick={() => setCategoryTab('standard')}
-                            />
-                            <Button 
-                                variant={categoryTab === 'priority' ? 'primary' : 'tertiary'}
-                                size="s"
-                                label="Priority"
-                                prefixIcon="warningTriangle"
-                                onClick={() => setCategoryTab('priority')}
-                            />
-                            <Button 
-                                variant={categoryTab === 'smart' ? 'primary' : 'tertiary'}
-                                size="s"
-                                label="Smart Categories"
-                                prefixIcon="sparkles"
-                                onClick={() => setCategoryTab('smart')}
-                            />
-                        </Row>
-
-                        {/* Standard Categories */}
-                        {categoryTab === 'standard' && (
-                            <Row gap="8" wrap>
-                                {standardCategories.map((option) => (
-                                    <Button
-                                        key={option.value}
-                                        onClick={() => handleCategoryChange(option.value)}
-                                        variant={currentCategory === option.value ? "primary" : "secondary"}
-                                        size="s"
-                                    >
-                                        <Row gap="4" vertical="center">
-                                            {option.icon && <Icon name={option.icon} size="s" />}
-                                            <Text>{option.label}</Text>
-                                        </Row>
-                                    </Button>
-                                ))}
-                            </Row>
-                        )}
-
-                        {/* Priority Categories */}
-                        {categoryTab === 'priority' && (
-                            <Row gap="8" wrap>
-                                {priorityCategories.map((option) => (
-                                    <Button
-                                        key={option.value}
-                                        onClick={() => handleCategoryChange(option.value)}
-                                        variant={currentCategory === option.value ? "primary" : "secondary"}
-                                        size="s"
-                                    >
-                                        <Row gap="4" vertical="center">
-                                            {option.icon && (
-                                                <Icon 
-                                                    name={option.icon} 
-                                                    size="s" 
-                                                    color={getBadgeColor(option) as any} 
-                                                />
-                                            )}
-                                            <Text>{option.label}</Text>
-                                        </Row>
-                                    </Button>
-                                ))}
-                            </Row>
-                        )}
-
-                        {/* AI Categories */}
-                        {categoryTab === 'smart' && (
-                            <Column gap="16">
-                                {/* Work & Business */}
-                                {groupedAiCategories.workBusiness.length > 0 && (
-                                    <Column gap="8">
-                                        <Text variant="label-strong-s">Work & Business</Text>
-                                        <Row gap="8" wrap>
-                                            {groupedAiCategories.workBusiness.map((option) => (
-                                                <Button
-                                                    key={option.value}
-                                                    onClick={() => handleCategoryChange(option.value)}
-                                                    variant={currentCategory === option.value ? "primary" : "tertiary"}
-                                                    size="s"
-                                                >
-                                                    <Row gap="4" vertical="center">
-                                                        {option.icon && <Icon name={option.icon} size="s" />}
-                                                        <Text>{option.label}</Text>
-                                                    </Row>
-                                                </Button>
-                                            ))}
-                                        </Row>
-                                    </Column>
-                                )}
-
-                                {/* Personal & Social */}
-                                {groupedAiCategories.personalSocial.length > 0 && (
-                                    <Column gap="8">
-                                        <Text variant="label-strong-s">Personal & Social</Text>
-                                        <Row gap="8" wrap>
-                                            {groupedAiCategories.personalSocial.map((option) => (
-                                                <Button
-                                                    key={option.value}
-                                                    onClick={() => handleCategoryChange(option.value)}
-                                                    variant={currentCategory === option.value ? "primary" : "tertiary"}
-                                                    size="s"
-                                                >
-                                                    <Row gap="4" vertical="center">
-                                                        {option.icon && <Icon name={option.icon} size="s" />}
-                                                        <Text>{option.label}</Text>
-                                                    </Row>
-                                                </Button>
-                                            ))}
-                                        </Row>
-                                    </Column>
-                                )}
-
-                                {/* Updates & Marketing */}
-                                {groupedAiCategories.updatesMarketing.length > 0 && (
-                                    <Column gap="8">
-                                        <Text variant="label-strong-s">Updates & Marketing</Text>
-                                        <Row gap="8" wrap>
-                                            {groupedAiCategories.updatesMarketing.map((option) => (
-                                                <Button
-                                                    key={option.value}
-                                                    onClick={() => handleCategoryChange(option.value)}
-                                                    variant={currentCategory === option.value ? "primary" : "tertiary"}
-                                                    size="s"
-                                                >
-                                                    <Row gap="4" vertical="center">
-                                                        {option.icon && <Icon name={option.icon} size="s" />}
-                                                        <Text>{option.label}</Text>
-                                                    </Row>
-                                                </Button>
-                                            ))}
-                                        </Row>
-                                    </Column>
-                                )}
-
-                                {/* Events & Travel */}
-                                {groupedAiCategories.eventsTravel.length > 0 && (
-                                    <Column gap="8">
-                                        <Text variant="label-strong-s">Events & Travel</Text>
-                                        <Row gap="8" wrap>
-                                            {groupedAiCategories.eventsTravel.map((option) => (
-                                                <Button
-                                                    key={option.value}
-                                                    onClick={() => handleCategoryChange(option.value)}
-                                                    variant={currentCategory === option.value ? "primary" : "tertiary"}
-                                                    size="s"
-                                                >
-                                                    <Row gap="4" vertical="center">
-                                                        {option.icon && <Icon name={option.icon} size="s" />}
-                                                        <Text>{option.label}</Text>
-                                                    </Row>
-                                                </Button>
-                                            ))}
-                                        </Row>
-                                    </Column>
-                                )}
-
-                                {/* Other Categories */}
-                                {groupedAiCategories.other.length > 0 && (
-                                    <Column gap="8">
-                                        <Text variant="label-strong-s">Other Categories</Text>
-                                        <Row gap="8" wrap>
-                                            {groupedAiCategories.other.map((option) => (
-                                                <Button
-                                                    key={option.value}
-                                                    onClick={() => handleCategoryChange(option.value)}
-                                                    variant={currentCategory === option.value ? "primary" : "tertiary"}
-                                                    size="s"
-                                                >
-                                                    <Row gap="4" vertical="center">
-                                                        {option.icon && <Icon name={option.icon} size="s" />}
-                                                        <Text>{option.label}</Text>
-                                                    </Row>
-                                                </Button>
-                                            ))}
-                                        </Row>
-                                    </Column>
-                                )}
-                            </Column>
-                        )}
-                    </Card>
-                </Column>
-            )}
-        </Column>
+        </>
     );
 }

@@ -83,7 +83,7 @@ export function EmailDetail({
     };
 
     return (
-        <Column fill radius="xl" border="neutral-alpha-medium" overflow="hidden">
+        <Column fill radius="m" border="neutral-alpha-medium" overflow="hidden">
             <Column fill>
                 <Row
                     horizontal="space-between"
@@ -210,7 +210,23 @@ export function EmailDetail({
                 )}
 
                 <Row fillWidth fitHeight paddingX="8">
+                    <style>{`
+                        .email-body a {
+                            color: blue;
+                            text-decoration: underline;
+                            font-weight: 500;
+                        }
+                        .email-body a:hover {
+                            color: inherit;
+                        }
+                        .email-body li {
+                            &::marker {
+                                color: inherit;
+                            }
+                        }
+                    `}</style>
                     <div
+                        className="email-body"
                         dangerouslySetInnerHTML={{
                             __html: DOMPurify.sanitize(email.body || email.snippet || ""),
                         }}
@@ -225,18 +241,23 @@ export function EmailDetail({
                     borderTop="neutral-alpha-medium"
                     paddingY="8"
                     paddingX="16"
+                    data-border="rounded"
                 >
-                    <Button 
-                        variant="secondary" 
-                        label="Forward" 
-                        prefixIcon="arrowRight" 
-                        onClick={handleForwardClick}
-                    />
-                    <Button 
-                        label="Reply" 
-                        prefixIcon="reply" 
-                        onClick={handleReplyClick}
-                    />
+                    <Row gap="8" maxWidth={12.5}>
+                        <Button 
+                            fillWidth
+                            variant="secondary" 
+                            label="Forward" 
+                            prefixIcon="arrowRight" 
+                            onClick={handleForwardClick}
+                        />
+                        <Button 
+                            fillWidth
+                            label="Reply" 
+                            prefixIcon="reply" 
+                            onClick={handleReplyClick}
+                        />
+                    </Row>
                 </Row>
             </Column>
         </Column>

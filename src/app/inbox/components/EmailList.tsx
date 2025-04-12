@@ -25,7 +25,7 @@ export function EmailList({
     // If loading, show skeletons
     if (isLoading) {
         return (
-            <Column padding="16" gap="16">
+            <Column fill gap="1" border="neutral-alpha-medium" overflow="hidden" bottomRadius="m">
                 {[1, 2, 3, 4, 5].map((i) => (
                     <Skeleton key={i} shape="block" style={{ height: "80px" }} />
                 ))}
@@ -50,7 +50,7 @@ export function EmailList({
 
     // Render list of emails
     return (
-        <Column fill overflow="hidden" radius="m" border="neutral-alpha-medium">
+        <Column fill overflow="hidden" bottomRadius="m" border="neutral-alpha-medium">
             <Column fill overflowY="auto">
                 {emails.map((email, index) => (
                     <Column fillWidth key={email.id}>

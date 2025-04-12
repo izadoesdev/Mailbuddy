@@ -36,6 +36,8 @@ import {
     HiOutlineCloud,
     HiOutlineListBullet,
     HiStar,
+    HiOutlinePaperAirplane,
+    HiPaperAirplane,
 } from "react-icons/hi2";
 
 import { RiVisaLine } from "react-icons/ri";
@@ -89,7 +91,7 @@ export const iconLibrary: Record<string, IconType> = {
     cloud: HiOutlineCloud,
     list: HiOutlineListBullet,
     starFill: HiStar,
-    trash: FaTrash,
+    send: HiPaperAirplane
 };
 
 export type IconLibrary = typeof iconLibrary;
