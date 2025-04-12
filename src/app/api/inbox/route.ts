@@ -190,18 +190,6 @@ function processThreadView(emails: any[]): any[] {
         (a, b) => new Date(b.internalDate || 0).getTime() - new Date(a.internalDate || 0).getTime()
     );
 }
-
-/**
- * Extract email headers from Gmail message
- */
-function extractEmailHeaders(headers: any[] = []): {subject: string, from: string, to: string} {
-    return {
-        subject: headers.find((h) => h.name === "Subject")?.value || "",
-        from: headers.find((h) => h.name === "From")?.value || "",
-        to: headers.find((h) => h.name === "To")?.value || ""
-    };
-}
-
 /**
  * Fetch messages from Gmail API with pagination
  */
