@@ -2,6 +2,7 @@ import { Index } from "@upstash/vector";
 import env from "@/libs/env";
 import Groq from "groq-sdk";
 import { OpenAI } from "openai";
+
 const index = new Index({
     url: env.UPSTASH_VECTOR_REST_URL,
     token: env.UPSTASH_VECTOR_REST_TOKEN,

@@ -6,7 +6,6 @@
  */
 
 // Import required functions for local use
-import { processEmail } from "./utils/groq";
 import { processEmail as processEmailOpenRouter } from "./utils/openrouter";
 import { storeEmail } from "./utils/vectors";
 import { saveEmailAIMetadata, getEmailAIMetadata } from "./utils/database";
