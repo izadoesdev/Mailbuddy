@@ -1,5 +1,5 @@
 import type React from "react";
-import { Column, Text, Skeleton, Icon, Line } from "@/once-ui/components";
+import { Column, Text, Skeleton, Icon } from "@/once-ui/components";
 import type { Email } from "../types";
 import { EmailItem } from "./EmailItem";
 
@@ -10,7 +10,6 @@ interface EmailListProps {
     searchQuery: string;
     onSelectEmail: (email: Email) => void;
     onToggleStar: (email: Email, e: React.MouseEvent<HTMLButtonElement>) => void;
-    onTrash?: (email: Email) => void;
 }
 
 export function EmailList({
@@ -20,7 +19,6 @@ export function EmailList({
     searchQuery,
     onSelectEmail,
     onToggleStar,
-    onTrash,
 }: EmailListProps) {
     // If loading, show skeletons
     if (isLoading) {
@@ -61,7 +59,6 @@ export function EmailList({
                             totalEmails={emails.length}
                             onSelect={onSelectEmail}
                             onToggleStar={onToggleStar}
-                            onTrash={onTrash}
                         />
                     </Column>
                 ))}

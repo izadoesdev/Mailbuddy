@@ -108,13 +108,13 @@ export function ComposeEmail({
 
     try {
       const textToEnhance = selectedText || body;
-      const res = await fetch('/api/inbox/enhance', {
+      const res = await fetch('/api/inbox/enchance', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          content: textToEnhance,
+          emailContent: textToEnhance,
           action: enhancementType,
         }),
       });
@@ -337,6 +337,7 @@ export function ComposeEmail({
               <div
                 ref={bodyRef}
                 onInput={handleBodyChange}
+                onMouseUp={handleTextSelection}
                 style={{
                   minHeight: "200px",
                   border: "1px solid var(--color-neutral-alpha-medium)",
@@ -346,17 +347,117 @@ export function ComposeEmail({
                   overflowY: "auto",
                 }}
               />
+
+              {/* Display Enhanced Content */}
+              {enhancedContent && (
+                <Column gap="8" paddingX="12" paddingY="8" borderTop="neutral-alpha-medium">
+                  <Row horizontal="space-between" vertical="center">
+                    <Text variant="body-strong-s">Enhanced version {selectedText ? "(selected text)" : ""}</Text>
+                    <Row gap="8">
+                      <Button 
+                        variant="primary" 
+                        size="s" 
+                        label="Apply" 
+                        onClick={applyEnhancement} 
+                      />
+                      <Button 
+                        variant="secondary" 
+                        size="s" 
+                        label="Dismiss" 
+                        onClick={dismissEnhancement} 
+                      />
+                    </Row>
+                  </Row>
+                  <Column 
+                    padding="12" 
+                    radius="m" 
+                    background="neutral-alpha-weak"
+                    border="neutral-alpha-medium"
+                  >
+                    <div dangerouslySetInnerHTML={{ __html: enhancedContent }} />
+                  </Column>
+                </Column>
+              )}
             </Column>
           </Column>
 
           <Row
             gap="8"
-            horizontal="end"
+            horizontal="space-between"
             borderTop="neutral-alpha-medium"
             paddingY="12"
             paddingX="20"
             background="neutral-alpha-weak"
           >
+            {/* Enhancement Options */}
+            {!enhancedContent && (
+              <Row gap="8">
+                {showEnhancementOptions ? (
+                  <>
+                    <Button 
+                      variant="secondary" 
+                      size="s" 
+                      label="Improve" 
+                      type="button"
+                      onClick={() => {
+                        setEnhancementType("improve");
+                      }}
+                    />
+                    <Button 
+                      variant="secondary" 
+                      size="s" 
+                      label="Shorten" 
+                      type="button"
+                      onClick={() => {
+                        setEnhancementType("shorten");
+                      }}
+                    />
+                    <Button 
+                      variant="secondary" 
+                      size="s" 
+                      label="Formal" 
+                      type="button"
+                      onClick={() => {
+                        setEnhancementType("formal");
+                      }}
+                    />
+                    <Button 
+                      variant="secondary" 
+                      size="s" 
+                      label="Friendly" 
+                      type="button"
+                      onClick={() => {
+                        setEnhancementType("friendly");
+                      }}
+                    />
+                    <Button 
+                      variant="secondary" 
+                      size="s" 
+                      label="Enhance" 
+                      type="button"
+                      onClick={handleEnhance}
+                      loading={isEnhancing}
+                    />
+                    <Button 
+                      variant="tertiary" 
+                      size="s" 
+                      prefixIcon="close" 
+                      type="button"
+                      onClick={() => setShowEnhancementOptions(false)}
+                    />
+                  </>
+                ) : (
+                  <Button 
+                    variant="secondary" 
+                    size="s" 
+                    prefixIcon="sparkles" 
+                    label="Enhance with AI"
+                    type="button"
+                    onClick={() => setShowEnhancementOptions(true)} 
+                  />
+                )}
+              </Row>
+            )}
             <Row maxWidth={6}>
               <Button
                 fillWidth

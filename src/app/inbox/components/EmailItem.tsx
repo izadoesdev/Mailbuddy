@@ -20,7 +20,6 @@ interface EmailItemProps {
     totalEmails: number;
     onSelect: (email: Email) => void;
     onToggleStar: (email: Email, e: React.MouseEvent<HTMLButtonElement>) => void;
-    onTrash?: (email: Email) => void;
 }
 
 export function EmailItem({
@@ -30,17 +29,9 @@ export function EmailItem({
     totalEmails,
     onSelect,
     onToggleStar,
-    onTrash,
 }: EmailItemProps) {
     const senderName = extractName(email.from ?? "");
-    const [isHovered, setIsHovered] = React.useState(false);
 
-    const handleTrashClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.stopPropagation();
-        if (onTrash) {
-            onTrash(email);
-        }
-    };
 
     return (
         <React.Fragment>
@@ -53,8 +44,6 @@ export function EmailItem({
                         onSelect(email);
                     }
                 }}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
             >
                 <Row
                     fillWidth
@@ -106,16 +95,6 @@ export function EmailItem({
                                 )}
                             </Row>
                             <Row gap="8" vertical="center">
-                                {isHovered && onTrash && (
-                                    <IconButton
-                                        variant="ghost"
-                                        size="s"
-                                        onClick={handleTrashClick}
-                                        tooltip="Move to trash"
-                                    >
-                                        <Icon name="trash" size="xs" onBackground="danger-weak" />
-                                    </IconButton>
-                                )}
                                 <Text variant="label-default-s" onBackground="neutral-weak" wrap="nowrap">
                                     {formatDate(email.createdAt)}
                                 </Text>
