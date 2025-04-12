@@ -7,6 +7,7 @@ import {
     Button,
     Avatar,
     Scroller,
+    Column,
 } from "@/once-ui/components";
 
 interface CategoryOption {
@@ -279,6 +280,6 @@ export function InboxControls({
                     </>
                 )}
             </Row>
-        </>
+        </Column>
     );
 }
