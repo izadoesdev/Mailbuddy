@@ -11,6 +11,7 @@ import {
   Dropdown,
   DropdownWrapper,
   Chip,
+  Icon,
 } from "@/once-ui/components";
 import { useEmailMutations } from "../hooks/useEmailMutations";
 
@@ -99,35 +100,34 @@ export function ComposeEmail({
 
   // Handle enhancement request
   const handleEnhance = async () => {
-    // Use selected text or full body if nothing selected
-    const textToEnhance = selectedText || body;
-    if (!textToEnhance.trim()) {
+    if (!body.trim()) {
       addToast({
         variant: "danger",
-        message: "Please enter some text to enhance"
+        message: "Cannot enhance empty content"
       });
       return;
     }
 
     setIsEnhancing(true);
-    
+
     try {
-      const response = await fetch('/api/inbox/enchance', {
+      const textToEnhance = selectedText || body;
+      const res = await fetch('/api/inbox/enhance', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          emailContent: `To: ${to}\n${cc ? `Cc: ${cc}\n` : ''}${bcc ? `Bcc: ${bcc}\n` : ''}Subject: ${subject}\n\n${textToEnhance}`,
-          action: enhancementType
-        })
+          content: textToEnhance,
+          action: enhancementType,
+        }),
       });
       
-      if (!response.ok) {
+      if (!res.ok) {
         throw new Error('Enhancement request failed');
       }
       
-      const data = await response.json();
+      const data = await res.json();
       if (data.success && data.enhancedContent) {
         setEnhancedContent(data.enhancedContent);
         setShowEnhancementOptions(false);
@@ -245,9 +245,10 @@ export function ComposeEmail({
       padding="0"
       fitWidth
       fitHeight
-      background="neutral-weak"
+      background="surface"
       border="neutral-alpha-medium"
       radius="l"
+      shadow="xl"
       style={{ position: "fixed", bottom: "24px", right: "24px", width: "600px", maxHeight: "80vh", zIndex: 100 }}
     >
       <form onSubmit={handleSubmit} style={{ height: "100%" }}>
@@ -257,7 +258,7 @@ export function ComposeEmail({
             vertical="center"
             paddingY="12"
             paddingX="24"
-            background="neutral-weak"
+            background="neutral-alpha-weak"
             borderBottom="neutral-alpha-medium"
           >
             <Text variant="heading-strong-s">New Email</Text>
@@ -270,7 +271,7 @@ export function ComposeEmail({
             />
           </Row>
 
-          <Column fillWidth padding="16" gap="12" overflow="auto">
+          <Column fillWidth padding="20" gap="16" overflow="auto">
             <Input 
               id="to"
               label="To"
@@ -278,6 +279,7 @@ export function ComposeEmail({
               onChange={(e) => setTo(e.target.value)}
               required
               placeholder="recipient@example.com"
+              hasPrefix={<Icon name="person" size="s" />}
             />
 
             {showCcBcc && (
@@ -288,6 +290,7 @@ export function ComposeEmail({
                   value={cc}
                   onChange={(e) => setCc(e.target.value)}
                   placeholder="cc@example.com"
+                  hasPrefix={<Icon name="person" size="s" />}
                 />
                 <Input 
                   id="bcc"
@@ -295,6 +298,7 @@ export function ComposeEmail({
                   value={bcc}
                   onChange={(e) => setBcc(e.target.value)}
                   placeholder="bcc@example.com"
+                  hasPrefix={<Icon name="person" size="s" />}
                 />
               </>
             )}
@@ -302,9 +306,10 @@ export function ComposeEmail({
             {!showCcBcc && (
               <Row horizontal="end">
                 <Button
-                  variant="secondary"
-                  label="Show Cc/Bcc"
+                  variant="tertiary"
+                  label="Add Cc/Bcc"
                   size="s"
+                  prefixIcon="plus"
                   onClick={() => setShowCcBcc(true)}
                 />
               </Row>
@@ -316,31 +321,32 @@ export function ComposeEmail({
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Subject"
+              hasPrefix={<Icon name="tag" size="s" />}
             />
 
             <Column fillWidth fitHeight>
-              <Row horizontal="space-between" vertical="center" marginBottom="4">
-                <Text variant="label-default-s">Message</Text>
+              <Row horizontal="space-between" vertical="center" marginBottom="8">
+                <Text variant="label-strong-s">Message</Text>
                 
                 {enhancedContent ? (
-                  <Row gap="8">
-                    <Chip 
-                      selected
-                      label="Changes ready to apply" 
-                    />
-                    <Button
-                      variant="primary"
-                      size="s"
-                      label="Apply"
-                      onClick={applyEnhancement}
-                    />
-                    <Button
-                      variant="secondary"
-                      size="s"
-                      label="Dismiss"
-                      onClick={dismissEnhancement}
-                    />
-                  </Row>
+                  <Card padding="8" background="success-alpha-weak" border="success-alpha-medium" radius="m">
+                    <Row gap="8" vertical="center">
+                      <Icon name="checkCircle" color="success" size="s" />
+                      <Text variant="label-strong-s" color="success">Changes ready</Text>
+                      <Button
+                        variant="primary"
+                        size="s"
+                        label="Apply"
+                        onClick={applyEnhancement}
+                      />
+                      <IconButton
+                        variant="ghost"
+                        icon="close"
+                        tooltip="Dismiss"
+                        onClick={dismissEnhancement}
+                      />
+                    </Row>
+                  </Card>
                 ) : showEnhancementOptions ? (
                   <Row gap="8">
                     <DropdownWrapper
@@ -351,35 +357,50 @@ export function ComposeEmail({
                           label={enhancementType === "improve" ? "Improve" : 
                                  enhancementType === "shorten" ? "Shorten" :
                                  enhancementType === "formal" ? "Make Formal" : "Make Friendly"}
+                          suffixIcon="chevronDown"
                         />
                       }
                       dropdown={
-                        <Column padding="8" gap="4">
-                          <Button
-                            variant={enhancementType === "improve" ? "primary" : "secondary"}
-                            size="s"
-                            label="Improve writing"
-                            onClick={() => setEnhancementType("improve")}
-                          />
-                          <Button
-                            variant={enhancementType === "shorten" ? "primary" : "secondary"}
-                            size="s"
-                            label="Make concise"
-                            onClick={() => setEnhancementType("shorten")}
-                          />
-                          <Button
-                            variant={enhancementType === "formal" ? "primary" : "secondary"}
-                            size="s"
-                            label="Make formal"
-                            onClick={() => setEnhancementType("formal")}
-                          />
-                          <Button
-                            variant={enhancementType === "friendly" ? "primary" : "secondary"}
-                            size="s"
-                            label="Make friendly"
-                            onClick={() => setEnhancementType("friendly")}
-                          />
-                        </Column>
+                        <Card padding="0" shadow="xl" radius="m">
+                          <Column padding="8" gap="4">
+                            <Button
+                              variant={enhancementType === "improve" ? "primary" : "tertiary"}
+                              size="s"
+                              label="Improve writing"
+                              prefixIcon="sparkles"
+                              onClick={() => setEnhancementType("improve")}
+                              fillWidth
+                              justifyContent="start"
+                            />
+                            <Button
+                              variant={enhancementType === "shorten" ? "primary" : "tertiary"}
+                              size="s"
+                              label="Make concise"
+                              prefixIcon="scissors"
+                              onClick={() => setEnhancementType("shorten")}
+                              fillWidth
+                              justifyContent="start"
+                            />
+                            <Button
+                              variant={enhancementType === "formal" ? "primary" : "tertiary"}
+                              size="s"
+                              label="Make formal"
+                              prefixIcon="briefcase"
+                              onClick={() => setEnhancementType("formal")}
+                              fillWidth
+                              justifyContent="start"
+                            />
+                            <Button
+                              variant={enhancementType === "friendly" ? "primary" : "tertiary"}
+                              size="s"
+                              label="Make friendly"
+                              prefixIcon="smile"
+                              onClick={() => setEnhancementType("friendly")}
+                              fillWidth
+                              justifyContent="start"
+                            />
+                          </Column>
+                        </Card>
                       }
                     />
                     
@@ -387,15 +408,16 @@ export function ComposeEmail({
                       variant="primary"
                       size="s"
                       label="Enhance"
+                      prefixIcon="sparkles"
                       loading={isEnhancing}
                       disabled={isEnhancing}
                       onClick={handleEnhance}
                     />
                     
-                    <Button
-                      variant="secondary"
-                      size="s"
-                      label="Cancel"
+                    <IconButton
+                      variant="ghost"
+                      icon="close"
+                      tooltip="Cancel"
                       onClick={() => {
                         setShowEnhancementOptions(false);
                         setSelectedText("");
@@ -404,59 +426,72 @@ export function ComposeEmail({
                   </Row>
                 ) : (
                   <Button
-                    variant="secondary"
+                    variant="tertiary"
                     size="s"
                     label="Enhance writing"
+                    prefixIcon="sparkles"
                     onClick={() => setShowEnhancementOptions(true)}
                   />
                 )}
               </Row>
               
-              <div
-                ref={bodyRef}
-                onInput={handleBodyChange}
-                onMouseUp={handleTextSelection}
-                onKeyUp={handleTextSelection}
-                style={{
-                  minHeight: "200px",
-                  border: "1px solid var(--color-neutral-alpha-medium)",
-                  borderRadius: "var(--radius-m)",
-                  padding: "12px",
-                  outline: "none",
-                  overflowY: "auto",
-                  backgroundColor: "var(--color-bg-default)",
-                }}
-              />
+              <Card
+                padding="0"
+                radius="m"
+                border="neutral-alpha-medium"
+                style={{ minHeight: "200px" }}
+              >
+                <div
+                  ref={bodyRef}
+                  onInput={handleBodyChange}
+                  onMouseUp={handleTextSelection}
+                  onKeyUp={handleTextSelection}
+                  style={{
+                    minHeight: "200px",
+                    padding: "16px",
+                    outline: "none",
+                    overflowY: "auto",
+                    backgroundColor: "var(--color-bg-default)",
+                    borderRadius: "var(--radius-m)",
+                  }}
+                />
+              </Card>
               
               {selectedText && (
-                <Text variant="label-default-xs" marginTop="4" color="neutral-medium">
-                  Text selected: {selectedText.length} characters
-                </Text>
+                <Row gap="4" marginTop="8" vertical="center">
+                  <Icon name="search" size="xs" color="neutral" />
+                  <Text variant="label-default-xs" color="neutral">
+                    {selectedText.length} characters selected
+                  </Text>
+                </Row>
               )}
               
               {enhancedContent && (
-                <Column 
+                <Card 
                   fillWidth 
-                  marginTop="12" 
-                  border="neutral-medium" 
+                  marginTop="16" 
+                  border="neutral-alpha-medium" 
                   background="neutral-alpha-weak" 
                   radius="m" 
-                  padding="12"
+                  padding="16"
                 >
-                  <Text variant="label-strong-s" marginBottom="4">Enhanced version:</Text>
-                  <div 
+                  <Row gap="8" vertical="center" marginBottom="8">
+                    <Icon name="sparkles" color="brand" size="s" />
+                    <Text variant="label-strong-s" color="brand">Enhanced version</Text>
+                  </Row>
+                  <Card
+                    background="surface"
+                    border="neutral-alpha-medium"
+                    radius="m"
+                    padding="16"
                     style={{
-                      backgroundColor: "var(--color-bg-default)",
-                      padding: "8px",
-                      borderRadius: "var(--radius-m)",
-                      border: "1px solid var(--color-primary-alpha-weak)",
                       maxHeight: "150px",
                       overflowY: "auto"
                     }}
                   >
                     {enhancedContent}
-                  </div>
-                </Column>
+                  </Card>
+                </Card>
               )}
             </Column>
           </Column>
@@ -465,11 +500,12 @@ export function ComposeEmail({
             gap="8"
             horizontal="end"
             borderTop="neutral-alpha-medium"
-            paddingY="8"
-            paddingX="16"
+            paddingY="12"
+            paddingX="20"
+            background="neutral-alpha-weak"
           >
             <Button 
-              variant="secondary" 
+              variant="tertiary" 
               label="Cancel" 
               onClick={onClose} 
               disabled={isSending} 
@@ -480,6 +516,7 @@ export function ComposeEmail({
               prefixIcon="send" 
               loading={isSending}
               disabled={isSending || !to.trim()} 
+              variant="primary"
             />
           </Row>
         </Column>

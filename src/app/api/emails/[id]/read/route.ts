@@ -102,7 +102,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
                 },
             },
         });
-        console.log(updatedEmail);
 
         log(`Successfully marked email ${id} as read`);
 

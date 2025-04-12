@@ -27,8 +27,22 @@ const fetchEmails = async ({
         const categoryParam = category ? `&category=${encodeURIComponent(category)}` : "";
         const pageTokenParam = pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "";
         
+        // Determine if we need to parse category into aiCategory or aiPriority params
+        let aiCategoryParam = "";
+        let aiPriorityParam = "";
+        
+        if (category) {
+            if (category.startsWith('category-')) {
+                const aiCategory = category.replace('category-', '');
+                aiCategoryParam = `&aiCategory=${encodeURIComponent(aiCategory)}`;
+            } else if (category.startsWith('priority-')) {
+                const aiPriority = category.replace('priority-', '');
+                aiPriorityParam = `&aiPriority=${encodeURIComponent(aiPriority)}`;
+            }
+        }
+        
         const response = await fetch(
-            `/api/inbox?page=${page}&pageSize=${pageSize}${searchParam}${categoryParam}${pageTokenParam}`,
+            `/api/inbox?page=${page}&pageSize=${pageSize}${searchParam}${categoryParam}${pageTokenParam}${aiCategoryParam}${aiPriorityParam}`,
         );
 
         // Special case: If we get a 404, it might just mean no emails yet

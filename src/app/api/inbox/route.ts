@@ -12,6 +12,7 @@ import { enhanceEmail} from "@/app/ai/new/ai";
 import type { Prisma } from "@prisma/client";
 import type { gmail_v1 } from "googleapis";
 import { checkForMissingEmails, fetchMissingEmails } from "../utils/getFromGmail";
+import { PRIORITY_LEVELS, EMAIL_CATEGORIES } from "@/app/ai/new/constants";
 
 // Constants
 const GMAIL_USER_ID = "me";
@@ -59,13 +60,16 @@ async function fetchEmailsFromDb(
     userId: string, 
     pageSize: number, 
     category: string | null, 
-    skip: number
+    skip: number,
+    searchQuery?: string | null,
+    aiCategory?: string | null,
+    aiPriority?: string | null
 ): Promise<EmailQueryResult> {
     console.log(`Fetching emails from DB for user ${userId}, skip: ${skip}, take: ${pageSize}`);
     const baseFilters: any = { userId };
     
-    // Apply category filters
-    if (category) {
+    // Apply category filters for standard Gmail categories
+    if (category && !aiCategory && !aiPriority) {
         if (category.toUpperCase() === "STARRED") {
             baseFilters.isStarred = true;
         } else {
@@ -75,6 +79,16 @@ async function fetchEmailsFromDb(
             }
             baseFilters.labels = { has: labelToMatch };
         }
+    }
+
+    // Add text search if provided
+    if (searchQuery) {
+        baseFilters.OR = [
+            { subject: { contains: searchQuery, mode: 'insensitive' } },
+            { from: { contains: searchQuery, mode: 'insensitive' } },
+            { to: { contains: searchQuery, mode: 'insensitive' } },
+            { snippet: { contains: searchQuery, mode: 'insensitive' } },
+        ];
     }
     
     // Exclude system labels
@@ -115,8 +129,83 @@ async function fetchEmailsFromDb(
         } as any)
     ]);
 
-    console.log(`Found ${emails.length} emails in database`);
-    return { emails, totalCount };
+    // Apply AI metadata filters if needed (client-side filtering as Prisma doesn't support jsonb well)
+    let filteredEmails = emails;
+    
+    // Handle AI priority filtering
+    if (aiPriority) {
+        switch (aiPriority) {
+            case 'urgent':
+                filteredEmails = filteredEmails.filter(email => 
+                    email.aiMetadata?.priority === PRIORITY_LEVELS.URGENT
+                );
+                break;
+            case 'high':
+                filteredEmails = filteredEmails.filter(email => 
+                    email.aiMetadata?.priority === PRIORITY_LEVELS.HIGH
+                );
+                break;
+            case 'medium':
+                filteredEmails = filteredEmails.filter(email => 
+                    email.aiMetadata?.priority === PRIORITY_LEVELS.MEDIUM
+                );
+                break;
+            case 'low':
+                filteredEmails = filteredEmails.filter(email => 
+                    email.aiMetadata?.priority === PRIORITY_LEVELS.LOW
+                );
+                break;
+        }
+    }
+    
+    // Handle AI category filtering
+    if (aiCategory) {
+        const categorySynonyms = getCategorySynonyms(aiCategory);
+        
+        filteredEmails = filteredEmails.filter(email => {
+            if (!email.aiMetadata?.category) return false;
+            
+            const lowerCaseCategory = email.aiMetadata.category.toLowerCase();
+            return categorySynonyms.some(synonym => 
+                lowerCaseCategory.includes(synonym)
+            );
+        });
+    }
+
+    console.log(`Found ${filteredEmails.length} emails after applying all filters`);
+    return { emails: filteredEmails, totalCount };
+}
+
+/**
+ * Helper to get synonyms for a category name to improve matching
+ */
+function getCategorySynonyms(category: string): string[] {
+    switch (category) {
+        case 'work':
+            return ['work', 'business', 'professional'];
+        case 'financial':
+            return ['financial', 'finance', 'bank', 'money', 'payment'];
+        case 'events':
+            return ['event', 'invitation', 'party', 'meeting'];
+        case 'travel':
+            return ['travel', 'flight', 'hotel', 'booking', 'trip', 'vacation'];
+        case 'newsletters':
+            return ['newsletter', 'subscription', 'update'];
+        case 'receipts':
+            return ['receipt', 'purchase', 'order confirmation'];
+        case 'invoices':
+            return ['invoice', 'bill', 'payment'];
+        case 'shopping':
+            return ['shopping', 'purchase', 'order', 'buy'];
+        case 'personal':
+            return ['personal', 'private', 'individual'];
+        case 'social':
+            return ['social', 'network', 'community'];
+        case 'job':
+            return ['job', 'career', 'employment', 'application'];
+        default:
+            return [category];
+    }
 }
 
 /**
@@ -278,7 +367,7 @@ async function fetchDirectFromGmail(
  */
 export async function GET(request: NextRequest) {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
+    if (!session?.user || !session.user.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -286,108 +375,140 @@ export async function GET(request: NextRequest) {
     const accessToken = session.user.accessToken ?? null;
     const refreshToken = session.user.refreshToken ?? null;
 
+    // Parse query parameters
+    const searchParams = request.nextUrl.searchParams;
+    const page = Number.parseInt(searchParams.get('page') || '1', 10);
+    const pageSize = Number.parseInt(searchParams.get('pageSize') || `${PAGE_SIZE}`, 10);
+    const category = searchParams.get('category');
+    const pageToken = searchParams.get('pageToken');
+    const searchQuery = searchParams.get('search');
+    
+    // Get AI-specific parameters directly from the query
+    const aiCategory = searchParams.get('aiCategory');
+    const aiPriority = searchParams.get('aiPriority');
+    
+    // If aiCategory or aiPriority weren't provided directly but can be derived from category
+    if (!aiCategory && !aiPriority && category) {
+        if (category.startsWith('category-')) {
+            const derivedAiCategory = category.replace('category-', '');
+            // Only use parameters from query string - don't pass category params for API filtering
+            // ...
+        } else if (category.startsWith('priority-')) {
+            const derivedAiPriority = category.replace('priority-', '');
+            // Only use parameters from query string - don't pass category params for API filtering
+            // ...
+        }
+    }
+
     try {
-        // Parse query parameters
-        const { searchParams } = new URL(request.url);
-        const page = Number.parseInt(searchParams.get("page") || "1", 10);
-        const pageSize = Number.parseInt(searchParams.get("pageSize") || PAGE_SIZE.toString(), 10);
-        const category = searchParams.get("category") || null;
-        const skip = (page - 1) * pageSize;
-        const pageToken = searchParams.get("pageToken") || undefined;
-
-        // Get the total count for this user
-        const totalCountResult = await getThreadCount(userId);
-        const totalThreadCount = totalCountResult.length;
-        console.log(`Total thread count: ${totalThreadCount}, Page: ${page}, PageToken: ${pageToken || 'none'}`);
-
-        let emails = [];
+        let emails: any[] = [];
         let nextPageToken: string | null = null;
-        
-        // If we have a page token, use token-based pagination with Gmail API directly
-        if (pageToken) {
-            console.log("Using token-based pagination with page token:", pageToken);
-            const result = await fetchDirectFromGmail(
-                userId, 
-                accessToken, 
-                refreshToken, 
-                pageSize, 
-                pageToken
-            );
-            
-            emails = result.emails;
-            nextPageToken = result.nextPageToken;
-        } else {
-            // For first page or when coming from database pagination
-            // Standard case: fetch from database first
-            const { emails: dbEmails } = await fetchEmailsFromDb(userId, pageSize, category, skip);
-            emails = dbEmails;
-            
-            // If no emails found in database or if we've reached the end of database pagination
-            if (emails.length === 0) {
-                console.log(`No emails found in database for page ${page}, fetching from Gmail`);
-                const result = await fetchDirectFromGmail(
-                    userId, 
-                    accessToken, 
-                    refreshToken, 
-                    pageSize
-                );
-                
-                emails = result.emails;
-                nextPageToken = result.nextPageToken;
-            }
-            
-            // Check for missing emails only on first page to avoid duplicates in token-based pagination
-            if (page === 1) {
-                const missingEmails = await checkForMissingEmails(
+        const skip = pageToken ? 0 : (page - 1) * pageSize;
+
+        // 1. Fetch from database first
+        const { emails: dbEmails, totalCount } = await fetchEmailsFromDb(
+            userId, 
+            pageSize, 
+            category,
+            skip, 
+            searchQuery,
+            aiCategory,
+            aiPriority
+        );
+
+        // 2. Check for missing emails on Gmail
+        if (!searchQuery && dbEmails.length < pageSize && !aiCategory && !aiPriority) {
+            try {
+                // Check if we need to fetch missing emails
+                const missingEmailIds = await checkForMissingEmails(
                     userId,
-                    page,
+                    1, // page
                     pageSize,
-                    undefined,
+                    pageToken || undefined, // Convert null to undefined
                     accessToken,
                     refreshToken
                 );
-                
-                if (missingEmails.length > 0) {
-                    console.log(`Found ${missingEmails.length} missing emails, fetching content`);
+
+                if (missingEmailIds.length > 0) {
+                    console.log(`Found ${missingEmailIds.length} emails missing from DB, fetching them`);
+                    // Fetch and store missing emails
                     await fetchMissingEmails(
-                        missingEmails.map(m => m.id),
+                        missingEmailIds.map(item => item.id),
                         userId,
                         accessToken,
                         refreshToken,
                         userId
                     );
                     
-                    // Re-fetch emails from database
-                    const { emails: updatedEmails } = await fetchEmailsFromDb(userId, pageSize, category, skip);
-                    if (updatedEmails.length > 0) {
-                        emails = updatedEmails;
-                    }
+                    // Try DB fetch again to get newly synced emails
+                    const retry = await fetchEmailsFromDb(
+                        userId, 
+                        pageSize, 
+                        category, 
+                        skip,
+                        searchQuery,
+                        aiCategory,
+                        aiPriority
+                    );
+                    
+                    emails = retry.emails;
+                } else {
+                    emails = dbEmails;
                 }
+            } catch (error) {
+                console.warn("Error syncing missing emails:", error);
+                emails = dbEmails;
+            }
+        } else {
+            emails = dbEmails;
+        }
+
+        // 3. Decrypt email content
+        const decryptedEmails = emails.map(decryptEmailContent);
+        
+        // 4. Process for thread view
+        const processedEmails = processThreadView(decryptedEmails);
+        
+        // 5. Try to fetch and attach AI metadata for emails that don't have it yet
+        const enhancedEmails = await Promise.all(processedEmails.map(async (email) => {
+            if (!email.aiMetadata && !searchQuery && !aiCategory && !aiPriority) {
+                try {
+                    const enhanced = await enhanceEmail(email);
+                    if (enhanced.success && enhanced.data) {
+                        return enhanced.data;
+                    }
+                } catch (err) {
+                    console.warn(`Error enhancing email ${email.id}:`, err);
+                }
+            }
+            return email;
+        }));
+
+        // 6. Calculate if there are more emails available
+        const hasMore = processedEmails.length === pageSize;
+        
+        // 7. Generate nextPageToken if needed
+        if (hasMore) {
+            // Use the timestamp of the last email as the next page token
+            const lastEmail = processedEmails[processedEmails.length - 1];
+            if (lastEmail?.internalDate) {
+                nextPageToken = lastEmail.internalDate;
             }
         }
 
-        // If we have emails, decrypt and process them
-        const decryptedEmails = emails.map(decryptEmailContent);
-        const processedEmails = processThreadView(decryptedEmails);
-        
-        // Prepare result with nextPageToken for client-side pagination
-        const result = {
-            emails: processedEmails,
-            hasMore: nextPageToken !== null,
-            totalCount: totalThreadCount,
+        return NextResponse.json({
+            emails: enhancedEmails,
+            totalCount: totalCount.length,
             page,
             pageSize,
-            nextPageToken,
-        };
-
-        return NextResponse.json(result);
+            hasMore,
+            nextPageToken
+        });
     } catch (error) {
-        console.error("Inbox API error:", error);
+        console.error("Error fetching emails:", error);
         return NextResponse.json(
-            {
-                error: error instanceof Error ? error.message : "An unexpected error occurred",
-            },
-            { status: 500 },
+            { error: "Error fetching emails", details: String(error) },
+            { status: 500 }
         );
     }
 }

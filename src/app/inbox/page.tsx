@@ -1,7 +1,7 @@
 "use client";
 
 import type { Email, GmailLabel } from "./types";
-import { Row, Column, useToast, Text, Button } from "@/once-ui/components";
+import { Row, Column, useToast, Text, Button, Card, Badge } from "@/once-ui/components";
 import { EmailList } from "./components/EmailList";
 import { EmailDetail } from "./components/EmailDetail";
 import { InboxControls } from "./components/InboxControls";
@@ -12,26 +12,73 @@ import { useInboxData } from "./hooks/useInboxData";
 import { useEmailMutations } from "./hooks/useEmailMutations";
 import { useBackgroundSync } from "./hooks/useBackgroundSync";
 import { useAISearch } from "./hooks/useAISearch";
-import { useState, useCallback, useEffect, useRef, Suspense } from "react";
+import { useState, useCallback, useEffect, useRef, Suspense, useMemo } from "react";
 import { useUser } from "@/libs/auth/client";
 import { redirect, useRouter } from "next/navigation";
 import { createParser, useQueryState } from "nuqs";
 import { ComposeEmail } from "./components/ComposeEmail";
+import { EMAIL_CATEGORIES, PRIORITY_LEVELS } from "@/app/ai/new/constants";
 
 type CategoryOption = {
     value: string;
     label: string;
+    badge?: string;
+    color?: string;
+    icon?: string;
 };
 
-const CATEGORY_OPTIONS: CategoryOption[] = [
-    { value: "inbox", label: "Inbox" },
-    { value: "important", label: "Important" },
-    { value: "starred", label: "Starred" },
-    { value: "sent", label: "Sent" },
-    { value: "social", label: "Social" },
-    { value: "promotions", label: "Promotions" },
-    { value: "updates", label: "Updates" },
-    { value: "forums", label: "Forums" }
+// Standard Gmail categories
+const STANDARD_CATEGORIES: CategoryOption[] = [
+    { value: "inbox", label: "Inbox", icon: "inbox" },
+    { value: "important", label: "Important", icon: "star" },
+    { value: "starred", label: "Starred", icon: "starFill" },
+    { value: "sent", label: "Sent", icon: "arrowUpRight" }
+];
+
+// Create Priority-based categories
+const PRIORITY_CATEGORIES: CategoryOption[] = [
+    { value: "priority-urgent", label: "Urgent", color: "danger", badge: PRIORITY_LEVELS.URGENT, icon: "errorCircle" },
+    { value: "priority-high", label: "High Priority", color: "warning", badge: PRIORITY_LEVELS.HIGH, icon: "warningTriangle" },
+    { value: "priority-medium", label: "Medium Priority", color: "info", badge: PRIORITY_LEVELS.MEDIUM, icon: "infoCircle" },
+    { value: "priority-low", label: "Low Priority", color: "success", badge: PRIORITY_LEVELS.LOW, icon: "checkCircle" }
+];
+
+// Create AI categories from EMAIL_CATEGORIES constant
+const AI_CATEGORIES: CategoryOption[] = [
+    // Work & Business
+    { value: "category-work", label: "Work", icon: "briefcase" },
+    { value: "category-job", label: "Job Applications", icon: "briefcase" },
+    { value: "category-financial", label: "Financial", icon: "money" },
+    { value: "category-legal", label: "Legal", icon: "shield" },
+    { value: "category-invoices", label: "Invoices", icon: "clipboard" },
+    { value: "category-receipts", label: "Receipts", icon: "clipboard" },
+    
+    // Personal & Social
+    { value: "category-personal", label: "Personal", icon: "person" },
+    { value: "category-social", label: "Social", icon: "group" },
+    { value: "category-healthcare", label: "Healthcare", icon: "shield" },
+    
+    // Updates & Marketing
+    { value: "category-updates", label: "Updates", icon: "refresh" },
+    { value: "category-newsletters", label: "Newsletters", icon: "mail" },
+    { value: "category-promotions", label: "Promotions", icon: "tag" },
+    { value: "category-marketing", label: "Marketing", icon: "bullhorn" },
+    
+    // Events & Travel
+    { value: "category-events", label: "Events", icon: "calendar" },
+    { value: "category-scheduling", label: "Scheduling", icon: "calendar" },
+    { value: "category-travel", label: "Travel", icon: "plane" },
+    { value: "category-shipping", label: "Shipping", icon: "truck" },
+    
+    // Other Categories
+    { value: "category-support", label: "Support", icon: "helpCircle" },
+    { value: "category-alerts", label: "Alerts", icon: "bell" },
+    { value: "category-educational", label: "Educational", icon: "book" },
+    { value: "category-technology", label: "Technology", icon: "computer" },
+    { value: "category-shopping", label: "Shopping", icon: "bag" },
+    { value: "category-food", label: "Food", icon: "utensils" },
+    { value: "category-entertainment", label: "Entertainment", icon: "music" },
+    { value: "category-security", label: "Security", icon: "security" }
 ];
 
 // Create parsers for the URL query parameters
@@ -104,6 +151,15 @@ function InboxPage() {
         pageToken,
         enabled: isAuthenticated,
     });
+
+    // Combine all category options
+    const allCategoryOptions = useMemo(() => {
+        return [
+            ...STANDARD_CATEGORIES,
+            ...PRIORITY_CATEGORIES,
+            ...AI_CATEGORIES
+        ];
+    }, []);
 
     // Determine if there are more pages available based on nextPageToken
     const hasMorePages = !!nextPageToken;
@@ -216,9 +272,83 @@ function InboxPage() {
     // Calculate width for main content
     const mainContentWidth = selectedEmail ? "50%" : "100%";
 
-    // Determine which emails to display based on AI search status
-    const displayEmails = isAISearchActive ? similarEmails : emails;
-    const displayTotalCount = isAISearchActive ? similarEmails.length : totalCount;
+    // Filter emails based on selected AI category
+    const displayedEmails = useMemo(() => {
+        if (isAISearchActive) {
+            return similarEmails;
+        }
+        
+        // For standard categories, just return the server-filtered emails
+        if (STANDARD_CATEGORIES.some(c => c.value === currentCategory)) {
+            return emails;
+        }
+        
+        // For priority-based categories, filter client-side by priority
+        if (currentCategory.startsWith('priority-')) {
+            const priorityLevel = currentCategory.replace('priority-', '');
+            
+            switch (priorityLevel) {
+                case 'urgent':
+                    return emails.filter(email => 
+                        email.aiMetadata?.priority === PRIORITY_LEVELS.URGENT
+                    );
+                case 'high':
+                    return emails.filter(email => 
+                        email.aiMetadata?.priority === PRIORITY_LEVELS.HIGH
+                    );
+                case 'medium':
+                    return emails.filter(email => 
+                        email.aiMetadata?.priority === PRIORITY_LEVELS.MEDIUM
+                    );
+                case 'low':
+                    return emails.filter(email => 
+                        email.aiMetadata?.priority === PRIORITY_LEVELS.LOW
+                    );
+                default:
+                    return emails;
+            }
+        }
+        
+        // For AI categories, filter client-side by category
+        if (currentCategory.startsWith('category-')) {
+            const categoryName = currentCategory.replace('category-', '');
+            
+            // Match the category against AI metadata
+            return emails.filter(email => {
+                if (!email.aiMetadata?.category) return false;
+                
+                const lowerCaseCategory = email.aiMetadata.category.toLowerCase();
+                const categorySynonyms = getCategorySynonyms(categoryName);
+                
+                return categorySynonyms.some(synonym => 
+                    lowerCaseCategory.includes(synonym)
+                );
+            });
+        }
+        
+        return emails;
+    }, [emails, similarEmails, isAISearchActive, currentCategory]);
+
+    // Helper to get synonyms for a category
+    function getCategorySynonyms(category: string): string[] {
+        switch (category) {
+            case 'work':
+                return ['work', 'business', 'professional'];
+            case 'financial':
+                return ['financial', 'finance', 'bank', 'money', 'payment'];
+            case 'events':
+                return ['event', 'invitation', 'party', 'meeting'];
+            case 'travel':
+                return ['travel', 'flight', 'hotel', 'booking', 'trip', 'vacation'];
+            case 'newsletters':
+                return ['newsletter', 'subscription', 'update'];
+            case 'receipts':
+                return ['receipt', 'purchase', 'order confirmation'];
+            // Add more synonyms for other categories as needed
+            default:
+                return [category];
+        }
+    }
 
     const handleNewEmail = useCallback(() => {
         setIsComposingEmail(true);
@@ -346,7 +476,7 @@ function InboxPage() {
                     isAISearchActive={isAISearchActive}
                     isAISearchLoading={isAISearchLoading}
                     currentCategory={currentCategory}
-                    categoryOptions={CATEGORY_OPTIONS}
+                    categoryOptions={allCategoryOptions}
                     onCategoryChange={handleCategoryChange}
                     onNewEmail={handleNewEmail}
                     pageSize={pageSize}
@@ -355,7 +485,7 @@ function InboxPage() {
 
                 <Column fill overflow="hidden">
                     <EmailList
-                        emails={displayEmails}
+                        emails={displayedEmails}
                         isLoading={isAISearchActive ? isAISearchLoading : isLoading}
                         selectedEmailId={selectedEmail?.id || null}
                         searchQuery={debouncedSearchQuery}
@@ -369,7 +499,7 @@ function InboxPage() {
                         isLoading={isLoading}
                         isFetching={isFetching}
                         pageSize={pageSize}
-                        totalCount={displayTotalCount}
+                        totalCount={isAISearchActive ? similarEmails.length : displayedEmails.length}
                         hasMore={hasMorePages}
                     />
                 </Column>
