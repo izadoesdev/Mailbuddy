@@ -9,6 +9,7 @@ interface PaginationProps {
     isFetching: boolean;
     pageSize?: number;
     totalCount?: number;
+    hasMore?: boolean;
 }
 
 export function Pagination({
@@ -19,9 +20,10 @@ export function Pagination({
     isFetching,
     pageSize = 20,
     totalCount,
+    hasMore = false,
 }: PaginationProps) {
-    // Don't render pagination if there's only one page or less
-    if (totalPages <= 1) {
+    // Don't render pagination if there's only one page and no more items available
+    if (totalPages <= 1 && !hasMore) {
         return null;
     }
 
@@ -30,8 +32,9 @@ export function Pagination({
     const endItem = Math.min(page * pageSize, totalCount || page * pageSize);
     const showCount = totalCount !== undefined;
 
-    // Generate page options for the dropdown
-    const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+    // Generate page options for the dropdown (up to current page + 1 if hasMore)
+    const maxPage = hasMore ? Math.max(totalPages, page + 1) : totalPages;
+    const pageNumbers = Array.from({ length: maxPage }, (_, i) => i + 1);
 
     return (
         <Row fillWidth horizontal="space-between" vertical="center" paddingX="24" paddingTop="8">
@@ -45,7 +48,7 @@ export function Pagination({
                     aria-label="Previous page"
                 />
                 
-                {totalPages > 3 && (
+                {maxPage > 3 && (
                     <Row width={4}>
                     <Select
                         height="s"
@@ -59,7 +62,7 @@ export function Pagination({
                         value={page.toString()}
                         onSelect={(value) => {
                             const numValue = Number.parseInt(value, 10);
-                            if (!Number.isNaN(numValue) && numValue >= 1 && numValue <= totalPages) {
+                            if (!Number.isNaN(numValue) && numValue >= 1 && numValue <= maxPage) {
                                 onPageChange(numValue);
                             }
                         }}
@@ -73,8 +76,8 @@ export function Pagination({
                     variant="secondary"
                     tooltip="Next"
                     icon="chevronRight"
-                    onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-                    disabled={page >= totalPages || isLoading || isFetching}
+                    onClick={() => onPageChange(page + 1)}
+                    disabled={(page >= totalPages && !hasMore) || isLoading || isFetching}
                     aria-label="Next page"
                 />
             </Row>

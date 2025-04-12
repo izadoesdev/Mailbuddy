@@ -44,6 +44,12 @@ const pageSizeParser = createParser({
     serialize: String,
 }).withDefault(20);
 
+// Use string parser for pageToken with undefined default
+const stringParser = createParser({
+    parse: String,
+    serialize: String,
+});
+
 function InboxPage() {
     // Authentication check
     const router = useRouter();
@@ -60,6 +66,10 @@ function InboxPage() {
         defaultValue: 'inbox',
         history: 'replace'
     });
+    const [pageTokenState, setPageTokenState] = useQueryState('pageToken', stringParser);
+    
+    // Derived pageToken value - convert empty string to null
+    const pageToken = pageTokenState || null;
 
     // Local state
     const [searchQuery, setSearchQuery] = useState("");
@@ -81,14 +91,18 @@ function InboxPage() {
     }, [user, isAuthLoading, router]);
 
     // Only fetch emails if user is authenticated
-    const { emails, totalPages, totalCount, isLoading, isFetching } = useInboxData({
+    const { emails, totalPages, totalCount, nextPageToken, isLoading, isFetching } = useInboxData({
         page,
         pageSize,
         threadView,
         searchQuery: debouncedSearchQuery,
         category: currentCategory,
+        pageToken,
         enabled: isAuthenticated,
     });
+
+    // Determine if there are more pages available based on nextPageToken
+    const hasMorePages = !!nextPageToken;
 
     // Use AI search hook
     const { similarEmails, isAISearchActive, isAISearchLoading, performAISearch, clearAISearch } =
@@ -152,8 +166,26 @@ function InboxPage() {
 
     // Handle page change
     const handlePageChange = useCallback((newPage: number) => {
+        // If we're moving forward and have a nextPageToken, use it
+        if (newPage > page && nextPageToken) {
+            setPageTokenState(nextPageToken);
+        } else if (newPage < page) {
+            // If going back, reset token and use offset-based pagination
+            setPageTokenState(null);
+            // If skipping back multiple pages, just go back to page 1 and re-fetch
+            if (newPage < page - 1) {
+                setPage(1);
+                setTimeout(() => setPage(newPage), 100);
+                return;
+            }
+        } else if (newPage > page + 1) {
+            // Skipping ahead multiple pages not supported with token-based pagination
+            // Just go to the next page
+            setPage(page + 1);
+            return;
+        }
         setPage(newPage);
-    }, [setPage]);
+    }, [setPage, setPageTokenState, page, nextPageToken]);
 
     // Handle page size change
     const handlePageSizeChange = useCallback((size: number) => {
@@ -256,7 +288,8 @@ function InboxPage() {
                         isLoading={isLoading}
                         isFetching={isFetching}
                         pageSize={pageSize}
-                        totalCount={totalCount}
+                        totalCount={displayTotalCount}
+                        hasMore={hasMorePages}
                     />
                 </Column>
 

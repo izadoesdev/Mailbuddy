@@ -10,6 +10,7 @@ export interface InboxResponse {
     hasMore: boolean;
     page: number;
     pageSize: number;
+    nextPageToken: string | null;
 }
 
 export type GmailLabel = 

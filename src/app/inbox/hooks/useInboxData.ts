@@ -9,6 +9,7 @@ interface FetchEmailsParams {
     threadView: boolean;
     searchQuery?: string;
     category?: string;
+    pageToken?: string | null;
     enabled?: boolean;
 }
 
@@ -20,12 +21,15 @@ const fetchEmails = async ({
     pageSize,
     searchQuery,
     category,
+    pageToken,
 }: Omit<FetchEmailsParams, "enabled" | "threadView">): Promise<InboxResponse> => {
     try {
         const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : "";
         const categoryParam = category ? `&category=${encodeURIComponent(category)}` : "";
+        const pageTokenParam = pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "";
+        
         const response = await fetch(
-            `/api/inbox?page=${page}&pageSize=${pageSize}${searchParam}${categoryParam}`,
+            `/api/inbox?page=${page}&pageSize=${pageSize}${searchParam}${categoryParam}${pageTokenParam}`,
         );
 
         // Special case: If we get a 404, it might just mean no emails yet
@@ -37,6 +41,7 @@ const fetchEmails = async ({
                 page,
                 pageSize,
                 hasMore: false,
+                nextPageToken: null
             };
         }
 
@@ -50,6 +55,7 @@ const fetchEmails = async ({
                 page,
                 pageSize,
                 hasMore: false,
+                nextPageToken: null
             };
         }
 
@@ -62,6 +68,7 @@ const fetchEmails = async ({
                 page,
                 pageSize,
                 hasMore: false,
+                nextPageToken: null
             };
         }
 
@@ -83,6 +90,7 @@ const fetchEmails = async ({
             page,
             pageSize,
             hasMore: false,
+            nextPageToken: null
         };
     }
 };
@@ -96,16 +104,18 @@ export function useInboxData({
     threadView,
     searchQuery,
     category,
+    pageToken,
     enabled = true,
 }: FetchEmailsParams) {
     const { addToast } = useToast();
     const hasShownErrorToast = useRef(false);
     const isFirstLoad = useRef(true);
+    const lastPageTokenRef = useRef<string | null>(null);
 
     // Define the query options
     const queryOptions: UseQueryOptions<InboxResponse, Error> = {
-        queryKey: ["emails", page, pageSize, searchQuery, category],
-        queryFn: () => fetchEmails({ page, pageSize, searchQuery, category }),
+        queryKey: ["emails", page, pageSize, searchQuery, category, pageToken],
+        queryFn: () => fetchEmails({ page, pageSize, searchQuery, category, pageToken }),
         staleTime: 60 * 1000, // 1 minute
         retry: false, // Disable retries to prevent multiple error messages
         enabled, // Only run the query when enabled is true
@@ -115,6 +125,13 @@ export function useInboxData({
 
     // Extract data from query result
     const { data, isLoading, isFetching, isError, error } = queryResult;
+    
+    // Store the next page token for subsequent requests
+    useEffect(() => {
+        if (data?.nextPageToken) {
+            lastPageTokenRef.current = data.nextPageToken;
+        }
+    }, [data?.nextPageToken]);
 
     // Handle errors in useEffect, not during render
     useEffect(() => {
@@ -145,6 +162,7 @@ export function useInboxData({
         emails: data?.emails || [],
         totalPages: data ? Math.ceil(data.totalCount / data.pageSize) || 1 : 1,
         totalCount: data?.totalCount || 0,
+        nextPageToken: data?.nextPageToken || null,
         isLoading,
         isFetching,
         isError,
