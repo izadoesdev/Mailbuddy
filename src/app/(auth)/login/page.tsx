@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -26,7 +26,7 @@ interface AuthError {
     [key: string]: any;
 }
 
-export default function LoginPage() {
+function LoginPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { addToast } = useToast();
@@ -629,3 +629,11 @@ export default function LoginPage() {
         </Column>
     );
 }
+
+export default function Page() {
+    return (
+        <Suspense fallback={<Spinner />}>
+            <LoginPage />
+        </Suspense>
+    );
+};
