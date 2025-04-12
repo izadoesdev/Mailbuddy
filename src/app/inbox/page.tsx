@@ -503,7 +503,6 @@ function InboxPage() {
                         searchQuery={debouncedSearchQuery}
                         onSelectEmail={handleEmailSelect}
                         onToggleStar={handleToggleStar}
-                        onTrash={handleTrash}
                     />
                     <Pagination
                         page={page}

@@ -1,14 +1,17 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./src/libs/db";
-import { customSession, multiSession } from "better-auth/plugins";
+import { customSession, emailOTP, multiSession, magicLink } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: "postgresql",
     }),
-    appName: "mailbuddy.ai",
+    appName: "mailbuddy.dev",
     socialProviders: {
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -21,6 +24,20 @@ export const auth = betterAuth({
             accessType: "offline",
             prompt: "consent",
         },
+    },
+    emailAndPassword: {
+        enabled: true,
+        minPasswordLength: 8,
+        maxPasswordLength: 32,
+        requireEmailVerification: true,
+        sendResetPassword: async ({user, url, token}, request) => {
+            await resend.emails.send({
+              from: "noreply@mailbuddy.dev",
+              to: user.email,
+              subject: "Reset your password",
+              text: `Click the link to reset your password: ${url}`,
+            });
+          },
     },
     session: {
         expiresIn: 60 * 60 * 24 * 30, // 30 days
@@ -53,6 +70,26 @@ export const auth = betterAuth({
         }),
         multiSession(),
         nextCookies(),
+        emailOTP({
+            sendVerificationOTP: async ({ email, otp }) => {
+                await resend.emails.send({
+                    from: "noreply@mailbuddy.dev",
+                    to: email,
+                    subject: "Verify your email",
+                    html: `<p>Your verification code is ${otp}</p>`,
+                });
+            },
+        }),
+        magicLink({
+            sendMagicLink: async ({ email, token }) => {
+                await resend.emails.send({
+                    from: "noreply@mailbuddy.dev",
+                    to: email,
+                    subject: "Login to Mailbuddy",
+                    html: `<p>Click <a href="${process.env.BETTER_AUTH_URL}/login?token=${token}">here</a> to login to Mailbuddy</p>`,
+                });
+            },
+        }),
     ],
 });
 
