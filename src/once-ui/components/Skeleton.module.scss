@@ -1,12 +1,12 @@
 @keyframes skeleton-loading {
     0% {
-        background-color: var(--neutral-background-strong);
+        background-color: var(--neutral-alpha-weak);
     }
     50% {
-        background-color: var(--neutral-background-medium);
+        background-color: var(--static-transparent);
     }
     100% {
-        background-color: var(--neutral-background-strong);
+        background-color: var(--neutral-alpha-weak);
     }
 }
 

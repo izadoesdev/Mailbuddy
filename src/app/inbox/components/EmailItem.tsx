@@ -47,6 +47,7 @@ export function EmailItem({
             <Row
                 fillWidth
                 onClick={() => onSelect(email)}
+                cursor="interactive"
                 onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                         onSelect(email);

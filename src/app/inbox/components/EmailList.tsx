@@ -26,8 +26,8 @@ export function EmailList({
     if (isLoading) {
         return (
             <Column fill gap="1" border="neutral-alpha-medium" overflow="hidden" bottomRadius="m">
-                {[1, 2, 3, 4, 5].map((i) => (
-                    <Skeleton key={i} shape="block" style={{ height: "80px" }} />
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+                    <Skeleton key={i} shape="block" style={{ height: "5rem" }} />
                 ))}
             </Column>
         );
