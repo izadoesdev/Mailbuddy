@@ -52,6 +52,7 @@ const fetchEmailsFromDb = cacheable(
                 from: true,
                 to: true,
                 snippet: true,
+                body: true,
                 isRead: true,
                 isStarred: true,
                 labels: true,
@@ -136,15 +137,73 @@ export async function GET(request: NextRequest) {
         const category = searchParams.get("category") || null;
         const skip = (page - 1) * pageSize;
 
+        // Get the total count for this user
+        const totalCountResult = await getEmailCount(userId);
+        const totalCountNumber = totalCountResult.length;
+
         // Use cached DB fetch
-        const { emails, totalCount } = await fetchEmailsFromDb(userId, page, pageSize, category, skip);
+        let { emails, totalCount } = await fetchEmailsFromDb(userId, page, pageSize, category, skip);
         
+        // If no emails found and we're on a higher page, attempt direct fetching from Gmail
         if (emails.length === 0 && page > 1) {
-            await prisma.email.findMany({
-                where: { userId },
-                select: { id: true },
-                take: 5
-            });
+            // Clear cache to ensure we're getting fresh data
+            fetchEmailsFromDb.invalidate(userId, page, pageSize, category, skip);
+            
+            // Attempt to fetch messages directly for this page range
+            const startIndex = (page - 1) * pageSize;
+            const endIndex = Math.min(page * pageSize, totalCountNumber);
+            
+            if (startIndex < totalCountNumber) {
+                const latestMessages = await withGmailApi(
+                    userId,
+                    session.user.accessToken ?? null,
+                    session.user.refreshToken ?? null,
+                    async (gmail) => {
+                        try {
+                            // Use list with pagination parameters to get specific page
+                            const response = await gmail.users.messages.list({
+                                userId: GMAIL_USER_ID,
+                                maxResults: pageSize,
+                                pageToken: searchParams.get("pageToken") || undefined
+                            });
+                            
+                            // Save the next page token if available
+                            const nextPageToken = response.data.nextPageToken;
+                            
+                            return {
+                                messages: response.data.messages || [],
+                                nextPageToken
+                            };
+                        } catch (error) {
+                            console.error("Error fetching messages:", error);
+                            return { messages: [], nextPageToken: null };
+                        }
+                    }
+                );
+                
+                if (latestMessages && latestMessages.messages.length > 0) {
+                    // Fetch the missing emails
+                    const fetchedEmails = await fetchMissingEmails(
+                        latestMessages.messages.map((m: any) => m.id),
+                        userId,
+                        session.user.accessToken ?? null,
+                        session.user.refreshToken ?? null,
+                        userId
+                    );
+                    
+                    if (fetchedEmails.length > 0) {
+                        // Re-fetch emails after invalidation and new fetches
+                        const refreshedData = await fetchEmailsFromDb(userId, page, pageSize, category, skip);
+                        emails = refreshedData.emails;
+                        totalCount = refreshedData.totalCount;
+                        
+                        // If we still don't have emails, use the directly fetched ones
+                        if (emails.length === 0) {
+                            emails = fetchedEmails;
+                        }
+                    }
+                }
+            }
         }
 
         // Use cached check for missing emails
@@ -175,54 +234,6 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        const totalCountNumber = totalCount.length;
-        if (emails.length === 0 && page > 1 && skip < totalCountNumber) {
-            const startIndex = (page - 1) * pageSize;
-            const endIndex = page * pageSize;
-            
-            const latestMessages = await withGmailApi(
-                userId,
-                session.user.accessToken ?? null,
-                session.user.refreshToken ?? null,
-                async (gmail) => {
-                    try {
-                        const response = await gmail.users.messages.list({
-                            userId: GMAIL_USER_ID,
-                            maxResults: endIndex,
-                        });
-                        
-                        const allMessages = response.data.messages || [];
-                        
-                        if (allMessages.length > startIndex) {
-                            return allMessages.slice(startIndex, endIndex);
-                        }
-                        return [];
-                    } catch (error) {
-                        return [];
-                    }
-                }
-            );
-            
-            if (latestMessages && latestMessages.length > 0) {
-                const fetchedEmails = await fetchMissingEmails(
-                    latestMessages.map((m: any) => m.id),
-                    userId,
-                    session.user.accessToken ?? null,
-                    session.user.refreshToken ?? null,
-                    userId
-                );
-                
-                if (fetchedEmails.length > 0) {
-                    // Invalidate the cache for this user's data
-                    fetchEmailsFromDb.invalidate(userId, page, pageSize, category, skip);
-                    
-                    // Re-fetch emails after cache invalidation
-                    const { emails: updatedEmails } = await fetchEmailsFromDb(userId, page, pageSize, category, skip);
-                    emails.splice(0, emails.length, ...updatedEmails);
-                }
-            }
-        }
-
         // Decrypt and process the emails
         const decryptedEmails = emails.map(email => {
             const decryptedEmail = { ...email };
@@ -236,6 +247,15 @@ export async function GET(request: NextRequest) {
                 }
             }
             
+            if (email.body) {
+                try {
+                    const { encryptedData, iv, authTag } = decodeEncryptedData(email.body);
+                    decryptedEmail.body = decryptText(encryptedData, iv, authTag);
+                } catch (error) {
+                    decryptedEmail.body = "[Body decryption failed]";
+                }
+            }
+            
             if (email.snippet) {
                 try {
                     const { encryptedData, iv, authTag } = decodeEncryptedData(email.snippet);
@@ -244,20 +264,22 @@ export async function GET(request: NextRequest) {
                     decryptedEmail.snippet = "[Snippet decryption failed]";
                 }
             }
-            
             return decryptedEmail;
         });
 
         const processedEmails = processThreadView(decryptedEmails);
         
-        const emailsNeedingMetadata = emails.filter(email => {
-            const metadata = email as unknown as { aiMetadata?: { summary?: string, category?: string } };
-            return !metadata.aiMetadata || 
-                  (metadata.aiMetadata && (!metadata.aiMetadata.summary || !metadata.aiMetadata.category));
-        });
-        
-        if (emailsNeedingMetadata.length > 0) {
-            queueBackgroundAIProcessing(emailsNeedingMetadata);
+        // Process emails for AI metadata in the background
+        if (processedEmails.length > 0) {
+            const emailsNeedingMetadata = processedEmails.filter(email => {
+                const metadata = email as unknown as { aiMetadata?: { summary?: string, category?: string } };
+                return !metadata.aiMetadata || 
+                      (metadata.aiMetadata && (!metadata.aiMetadata.summary || !metadata.aiMetadata.category));
+            });
+            
+            if (emailsNeedingMetadata.length > 0) {
+                queueBackgroundAIProcessing(emailsNeedingMetadata);
+            }
         }
 
         const result = {
@@ -270,6 +292,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json(result);
     } catch (error) {
+        console.error("Inbox API error:", error);
         return NextResponse.json(
             {
                 error: error instanceof Error ? error.message : "An unexpected error occurred",
@@ -379,15 +402,19 @@ function queueBackgroundAIProcessing(emails: any[]): void {
                 for (const email of batch) {
                     try {
                         await enhanceEmail(email);
-                        // await new Promise(resolve => setTimeout(resolve, 100));
+                        // Add small delay between emails to avoid overwhelming the AI API
+                        await new Promise(resolve => setTimeout(resolve, 100));
                     } catch (error) {
+                        console.error("Failed to enhance email:", error);
                         // Continue with next email
                     }
                 }
                 
+                // Add delay between batches
                 await new Promise(resolve => setTimeout(resolve, 200));
             }
         } catch (error) {
+            console.error("Background AI processing error:", error);
             // Silent error in background processing
         }
     }, 100);
@@ -502,9 +529,9 @@ async function fetchMissingEmails(
                 batchResults = (await Promise.all(messageBatchPromises)).filter(Boolean) as any[];
                 fetchedEmails.push(...batchResults);
 
-                if (batchResults.length > 0) {
-                    await storeEmailBatch(batchResults);
-                }
+                // if (batchResults.length > 0) {
+                //     await storeEmailBatch(batchResults);
+                // }
             } catch (error) {
                 // Continue with next batch
             }
