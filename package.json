@@ -24,6 +24,7 @@
         "dayjs": "^1.11.13",
         "dompurify": "^3.2.5",
         "googleapis": "^148.0.0",
+        "gpt3-tokenizer": "^1.1.5",
         "groq-sdk": "^0.19.0",
         "html-to-text": "^9.0.5",
         "ioredis": "^5.6.0",
@@ -42,6 +43,7 @@
         "sass": "^1.77.6",
         "sharp": "^0.33.4",
         "superjson": "^2.2.2",
+        "tiktoken": "^1.0.20",
         "zod": "^3.24.2"
     },
     "devDependencies": {

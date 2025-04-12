@@ -108,27 +108,60 @@ export const VECTOR_CONFIG = {
  * AI processing prompts
  */
 export const AI_PROMPTS = {
-    CATEGORIZE: `Analyze this email that was sent to the user and determine the most appropriate category from this list: ${EMAIL_CATEGORIES.join(", ")}. 
-               Respond with only the category name.`,
+    CATEGORIZE: `Analyze this email and determine up to 3 relevant categories from this list: ${EMAIL_CATEGORIES.join(", ")}. 
+               Focus on the primary purpose first, then include secondary themes if relevant.
+               Format response as comma-separated values (e.g., "Work, Scheduling, Updates").
+               Do not include any other text or explanation.`,
 
-    PRIORITIZE: `Based on the content, urgency, and importance of this email to the user receiving it, assign a priority level from these options: 
-               ${Object.values(PRIORITY_LEVELS).join(", ")}. 
-               Consider how important and time-sensitive it is for the user to respond or take action.
-               Respond with only the priority level.`,
+    PRIORITIZE: `Determine the priority level of this email based on:
+               - Time sensitivity (how soon action is needed)
+               - Importance to the recipient
+               - Consequences of delayed response
+               
+               Choose exactly ONE from: ${Object.values(PRIORITY_LEVELS).join(", ")}.
+               Guidelines:
+               - Urgent: Requires immediate attention (within hours)
+               - High: Should be addressed today or tomorrow
+               - Medium: Can wait a few days
+               - Low: No time sensitivity
+               
+               Return ONLY the priority level name.`,
 
-    SUMMARIZE: `Provide a concise summary of this email in 1-2 sentences highlighting key information, 
-              requests, or action items directly to you as the reader. Use second-person perspective (using "you" and "your") 
-              to address the reader directly. For example, say "It encourages you to engage" instead of "It encourages the user to engage".
-              Keep it under 200 characters.`,
+    SUMMARIZE: `Create a concise, actionable summary of this email that:
+              - Addresses the recipient directly ("you" not "the user")
+              - Focuses on the main purpose and key points
+              - Highlights any deadlines or time-sensitive elements
+              - Uses present tense and active voice
+              - Is under 200 characters
+              
+              Return ONLY the summary with no prefixes or explanations.`,
 
-    EXTRACT_ACTION_ITEMS: `Extract specific action items or tasks requested of the user in this email. 
-                         Focus only on what the user needs to do.
-                         Format as a list with deadlines if mentioned. 
-                         If no action items are present for the user, respond with "No action items".`,
+    EXTRACT_ACTION_ITEMS: `Identify all specific actions the recipient needs to take based on this email.
+                         Return as a JSON array of strings with these characteristics:
+                         - Start each item with an action verb (review, respond, submit, etc.)
+                         - Focus on concrete, specific tasks
+                         - Include deadlines if mentioned
+                         - Keep each item under 10 words
+                         - Example format: ["respond to meeting invite by Friday", "review attached document"]
+                         - If no actions required, return empty array []
+                         
+                         Return ONLY the valid JSON array with no other text.`,
 
-    EXTRACT_CONTACT_INFO: `Extract any contact information present in this email including names, 
-                         email addresses, phone numbers, and addresses of the sender or other contacts mentioned. 
-                         Format as structured data. If none found, respond with "No contact information".`,
+    EXTRACT_CONTACT_INFO: `Extract contact information from this email including:
+                         - Name(s)
+                         - Email address(es)
+                         - Phone number(s)
+                         - Physical address(es)
+                         
+                         Return as a properly formatted JSON object:
+                         {
+                           "name": "Person name or null if not found",
+                           "email": "Email address or null",
+                           "phone": "Phone number or null",
+                           "address": "Physical address or null"
+                         }
+                         
+                         Return ONLY the JSON object with no other text.`,
 };
 
 /**

@@ -14,7 +14,19 @@ function cleanEmailBody(body: string): string {
     let cleanedText = body;
 
     try {
-        cleanedText = convert(body);
+        cleanedText = convert(body, {
+            selectors: [
+                {
+                    selector: 'img',
+                    format: 'skip',
+                    options: { ignoreHref: true }
+                },
+                {
+                    selector: 'a',
+                    options: { ignoreHref: true }
+                }
+            ]
+        });
     } catch (error) {
         console.error("[cleanEmailBody] HTML conversion error:", error);
         // Keep original if conversion fails
