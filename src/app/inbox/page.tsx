@@ -208,6 +208,7 @@ function InboxPage() {
     const handleTrash = useCallback(
         (email: Email) => {
             trashEmail.mutate(email.id);
+            setSelectedEmail(null); // Close the email detail view after trashing
         },
         [trashEmail],
     );
