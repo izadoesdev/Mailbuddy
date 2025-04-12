@@ -5,11 +5,8 @@ import {
     Input,
     Icon,
     Button,
-    Tooltip,
-    IconButton,
-    DropdownWrapper,
-    Column,
     Avatar,
+    Scroller,
 } from "@/once-ui/components";
 
 interface CategoryOption {
@@ -105,11 +102,10 @@ export function InboxControls({
                 <Text variant="heading-strong-l">
                     {isAISearchActive ? "AI Search Results" : "Inbox"}
                 </Text>
-                <Row maxWidth={24}>
+                <Row maxWidth={24} data-border="rounded">
                     <Input
-                        data-border="rounded"
                         id="search-emails"
-                        label={isAISearchActive ? "Type to search with AI..." : "Search emails"}
+                        label={isAISearchActive ? "Search with AI..." : "Search emails"}
                         labelAsPlaceholder
                         value={localSearchQuery}
                         onChange={(e) => handleSearchChange(e.target.value)}
@@ -140,7 +136,7 @@ export function InboxControls({
                 <Avatar />
             </Row>
 
-            <Row paddingX="16" marginBottom="16" gap="8">
+            <Row paddingX="8" paddingY="8" gap="24" data-border="rounded" background="neutral-alpha-weak" topRadius="m" borderTop="neutral-alpha-medium" borderLeft="neutral-alpha-medium" borderRight="neutral-alpha-medium">
                 {isAISearchActive && onClearAISearch ? (
                     <Button
                         label="Return to inbox"
@@ -152,44 +148,48 @@ export function InboxControls({
                         {onNewEmail && (
                             <Button
                                 size="s"
-                                weight="default"
                                 label="Compose"
-                                prefixIcon="edit"
-                                variant="primary"
+                                prefixIcon="plus"
                                 onClick={onNewEmail}
-                            />
-                        )}
-                        
-                        {onSync && (
-                            <Button
-                                size="s"
-                                weight="default"
-                                label="Sync & Refresh"
-                                prefixIcon="refresh"
-                                variant="secondary"
-                                onClick={() => {
-                                    onSync();
-                                    onRefresh();
-                                }}
-                                disabled={isLoading || isFetching || isSyncing}
-                                loading={isSyncing}
                             />
                         )}
 
                         {/* Simple category buttons row */}
                         {categoryOptions.length > 0 && onCategoryChange && (
-                            <Row gap="8" wrap>
-                                {categoryOptions.map((option) => (
-                                    <Button
-                                        key={option.value}
-                                        onClick={() => handleCategoryChange(option.value)}
-                                        variant={currentCategory === option.value ? "primary" : "secondary"}
-                                        label={option.label}
-                                        size="s"
-                                    />
-                                ))}
+                            <Row fillWidth horizontal="center">
+                                <Scroller fitWidth>
+                                    <Row gap="4">
+                                        {categoryOptions.map((option) => (
+                                            <Button
+                                                key={option.value}
+                                                weight="default"
+                                                onClick={() => handleCategoryChange(option.value)}
+                                                variant={currentCategory === option.value ? "primary" : "secondary"}
+                                                label={option.label}
+                                                size="s"
+                                            />
+                                        ))}
+                                    </Row>
+                                </Scroller>
                             </Row>
                         )}
+
+                        
+                        {onSync && (
+                                <Button
+                                    size="s"
+                                    weight="default"
+                                    label="Sync"
+                                    prefixIcon="refresh"
+                                    variant="secondary"
+                                    onClick={() => {
+                                        onSync();
+                                        onRefresh();
+                                    }}
+                                    disabled={isLoading || isFetching || isSyncing}
+                                    loading={isSyncing}
+                                />
+                            )}
                     </>
                 )}
             </Row>

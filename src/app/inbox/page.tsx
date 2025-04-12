@@ -1,7 +1,7 @@
 "use client";
 
 import type { Email, GmailLabel } from "./types";
-import { Row, Column, useToast, Text, Button } from "@/once-ui/components";
+import { Row, Column, useToast, Text, Button, Spinner } from "@/once-ui/components";
 import { EmailList } from "./components/EmailList";
 import { EmailDetail } from "./components/EmailDetail";
 import { InboxControls } from "./components/InboxControls";
@@ -261,8 +261,11 @@ function InboxPage() {
             // Format reply body with original message
             const replyBody = `
                 <br/><br/>
-                <div style="padding-left: 20px; border-left: 3px solid #e0e0e0;">
-                    <p>On ${new Date(replyTo.createdAt || new Date()).toLocaleString()}, ${originalSender} wrote:</p>
+                <div style="background: rgb(47, 47, 47);">
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; color: white;">
+                        <p style="padding: 1rem; font-weight: bold;">${originalSender}</p>
+                        <p style="padding: 1rem;">${new Date(replyTo.createdAt || new Date()).toLocaleString()}</p>
+                    </div>
                     <div>${replyTo.body || ""}</div>
                 </div>
             `;
@@ -314,8 +317,7 @@ function InboxPage() {
     // Conditional rendering logic
     if (isAuthLoading) {
         return (
-            <Column fill paddingY="20" horizontal="center" vertical="center">
-                <Text variant="heading-default-l">Loading...</Text>
+            <Column>
             </Column>
         );  
     }
@@ -325,8 +327,9 @@ function InboxPage() {
     }
 
     return (
-        <Row fill padding="8" gap="32">
+        <Row fill padding="8" gap="8">
             <Column
+                gap="-1"
                 fillWidth
                 style={{
                     width: mainContentWidth,
@@ -414,7 +417,7 @@ function InboxPage() {
 
 export default function Page() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<Spinner/>}>
             <InboxPage />
         </Suspense>
     )

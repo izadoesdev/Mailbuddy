@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import {
   Button,
-  Card,
   Column,
   Input,
   Row,
   Text,
   IconButton,
   useToast,
+  Line,
 } from "@/once-ui/components";
 import { useEmailMutations } from "../hooks/useEmailMutations";
 
@@ -117,16 +117,20 @@ export function ComposeEmail({
   };
 
   return (
-    <Card
+    <Row
       padding="0"
-      fitWidth
-      fitHeight
+      maxWidth={40}
+      height={48}
+      overflow="hidden"
       background="neutral-weak"
       border="neutral-alpha-medium"
-      radius="l"
-      style={{ position: "fixed", bottom: "24px", right: "24px", width: "600px", maxHeight: "80vh", zIndex: 100 }}
+      radius="m"
+      position="fixed"
+      bottom="8"
+      right="8"
+      zIndex={9}
     >
-      <form onSubmit={handleSubmit} style={{ height: "100%" }}>
+      <form onSubmit={handleSubmit} style={{ height: "100%", width: "100%" }}>
         <Column fill>
           <Row
             horizontal="space-between"
@@ -136,7 +140,7 @@ export function ComposeEmail({
             background="neutral-weak"
             borderBottom="neutral-alpha-medium"
           >
-            <Text variant="heading-strong-s">New Email</Text>
+            <Text variant="heading-strong-s">New email</Text>
             <IconButton
               tooltip="Close"
               tooltipPosition="left"
@@ -146,56 +150,70 @@ export function ComposeEmail({
             />
           </Row>
 
-          <Column fillWidth padding="16" gap="12" overflow="auto">
-            <Input 
+          <Input 
+              style={{ border: "1px solid transparent" }}
               id="to"
               label="To"
+              radius="none"
               value={to}
+              labelAsPlaceholder
+              hasSuffix={
+                !showCcBcc && (
+                    <Button
+                        data-border="rounded"
+                        variant="secondary"
+                        prefixIcon="plus"
+                        label="Add people"
+                        size="s"
+                        onClick={() => setShowCcBcc(true)}
+                    />
+                )
+            }
               onChange={(e) => setTo(e.target.value)}
               required
-              placeholder="recipient@example.com"
             />
+
+            <Line background="neutral-alpha-medium"/>
 
             {showCcBcc && (
               <>
                 <Input 
+                  radius="none"
+                  style={{ border: "1px solid transparent" }}
                   id="cc"
                   label="Cc"
                   value={cc}
+                  labelAsPlaceholder
                   onChange={(e) => setCc(e.target.value)}
-                  placeholder="cc@example.com"
                 />
+                <Line background="neutral-alpha-medium"/>
                 <Input 
+                  radius="none"
+                  style={{ border: "1px solid transparent" }}
                   id="bcc"
                   label="Bcc"
                   value={bcc}
+                  labelAsPlaceholder
                   onChange={(e) => setBcc(e.target.value)}
-                  placeholder="bcc@example.com"
                 />
+                <Line background="neutral-alpha-medium"/>
               </>
             )}
 
-            {!showCcBcc && (
-              <Row horizontal="end">
-                <Button
-                  variant="secondary"
-                  label="Show Cc/Bcc"
-                  size="s"
-                  onClick={() => setShowCcBcc(true)}
-                />
-              </Row>
-            )}
-
             <Input 
+              radius="none"
+              style={{ border: "1px solid transparent" }}
               id="subject"
               label="Subject"
               value={subject}
+              labelAsPlaceholder
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="Subject"
             />
 
+            <Line background="neutral-alpha-medium"/>
+
+          <Column fill overflow="auto">
             <Column fillWidth fitHeight>
-              <Text variant="label-default-s" marginBottom="4">Message</Text>
               <div
                 ref={bodyRef}
                 onInput={handleBodyChange}
@@ -206,7 +224,6 @@ export function ComposeEmail({
                   padding: "12px",
                   outline: "none",
                   overflowY: "auto",
-                  backgroundColor: "var(--color-bg-default)",
                 }}
               />
             </Column>
@@ -219,22 +236,20 @@ export function ComposeEmail({
             paddingY="8"
             paddingX="16"
           >
-            <Button 
-              variant="secondary" 
-              label="Cancel" 
-              onClick={onClose} 
-              disabled={isSending} 
-            />
-            <Button 
-              type="submit" 
-              label="Send" 
-              prefixIcon="send" 
-              loading={isSending}
-              disabled={isSending || !to.trim()} 
-            />
+            <Row maxWidth={6}>
+              <Button
+                fillWidth
+                suffixIcon={isSending ? "" : "send"}
+                data-border="rounded"
+                type="submit" 
+                label={isSending ? "" : "Send"}
+                loading={isSending}
+                disabled={isSending || !to.trim()} 
+              />
+            </Row>
           </Row>
         </Column>
       </form>
-    </Card>
+    </Row>
   );
 } 
