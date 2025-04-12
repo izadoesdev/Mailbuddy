@@ -1,4 +1,4 @@
-import type { Email } from "@/app/inbox/types";
+import type { Email } from "@/app/(main)/inbox/types";
 import { convert } from "html-to-text";
 import { EMAIL_CLEANING, SIGNATURE_PATTERNS, REPLY_PATTERNS } from "../constants";
 

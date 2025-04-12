@@ -8,11 +8,11 @@ import {
 } from "@/libs/utils/encryption";
 import { extractContentFromParts } from "@/libs/utils/email-content";
 import { withGmailApi } from "../utils/withGmail";
-import { enhanceEmail} from "@/app/ai/new/ai";
+import { enhanceEmail} from "@/app/(dev)/ai/new/ai";
 import type { Prisma } from "@prisma/client";
 import type { gmail_v1 } from "googleapis";
 import { checkForMissingEmails, fetchMissingEmails } from "../utils/getFromGmail";
-import { PRIORITY_LEVELS, EMAIL_CATEGORIES } from "@/app/ai/new/constants";
+import { PRIORITY_LEVELS, EMAIL_CATEGORIES } from "@/app/(dev)/ai/new/constants";
 
 // Constants
 const GMAIL_USER_ID = "me";

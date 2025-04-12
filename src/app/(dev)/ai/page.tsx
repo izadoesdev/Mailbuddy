@@ -23,9 +23,9 @@ import {
 } from "@/once-ui/components";
 import { searchEmailsByQuery } from "./new/utils/search";
 import { processEmail } from "./new/utils/groq";
-import type { Email, InboxResponse } from "../inbox/types";
-import { formatDate } from "../inbox/utils";
-import { extractName, getInitials } from "../inbox/utils";
+import type { Email, InboxResponse } from "../../(main)/inbox/types";
+import { formatDate } from "../../(main)/inbox/utils";
+import { extractName, getInitials } from "../../(main)/inbox/utils";
 
 // Type definitions
 type SimilarEmailResult = {

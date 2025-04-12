@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { searchSimilarEmails } from "@/app/ai/new/utils/search";
+import { searchSimilarEmails } from "@/app/(dev)/ai/new/utils/search";
 import type { Email, InboxResponse } from "../types";
 import { useUser } from "@/libs/auth/client";
 

@@ -3,7 +3,7 @@
 import { pipeline } from "@xenova/transformers";
 import { EMAIL_CATEGORIES } from "../constants";
 import { cleanEmail } from "./clean";
-import type { Email } from "@/app/inbox/types";
+import type { Email } from "@/app/(main)/inbox/types";
 import index from "../index";
 
 // Threshold for multi-label classification confidence

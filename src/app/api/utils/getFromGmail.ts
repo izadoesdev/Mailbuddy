@@ -2,7 +2,7 @@ import { prisma } from "@/libs/db";
 import { withGmailApi } from "./withGmail";
 import type { gmail_v1 } from "googleapis";
 import { encodeEncryptedData, encryptText, extractContentFromParts } from "@/libs/utils";
-import { enhanceEmail } from "@/app/ai/new/ai";
+import { enhanceEmail } from "@/app/(dev)/ai/new/ai";
 
 // Constants
 const GMAIL_USER_ID = "me";

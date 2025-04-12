@@ -3,6 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./src/libs/db";
 import { customSession, emailOTP, multiSession, magicLink } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
+
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);

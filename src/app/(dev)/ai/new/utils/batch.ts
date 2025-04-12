@@ -1,7 +1,7 @@
 "use server";
 
 import { BATCH_SIZES } from "../constants";
-import type { Email } from "@/app/inbox/types";
+import type { Email } from "@/app/(main)/inbox/types";
 import { storeEmail } from "./vectors";
 import { processEmail } from "./groq";
 import { cleanEmail } from "./clean";

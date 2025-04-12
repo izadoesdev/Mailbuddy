@@ -1,7 +1,7 @@
 "use client";
 
-import type { Email, GmailLabel } from "./types";
-import { Row, Column, useToast, Text, Button, Spinner } from "@/once-ui/components";
+import type { Email } from "./types";
+import { Row, Column, useToast, Text, Spinner } from "@/once-ui/components";
 import { EmailList } from "./components/EmailList";
 import { EmailDetail } from "./components/EmailDetail";
 import { InboxControls } from "./components/InboxControls";
@@ -17,7 +17,7 @@ import { useUser } from "@/libs/auth/client";
 import { redirect, useRouter } from "next/navigation";
 import { createParser, useQueryState } from "nuqs";
 import { ComposeEmail } from "./components/ComposeEmail";
-import { EMAIL_CATEGORIES, PRIORITY_LEVELS } from "@/app/ai/new/constants";
+import { EMAIL_CATEGORIES, PRIORITY_LEVELS } from "@/app/(dev)/ai/new/constants";
 
 type CategoryOption = {
     value: string;

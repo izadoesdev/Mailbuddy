@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/libs/auth";
 import { headers } from "next/headers";
-import index from "@/app/ai/new";
+import index from "@/app/(dev)/ai/new";
 
 const openRouter = index.openrouter;
 

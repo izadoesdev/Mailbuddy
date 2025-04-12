@@ -2,7 +2,7 @@
 
 import index from "../index";
 import { AI_PROMPTS, VECTOR_CONFIG, PRIORITY_LEVELS } from "../constants";
-import type { Email } from "@/app/inbox/types";
+import type { Email } from "@/app/(main)/inbox/types";
 import { cleanEmail } from "./clean";
 
 // Default model to use for Groq requests

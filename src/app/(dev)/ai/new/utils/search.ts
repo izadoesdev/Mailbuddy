@@ -3,7 +3,7 @@
 import index from "../index";
 import { VECTOR_CONFIG } from "../constants";
 import { cleanEmail } from "./clean";
-import type { Email } from "@/app/inbox/types";
+import type { Email } from "@/app/(main)/inbox/types";
 import { queryVector } from "./vectors";
 
 // Define the search result type for better type safety

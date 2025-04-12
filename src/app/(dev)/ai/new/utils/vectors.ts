@@ -3,7 +3,7 @@
 import index from "../index";
 import { cleanEmail, cleanMetadata } from "./clean";
 import { EMAIL_CLEANING, VECTOR_CONFIG } from "../constants";
-import type { Email } from "@/app/inbox/types";
+import type { Email } from "@/app/(main)/inbox/types";
 
 /**
  * Get a namespace for a user
