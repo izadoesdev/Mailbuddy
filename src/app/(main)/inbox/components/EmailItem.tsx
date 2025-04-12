@@ -30,8 +30,7 @@ export function EmailItem({
     onSelect,
     onToggleStar,
 }: EmailItemProps) {
-    const senderName = extractName(email.from ?? "");
-
+    const senderName = (email as any).fromName || extractName(email.from ?? "");
 
     return (
         <React.Fragment>

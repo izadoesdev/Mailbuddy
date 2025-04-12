@@ -35,7 +35,10 @@ export function EmailDetail({
     onForward,
     onTrash 
 }: EmailDetailProps) {
-    const senderName = extractName(email.from ?? "");
+    // Use fromName if available, otherwise extract from the from field
+    const senderName = (email as any).fromName || extractName(email.from ?? "");
+    // Use fromEmail if available
+    const senderEmail = (email as any).fromEmail || email.from;
     
     const handleStarClick = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
@@ -129,7 +132,7 @@ export function EmailDetail({
                     <Column gap="4">
                         <Text variant="body-strong-m">{senderName}</Text>
                         <Text variant="body-default-s" onBackground="neutral-weak">
-                            {email.from}
+                            {senderEmail}
                         </Text>
                         <Text variant="label-default-s" onBackground="neutral-weak">
                             To: {email.to || "me"}

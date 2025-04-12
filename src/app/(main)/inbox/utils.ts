@@ -1,8 +1,18 @@
 /**
- * Extract name from email address string
+ * Extract name from email address string or use fromName if available
  */
-export function extractName(emailString: string): string {
-    const namePart = emailString?.split("<")[0].trim();
+export function extractName(emailString: string, fromName?: string): string {
+    // If fromName is provided and not empty, use it
+    if (fromName) {
+        return fromName;
+    }
+    
+    // Otherwise extract from email string format (Name <email@example.com>)
+    const namePart = emailString?.split("<")?.[0]?.trim();
+    // Remove quotes if present
+    if (namePart?.startsWith('"') && namePart?.endsWith('"')) {
+        return namePart.substring(1, namePart.length - 1);
+    }
     return namePart || emailString || "Unknown";
 }
 

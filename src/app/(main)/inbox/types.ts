@@ -2,6 +2,8 @@ import type { Email as PrismaEmail, EmailAIMetadata } from "@prisma/client";
 
 export interface Email extends PrismaEmail {
     aiMetadata: EmailAIMetadata | null;
+    fromName?: string;
+    fromEmail?: string;
 }
 
 export interface InboxResponse {

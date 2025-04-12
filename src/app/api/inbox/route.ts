@@ -249,6 +249,36 @@ function decryptEmailContent(email: any): any {
         decryptedEmail.snippet = decryptField(email.snippet);
     }
     
+    if (email.from) {
+        // Extract both name and email parts from the from field if it contains angle brackets
+        // Format: "Some Name" <email@example.com> or Name <email@example.com> or just email@example.com
+        const emailRegex = /(.*?)\s*<([^>]+)>/;
+        const matches = email.from.match(emailRegex);
+        
+        if (matches) {
+            // If we have both name and email parts
+            let fromName = matches[1].trim();
+            const fromEmail = matches[2];
+            
+            // If name is in quotes, remove them
+            if (fromName.startsWith('"') && fromName.endsWith('"')) {
+                fromName = fromName.substring(1, fromName.length - 1);
+            }
+            
+            // Add new properties for name and email parts
+            decryptedEmail.fromName = fromName;
+            decryptedEmail.fromEmail = fromEmail;
+            
+            // Keep the original from value
+            decryptedEmail.from = email.from;
+        } else {
+            // If there's no match, it's likely just an email address
+            decryptedEmail.fromName = "";
+            decryptedEmail.fromEmail = email.from;
+            decryptedEmail.from = email.from;
+        }
+    }
+    
     // Make sure isRead flag is consistent with UNREAD label
     if (email.labels?.includes("UNREAD") ?? false) {
         decryptedEmail.isRead = false;

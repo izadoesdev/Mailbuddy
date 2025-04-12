@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     Heading,
@@ -15,12 +16,96 @@ import {
     Line,
     IconButton,
     Fade,
+    Input,
 } from "@/once-ui/components";
 import { useUser } from "@/libs/auth/client";
 
 export default function Home() {
     const router = useRouter();
     const { user, isLoading } = useUser();
+    const [wishlistEmail, setWishlistEmail] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
+    const [submitError, setSubmitError] = useState("");
+    const [userCount, setUserCount] = useState(0);
+    const [successMessage, setSuccessMessage] = useState("");
+    const [alreadySubscribed, setAlreadySubscribed] = useState(false);
+    
+    useEffect(() => {
+        const fetchUserCount = async () => {
+            try {
+                const response = await fetch('/api/wishlist');
+                const data = await response.json();
+                
+                if (data.success && data.data?.count) {
+                    animateCounter(data.data.count);
+                } else {
+                    animateCounter(1247);
+                }
+            } catch (error) {
+                animateCounter(1247);
+            }
+        };
+        
+        fetchUserCount();
+    }, []);
+    
+    const animateCounter = (targetCount: number) => {
+        const duration = 1500;
+        const step = 30;
+        const increment = Math.ceil(targetCount / (duration / step));
+        let current = 0;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= targetCount) {
+                setUserCount(targetCount);
+                clearInterval(timer);
+            } else {
+                setUserCount(current);
+            }
+        }, step);
+    };
+    
+    const handleWishlistSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!wishlistEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(wishlistEmail)) {
+            setSubmitError("Please enter a valid email address");
+            return;
+        }
+        
+        setIsSubmitting(true);
+        setSubmitError("");
+        
+        try {
+            const response = await fetch('/api/wishlist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: wishlistEmail }),
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                setSuccessMessage(data.message || "Successfully added to wishlist");
+                const isAlreadySubscribed = data.message?.includes("already");
+                setAlreadySubscribed(isAlreadySubscribed);
+                
+                if (!isAlreadySubscribed) {
+                    setUserCount(prev => prev + 1);
+                }
+                
+                setSubmitted(true);
+                setWishlistEmail("");
+            } else {
+                setSubmitError(data.error || "Failed to join wishlist. Please try again.");
+            }
+        } catch (error) {
+            setSubmitError("An unexpected error occurred. Please try again later.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     // Redirect to inbox if user is logged in
     // useEffect(() => {
@@ -30,7 +115,6 @@ export default function Home() {
     //     }
     // }, [user, isLoading, router]);
 
-    // Don't render the full page content during loading or if redirecting
     if (isLoading) {
         return <Column fillWidth paddingTop="80" horizontal="center" flex={1} />;
     }
@@ -47,11 +131,7 @@ export default function Home() {
             <Background
                 position="absolute"
                 pointerEvents="none"
-                mask={{
-                    x: 100,
-                    y: 0,
-                    radius: 100,
-                }}
+                mask={{ x: 100, y: 0, radius: 100 }}
                 gradient={{
                     display: true,
                     x: 100,
@@ -71,13 +151,9 @@ export default function Home() {
                     height: "0.25rem",
                 }}
             />
-            {/* Top fade effect */}
             <Fade
                 zIndex={3}
-                pattern={{
-                    display: true,
-                    size: "4",
-                }}
+                pattern={{ display: true, size: "4" }}
                 position="fixed"
                 top="0"
                 left="0"
@@ -87,7 +163,6 @@ export default function Home() {
                 blur={0.25}
             />
 
-            {/* Navigation */}
             <Row position="fixed" top="0" fillWidth horizontal="center" zIndex={3}>
                 <Row
                     data-border="rounded"
@@ -98,7 +173,7 @@ export default function Home() {
                     fillWidth
                 >
                     <Row gap="8" vertical="center">
-                        <Logo size="s" icon={true} href="/" />
+                        <Logo size="xl" icon={false} wordmarkSrc="/images/logo.webp" href="/" />
                         <Row paddingLeft="24" gap="8">
                             <Button
                                 weight="default"
@@ -126,7 +201,6 @@ export default function Home() {
                 </Row>
             </Row>
 
-            {/* Main content */}
             <Column
                 overflow="hidden"
                 as="main"
@@ -135,7 +209,6 @@ export default function Home() {
                 horizontal="center"
                 fillWidth
             >
-                {/* Hero section */}
                 <Column
                     fillWidth
                     horizontal="center"
@@ -147,10 +220,7 @@ export default function Home() {
                     position="relative"
                 >
                     <Background
-                        mask={{
-                            x: 0,
-                            y: 48,
-                        }}
+                        mask={{ x: 0, y: 48 }}
                         position="absolute"
                         grid={{
                             display: true,
@@ -160,11 +230,7 @@ export default function Home() {
                         }}
                     />
                     <Background
-                        mask={{
-                            x: 80,
-                            y: 0,
-                            radius: 100,
-                        }}
+                        mask={{ x: 80, y: 0, radius: 100 }}
                         position="absolute"
                         gradient={{
                             display: true,
@@ -178,11 +244,7 @@ export default function Home() {
                         }}
                     />
                     <Background
-                        mask={{
-                            x: 100,
-                            y: 0,
-                            radius: 100,
-                        }}
+                        mask={{ x: 100, y: 0, radius: 100 }}
                         position="absolute"
                         gradient={{
                             display: true,
@@ -233,210 +295,104 @@ export default function Home() {
                     </Column>
                 </Column>
 
-                {/* Features section */}
                 <Column
                     fillWidth
                     paddingX="32"
                     paddingY="64"
-                    gap="64"
+                    gap="48"
                     horizontal="center"
                     position="relative"
                 >
                     <Background mask={{ x: 50, y: 0, radius: 50 }}>
                         <Line maxWidth="l" background="neutral-alpha-medium" />
                     </Background>
-
-                    <Column fillWidth gap="32" horizontal="center">
-                        <Heading as="h2" variant="display-strong-m" align="center">
-                            Why Choose Mailbuddy
-                        </Heading>
-
-                        <Row gap="24" fillWidth marginTop="32" mobileDirection="column">
-                            <Card
-                                direction="column"
-                                fillWidth
-                                padding="32"
-                                gap="16"
-                                radius="xl"
-                                border="neutral-alpha-weak"
-                            >
-                                <Icon name="shield" size="s" color="brand-medium" />
-                                <Heading as="h3" variant="heading-strong-m">
-                                    Privacy First
-                                </Heading>
-                                <Text
-                                    variant="body-default-s"
-                                    onBackground="neutral-weak"
-                                    wrap="balance"
-                                >
-                                    End-to-end encryption keeps your emails secure and private, with
-                                    zero access to your data.
-                                </Text>
-                            </Card>
-
-                            <Card
-                                direction="column"
-                                fillWidth
-                                padding="32"
-                                gap="16"
-                                radius="xl"
-                                border="neutral-alpha-weak"
-                            >
-                                <Icon name="bolt" size="s" color="brand-medium" />
-                                <Heading as="h3" variant="heading-strong-m">
-                                    Lightning Fast
-                                </Heading>
-                                <Text
-                                    variant="body-default-s"
-                                    onBackground="neutral-weak"
-                                    wrap="balance"
-                                >
-                                    Optimized performance for quick loading and responsiveness even
-                                    with thousands of emails.
-                                </Text>
-                            </Card>
-
-                            <Card
-                                direction="column"
-                                fillWidth
-                                padding="32"
-                                gap="16"
-                                radius="xl"
-                                border="neutral-alpha-weak"
-                            >
-                                <Icon name="layout" size="s" color="brand-medium" />
-                                <Heading as="h3" variant="heading-strong-m">
-                                    Intuitive Interface
-                                </Heading>
-                                <Text
-                                    variant="body-default-s"
-                                    onBackground="neutral-weak"
-                                    wrap="balance"
-                                >
-                                    Clean, modern design that makes email management feel effortless
-                                    and enjoyable.
-                                </Text>
-                            </Card>
-                        </Row>
-                    </Column>
-                </Column>
-
-                {/* How it works section */}
-                <Column
-                    fillWidth
-                    paddingX="32"
-                    paddingY="64"
-                    gap="64"
-                    horizontal="center"
-                    position="relative"
-                    background="overlay"
-                >
-                    <Background mask={{ x: 50, y: 0, radius: 50 }}>
-                        <Line maxWidth="l" background="neutral-alpha-medium" />
-                    </Background>
+                    
                     <Column fillWidth gap="32" horizontal="center" maxWidth="l">
                         <Heading as="h2" variant="display-strong-m" align="center">
-                            How Mailbuddy Works
+                            Join Our Wishlist
                         </Heading>
-
-                        <Row
-                            gap="64"
-                            fillWidth
-                            marginTop="32"
-                            mobileDirection="column"
-                            vertical="center"
+                        
+                        <Column horizontal="center" gap="16">
+                            <Text
+                                variant="heading-strong-s"
+                                align="center"
+                                marginBottom="8"
+                                wrap="balance"
+                            >
+                                <span style={{ color: "var(--brand-on-background-strong)" }}>
+                                    {userCount.toLocaleString()}
+                                </span> people are already waiting
+                            </Text>
+                            <Text
+                                variant="body-default-m"
+                                align="center"
+                                onBackground="neutral-medium"
+                                style={{ maxWidth: '32rem' }}
+                                wrap="balance"
+                            >
+                                Be the first to know when we launch new features and get early access to our premium tiers.
+                            </Text>
+                        </Column>
+                        
+                        <Card
+                            padding="l"
+                            radius="l"
+                            maxWidth={32}
+                            background="neutral-alpha-weak"
+                            border="neutral-alpha-medium"
                         >
-                            <Column gap="24" fillWidth>
-                                <Row gap="24" vertical="center">
-                                    <Row
-                                        radius="full"
-                                        background="neutral-medium"
-                                        border="neutral-alpha-weak"
-                                        minWidth="40"
-                                        height="40"
-                                        center
+                            {submitted ? (
+                                <Column gap="16" horizontal="center" paddingY="24">
+                                    <Icon 
+                                        name={alreadySubscribed ? "info" : "checkCircle"} 
+                                        size="l" 
+                                        color={alreadySubscribed ? "info" : "success"} 
+                                    />
+                                    <Heading 
+                                        variant="heading-strong-m" 
+                                        align="center"
                                     >
-                                        <Text onSolid="neutral-strong" variant="body-default-m">
-                                            1
-                                        </Text>
-                                    </Row>
-                                    <Heading as="h3" variant="heading-strong-m">
-                                        Connect Your Gmail
+                                        {alreadySubscribed ? "Already subscribed" : "Thank you!"}
                                     </Heading>
-                                </Row>
-                                <Text
-                                    variant="body-default-s"
-                                    marginLeft="64"
-                                    onBackground="neutral-weak"
-                                    wrap="balance"
-                                >
-                                    Securely link your Gmail account with read-only access. We never
-                                    store your password.
-                                </Text>
-                            </Column>
-
-                            <Column gap="24" fillWidth>
-                                <Row gap="24" vertical="center">
-                                    <Row
-                                        radius="full"
-                                        background="neutral-medium"
-                                        border="neutral-alpha-weak"
-                                        minWidth="40"
-                                        height="40"
-                                        center
+                                    <Text 
+                                        variant="body-default-m" 
+                                        align="center" 
+                                        onBackground="neutral-medium"
                                     >
-                                        <Text onSolid="neutral-strong" variant="body-strong-m">
-                                            2
-                                        </Text>
-                                    </Row>
-                                    <Heading as="h3" variant="heading-strong-m">
-                                        Encrypt Your Data
-                                    </Heading>
-                                </Row>
-                                <Text
-                                    variant="body-default-s"
-                                    marginLeft="64"
-                                    onBackground="neutral-weak"
-                                    wrap="balance"
-                                >
-                                    Your emails are automatically encrypted with keys only you
-                                    control.
-                                </Text>
-                            </Column>
-
-                            <Column gap="24" fillWidth>
-                                <Row gap="24" vertical="center">
-                                    <Row
-                                        radius="full"
-                                        background="neutral-medium"
-                                        border="neutral-alpha-weak"
-                                        minWidth="40"
-                                        height="40"
-                                        center
-                                    >
-                                        <Text onSolid="neutral-strong" variant="body-strong-m">
-                                            3
-                                        </Text>
-                                    </Row>
-                                    <Heading as="h3" variant="heading-strong-m">
-                                        Enjoy Your Inbox
-                                    </Heading>
-                                </Row>
-                                <Text
-                                    variant="body-default-s"
-                                    marginLeft="64"
-                                    onBackground="neutral-weak"
-                                    wrap="balance"
-                                >
-                                    Browse, search, and manage your emails with confidence and peace
-                                    of mind.
-                                </Text>
-                            </Column>
-                        </Row>
+                                        {alreadySubscribed 
+                                            ? "This email is already on our wishlist. We'll keep you updated on our progress."
+                                            : "You've been added to our wishlist. We'll keep you updated on our progress and upcoming features."
+                                        }
+                                    </Text>
+                                </Column>
+                            ) : (
+                                <form onSubmit={handleWishlistSubmit}>
+                                    <Column gap="16">
+                                        <Input
+                                            id="wishlist-email"
+                                            label="Your email address"
+                                            type="email"
+                                            value={wishlistEmail}
+                                            onChange={(e) => setWishlistEmail(e.target.value)}
+                                            required
+                                            error={submitError ? true : undefined}
+                                            errorMessage={submitError}
+                                            placeholder="example@email.com"
+                                        />
+                                        <Button
+                                            type="submit"
+                                            variant="primary"
+                                            label={isSubmitting ? "Adding you..." : "Join Wishlist"}
+                                            loading={isSubmitting}
+                                            fillWidth
+                                        />
+                                    </Column>
+                                </form>
+                            )}
+                        </Card>
                     </Column>
                 </Column>
 
-                {/* CTA section */}
                 <Column
                     fillWidth
                     paddingX="32"
@@ -474,18 +430,17 @@ export default function Home() {
                 <Line background="neutral-alpha-medium" />
             </Background>
 
-            {/* Footer */}
             <Row
                 as="footer"
                 maxWidth="l"
                 paddingX="32"
-                paddingY="64"
+                paddingY="48"
                 gap="64"
                 mobileDirection="column"
-                marginTop="64"
+                marginTop="48"
             >
                 <Column gap="24" maxWidth={24}>
-                    <Logo size="m" />
+                    <Logo wordmarkSrc="/images/logo.webp" size="xl" icon={false} />
                     <Text variant="label-default-s" onBackground="neutral-medium" wrap="balance">
                         Your secure email companion that makes managing Gmail simple and efficient.
                     </Text>
