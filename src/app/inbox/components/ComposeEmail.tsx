@@ -240,7 +240,7 @@ export function ComposeEmail({
     <Row
       padding="0"
       maxWidth={40}
-      height={48}
+      maxHeight={48}
       overflow="hidden"
       background="neutral-weak"
       border="neutral-alpha-medium"
@@ -255,8 +255,8 @@ export function ComposeEmail({
           <Row
             horizontal="space-between"
             vertical="center"
-            paddingY="12"
-            paddingX="24"
+            paddingY="8"
+            paddingX="16"
             background="neutral-alpha-weak"
             borderBottom="neutral-alpha-medium"
           >

@@ -36,7 +36,7 @@ export function EmailList({
     // If no emails, show empty state
     if (emails.length === 0) {
         return (
-            <Column fill center padding="64" horizontal="center" vertical="center" gap="16">
+            <Column fill center padding="64" horizontal="center" vertical="center" gap="16" border="neutral-alpha-medium" bottomRadius="m">
                 <Icon name="inbox" size="m" />
                 <Text variant="heading-strong-m">Your inbox is empty</Text>
                 {searchQuery && (
