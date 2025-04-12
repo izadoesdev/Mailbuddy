@@ -10,6 +10,7 @@ interface EmailListProps {
     searchQuery: string;
     onSelectEmail: (email: Email) => void;
     onToggleStar: (email: Email, e: React.MouseEvent<HTMLButtonElement>) => void;
+    onTrash?: (email: Email) => void;
 }
 
 export function EmailList({
@@ -19,6 +20,7 @@ export function EmailList({
     searchQuery,
     onSelectEmail,
     onToggleStar,
+    onTrash,
 }: EmailListProps) {
     // If loading, show skeletons
     if (isLoading) {
@@ -53,16 +55,16 @@ export function EmailList({
                 {emails.map((email, index) => (
                     <Column fillWidth key={email.id}>
                         <EmailItem
-                            key={email.id}
-                        email={email}
-                        index={index}
-                        isSelected={selectedEmailId === email.id}
-                        totalEmails={emails.length}
-                        onSelect={onSelectEmail}
-                        onToggleStar={onToggleStar}
-                    />
-                </Column>
-            ))}
+                            email={email}
+                            index={index}
+                            isSelected={selectedEmailId === email.id}
+                            totalEmails={emails.length}
+                            onSelect={onSelectEmail}
+                            onToggleStar={onToggleStar}
+                            onTrash={onTrash}
+                        />
+                    </Column>
+                ))}
             </Column>
         </Column>
     );

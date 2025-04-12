@@ -40,7 +40,7 @@ import {
 
 import { RiVisaLine } from "react-icons/ri";
 
-import { FaDiscord, FaGithub, FaGoogle, FaLinkedin, FaTwitter } from "react-icons/fa6";
+import { FaDiscord, FaGithub, FaGoogle, FaLinkedin, FaTrash, FaTwitter } from "react-icons/fa6";
 
 import { LuChevronsLeftRight } from "react-icons/lu";
 
@@ -88,7 +88,8 @@ export const iconLibrary: Record<string, IconType> = {
     star: HiOutlineStar,
     cloud: HiOutlineCloud,
     list: HiOutlineListBullet,
-    starFill: HiStar
+    starFill: HiStar,
+    trash: FaTrash,
 };
 
 export type IconLibrary = typeof iconLibrary;

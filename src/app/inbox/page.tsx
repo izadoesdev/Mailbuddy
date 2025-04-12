@@ -169,7 +169,7 @@ function InboxPage() {
         useAISearch();
 
     // Pass authentication state to hooks
-    const { markAsRead, toggleStar } = useEmailMutations({ enabled: isAuthenticated });
+    const { markAsRead, toggleStar, trashEmail } = useEmailMutations({ enabled: isAuthenticated });
     const { triggerSync, isSyncing } = useBackgroundSync({ enabled: isAuthenticated });
 
     // Trigger a sync when the inbox is first loaded, but only once
@@ -202,6 +202,14 @@ function InboxPage() {
             });
         },
         [toggleStar],
+    );
+
+    // Handle trash email
+    const handleTrash = useCallback(
+        (email: Email) => {
+            trashEmail.mutate(email.id);
+        },
+        [trashEmail],
     );
 
     // Handle search
@@ -491,6 +499,7 @@ function InboxPage() {
                         searchQuery={debouncedSearchQuery}
                         onSelectEmail={handleEmailSelect}
                         onToggleStar={handleToggleStar}
+                        onTrash={handleTrash}
                     />
                     <Pagination
                         page={page}
@@ -527,6 +536,7 @@ function InboxPage() {
                         onToggleStar={handleToggleStar}
                         onReply={handleReply}
                         onForward={handleForward}
+                        onTrash={handleTrash}
                     />
                 </Column>
             )}

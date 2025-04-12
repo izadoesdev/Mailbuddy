@@ -88,6 +88,59 @@ export function useEmailMutations({ enabled = true } = {}) {
         },
     });
 
+    // Trash email mutation
+    const trashEmail = useMutation<string, Error, string>({
+        mutationFn: async (emailId: string) => {
+            const response = await fetch(`/api/emails/${emailId}/trash`, {
+                method: "PUT",
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || "Failed to move email to trash");
+            }
+            return emailId;
+        },
+        onSuccess: (emailId, _, context) => {
+            // Optimistic update for immediate UI feedback
+            const queries = queryClient.getQueriesData({ queryKey: ["emails"] });
+
+            for (const [queryKey, queryData] of queries) {
+                if (queryData && typeof queryData === "object" && "emails" in queryData) {
+                    const data = queryData as { emails: Email[] };
+
+                    // Remove the trashed email from the UI immediately
+                    queryClient.setQueryData(queryKey, {
+                        ...queryData,
+                        emails: data.emails.filter((email) => email.id !== emailId),
+                    });
+                }
+            }
+
+            // Invalidate queries to update counts
+            queryClient.invalidateQueries({ queryKey: ["emails"] });
+            
+            // Show success message
+            queryClient.setQueryData(["toasts"], [
+                {
+                    id: Date.now().toString(),
+                    variant: "success",
+                    message: "Email moved to trash"
+                }
+            ]);
+        },
+        onError: (error) => {
+            // Show error message
+            queryClient.setQueryData(["toasts"], [
+                {
+                    id: Date.now().toString(),
+                    variant: "danger",
+                    message: error instanceof Error ? error.message : "Failed to move email to trash"
+                }
+            ]);
+        }
+    });
+
     // Send email mutation
     const sendEmail = useMutation<SendEmailParams, Error, SendEmailParams>({
         mutationFn: async (emailData: SendEmailParams) => {
@@ -142,6 +195,21 @@ export function useEmailMutations({ enabled = true } = {}) {
         },
     };
 
+    const safeTrashEmail = {
+        ...trashEmail,
+        mutate: (emailId: string) => {
+            if (enabled) {
+                trashEmail.mutate(emailId);
+            }
+        },
+        mutateAsync: async (emailId: string) => {
+            if (enabled) {
+                return await trashEmail.mutateAsync(emailId);
+            }
+            return emailId;
+        },
+    };
+
     const safeSendEmail = {
         ...sendEmail,
         mutate: (params: SendEmailParams) => {
@@ -160,6 +228,7 @@ export function useEmailMutations({ enabled = true } = {}) {
     return {
         markAsRead: safeMarkAsRead,
         toggleStar: safeToggleStar,
+        trashEmail: safeTrashEmail,
         sendEmail: safeSendEmail,
     };
 }

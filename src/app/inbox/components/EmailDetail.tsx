@@ -24,6 +24,7 @@ interface EmailDetailProps {
     onToggleStar?: (email: Email, e: React.MouseEvent<HTMLButtonElement>) => void;
     onReply?: (email: Email) => void;
     onForward?: (email: Email) => void;
+    onTrash?: (email: Email) => void;
 }
 
 export function EmailDetail({ 
@@ -31,7 +32,8 @@ export function EmailDetail({
     onClose, 
     onToggleStar,
     onReply,
-    onForward 
+    onForward,
+    onTrash 
 }: EmailDetailProps) {
     const senderName = extractName(email.from ?? "");
     
@@ -53,6 +55,13 @@ export function EmailDetail({
         e.stopPropagation();
         if (onForward) {
             onForward(email);
+        }
+    };
+
+    const handleTrashClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
+        if (onTrash) {
+            onTrash(email);
         }
     };
 
@@ -94,13 +103,25 @@ export function EmailDetail({
                             onClick={handleStarClick}
                         />
                     </Row>
-                    <IconButton
-                        tooltip="Close"
-                        tooltipPosition="left"
-                        variant="ghost"
-                        icon="close"
-                        onClick={onClose}
-                    />
+                    <Row gap="8">
+                        {onTrash && (
+                            <IconButton
+                                tooltip="Move to trash"
+                                tooltipPosition="bottom"
+                                variant="ghost"
+                                icon="trash"
+                                color="danger"
+                                onClick={handleTrashClick}
+                            />
+                        )}
+                        <IconButton
+                            tooltip="Close"
+                            tooltipPosition="left"
+                            variant="ghost"
+                            icon="close"
+                            onClick={onClose}
+                        />
+                    </Row>
                 </Row>
                 <Column fill overflowY="auto" paddingY="12" gap="16">
                 <Row gap="16" vertical="center" paddingX="24" fillWidth fitHeight>
