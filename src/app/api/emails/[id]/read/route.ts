@@ -42,6 +42,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
                 id,
                 userId,
             },
+            select: {
+                labels: true,
+                isRead: true,
+                id: true
+            },
         });
 
         if (!email) {
@@ -93,10 +98,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             data: {
                 isRead: true,
                 labels: {
-                    push: ["UNREAD"],
+                    set: email.labels.filter(label => label !== "UNREAD"),
                 },
             },
         });
+        console.log(updatedEmail);
 
         log(`Successfully marked email ${id} as read`);
 
