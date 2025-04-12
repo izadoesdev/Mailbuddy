@@ -39,6 +39,17 @@ export const auth = betterAuth({
             });
           },
     },
+    emailVerification: {
+        autoSignInAfterVerification: true,
+        sendVerificationEmail: async ({user, url, token}, request) => {
+            await resend.emails.send({
+                from: "noreply@mailbuddy.dev",
+                to: user.email,
+                subject: "Verify your email",
+                html: `<p>Click <a href="${url}">here</a> to verify your email</p>`,
+            });
+        },
+    },
     session: {
         expiresIn: 60 * 60 * 24 * 30, // 30 days
         updateAge: 60 * 60 * 24, // 1 day

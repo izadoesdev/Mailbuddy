@@ -19,6 +19,13 @@ import {
 } from "@/once-ui/components";
 import { authClient, signIn } from "@/libs/auth/client";
 
+// Define a proper error interface
+interface AuthError {
+    message?: string;
+    code?: string;
+    [key: string]: any;
+}
+
 export default function LoginPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -26,7 +33,7 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [view, setView] = useState<"options" | "password" | "magic" | "forgot" | "magic-sent">("options");
+    const [view, setView] = useState<"options" | "password" | "magic" | "forgot" | "magic-sent" | "verification-needed">("options");
     const [verifyingToken, setVerifyingToken] = useState(false);
 
     // Check for magic link token in URL
@@ -116,16 +123,57 @@ export default function LoginPage() {
                     });
                     router.push("/inbox");
                 },
-                onError: (error) => {
+                onError: (error: any) => {
                     setIsLoading(false);
-                    console.log(error);
-                    addToast({
-                        variant: "danger",
-                        message: "Login failed. Please check your credentials and try again.",
-                    });
+                    // Check if this is an email verification error
+                    if (
+                        error?.code === "EMAIL_NOT_VERIFIED" || 
+                        error?.message?.toLowerCase().includes("not verified") ||
+                        error?.code === "auth/email-not-verified"
+                    ) {
+                        // Show verification needed view instead of error toast
+                        setView("verification-needed");
+                        // Send verification email automatically - no need to show an extra toast since we're showing the verification screen
+                        // sendVerificatio nEmail();
+                    } else {
+                        addToast({
+                            variant: "danger",
+                            message: error?.message || "Login failed. Please check your credentials and try again.",
+                        });
+                    }
                 },
             },
         });
+    };
+
+    /**
+     * Send verification email to the user
+     */
+    const sendVerificationEmail = async () => {
+        try {
+            // First check if the API has a dedicated email verification sending method
+                await authClient.sendVerificationEmail({
+                    email,
+                    fetchOptions: {
+                        onSuccess: () => {
+                            addToast({
+                                variant: "success",
+                                message: "Verification email sent!",
+                            });
+                        },
+                        onError: () => {
+                            addToast({
+                                variant: "danger",
+                                message: "Failed to send verification email. Please try again later.",
+                            });
+                        }
+                    }
+                });
+                // Fallback to using the auth provider's method
+                console.log("Email verification method not available");
+        } catch (error) {
+            console.error("Error sending verification email:", error);
+        }
     };
 
     const handleMagicLinkLogin = async (e: React.FormEvent) => {
@@ -354,6 +402,29 @@ export default function LoginPage() {
                     </Column>
                 );
                 
+            case "verification-needed":
+                return (
+                    <Column gap="24" fillWidth horizontal="center">
+                        <div style={{ fontSize: "48px" }}>✉️</div>
+                        <Text variant="heading-strong-s" align="center">
+                            Email verification required
+                        </Text>
+                        <Text variant="body-default-m" align="center">
+                            We've sent a verification link to <strong>{email}</strong>
+                        </Text>
+                        <Text variant="body-default-s" align="center" onBackground="neutral-medium">
+                            Please check your inbox and verify your email to continue
+                        </Text>
+                        <Button
+                            label="Back to sign in"
+                            variant="secondary"
+                            onClick={() => setView("options")}
+                            type="button"
+                            style={{ marginTop: "24px" }}
+                        />
+                    </Column>
+                );
+                
             default: // options
                 return (
                     <Column gap="16" fillWidth>
@@ -441,6 +512,26 @@ export default function LoginPage() {
                         </Text>
                     </>
                 );
+            case "verification-needed":
+                return (
+                    <>
+                        <Heading
+                            as="h1"
+                            variant="display-strong-xs"
+                            align="center"
+                            marginTop="24"
+                        >
+                            Verify your email
+                        </Heading>
+                        <Text
+                            onBackground="neutral-medium"
+                            marginBottom="24"
+                            align="center"
+                        >
+                            Your account needs verification
+                        </Text>
+                    </>
+                );
             default:
                 return (
                     <>
@@ -520,7 +611,7 @@ export default function LoginPage() {
 
                                 {renderForm()}
 
-                                {view !== "magic-sent" && (
+                                {view !== "magic-sent" && view !== "verification-needed" && (
                                     <Row paddingTop="32" horizontal="center">
                                         <Text variant="body-default-s" onBackground="neutral-medium">
                                             Don't have an account?&nbsp;

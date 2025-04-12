@@ -37,7 +37,7 @@ export default function RegisterPage() {
     const [otp, setOtp] = useState("");
     
     // View state - consolidated to a single state
-    const [view, setView] = useState<"options" | "password" | "magic" | "otp" | "magic-sent">("options");
+    const [view, setView] = useState<"options" | "password" | "magic" | "otp" | "magic-sent" | "verification-sent">("options");
 
     /**
      * Handle Google sign up
@@ -99,9 +99,10 @@ export default function RegisterPage() {
                         setIsLoading(false);
                         addToast({
                             variant: "success",
-                            message: "Verification code sent to your email.",
+                            message: "Registration successful! Please verify your email.",
                         });
-                        setView("otp");
+                        // Show verification sent view
+                        setView("verification-sent");
                     },
                     onError: (error: ApiError) => {
                         setIsLoading(false);
@@ -389,6 +390,31 @@ export default function RegisterPage() {
                     </Column>
                 );
                 
+            case "verification-sent":
+                return (
+                    <Column gap="24" fillWidth horizontal="center">
+                        <div style={{ fontSize: "48px" }}>
+                            ✉️
+                        </div>
+                        <Text variant="heading-strong-s" align="center">
+                            Check your email
+                        </Text>
+                        <Text variant="body-default-m" align="center">
+                            We've sent a verification link to <strong>{email}</strong>
+                        </Text>
+                        <Text variant="body-default-s" align="center" onBackground="neutral-medium">
+                            Please verify your email to activate your account
+                        </Text>
+                        <Button
+                            label="Go to sign in"
+                            variant="primary"
+                            onClick={() => router.push("/login")}
+                            type="button"
+                            style={{ marginTop: "24px" }}
+                        />
+                    </Column>
+                );
+                
             default: // options
                 return (
                     <Column gap="16" fillWidth>
@@ -476,6 +502,26 @@ export default function RegisterPage() {
                         </Text>
                     </>
                 );
+            case "verification-sent":
+                return (
+                    <>
+                        <Heading
+                            as="h1"
+                            variant="display-strong-xs"
+                            align="center"
+                            marginTop="24"
+                        >
+                            Verify your email
+                        </Heading>
+                        <Text
+                            onBackground="neutral-medium"
+                            marginBottom="24"
+                            align="center"
+                        >
+                            Your account has been created
+                        </Text>
+                    </>
+                );
             default:
                 return (
                     <>
@@ -555,7 +601,7 @@ export default function RegisterPage() {
                                 
                                 {renderForm()}
 
-                                {view !== "otp" && view !== "magic-sent" && (
+                                {view !== "otp" && view !== "magic-sent" && view !== "verification-sent" && (
                                     <Row paddingTop="32" horizontal="center">
                                         <Text variant="body-default-s" onBackground="neutral-medium">
                                             Already have an account?&nbsp;
