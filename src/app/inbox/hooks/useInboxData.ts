@@ -6,7 +6,6 @@ import { useEffect, useRef } from "react";
 interface FetchEmailsParams {
     page: number;
     pageSize: number;
-    threadView: boolean;
     searchQuery?: string;
     category?: string;
     pageToken?: string | null;
@@ -22,7 +21,7 @@ const fetchEmails = async ({
     searchQuery,
     category,
     pageToken,
-}: Omit<FetchEmailsParams, "enabled" | "threadView">): Promise<InboxResponse> => {
+}: Omit<FetchEmailsParams, "enabled">): Promise<InboxResponse> => {
     try {
         const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : "";
         const categoryParam = category ? `&category=${encodeURIComponent(category)}` : "";
@@ -101,7 +100,6 @@ const fetchEmails = async ({
 export function useInboxData({
     page,
     pageSize,
-    threadView,
     searchQuery,
     category,
     pageToken,

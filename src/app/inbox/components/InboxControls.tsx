@@ -5,47 +5,57 @@ import {
     Input,
     Icon,
     Button,
-    Select,
     Tooltip,
     IconButton,
     DropdownWrapper,
-    Dropdown,
-    Option,
     Column,
     Avatar,
 } from "@/once-ui/components";
 
+interface CategoryOption {
+    value: string;
+    label: string;
+}
+
 interface InboxControlsProps {
     searchQuery: string;
     onSearchChange: (value: string) => void;
-    pageSize: number;
-    onPageSizeChange: (value: number) => void;
+    pageSize?: number;
+    onPageSizeChange?: (value: number) => void;
     onRefresh: () => void;
     onSync?: () => void;
     isSyncing?: boolean;
     isLoading: boolean;
-    isFetching: boolean;
+    isFetching?: boolean;
     // AI Search props
     onAISearch?: (query: string) => void;
     onClearAISearch?: () => void;
     isAISearchActive?: boolean;
     isAISearchLoading?: boolean;
+    // Category selection
+    currentCategory?: string;
+    categoryOptions?: CategoryOption[];
+    onCategoryChange?: (value: string) => void;
+    // Compose new email
+    onNewEmail?: () => void;
 }
 
 export function InboxControls({
     searchQuery,
     onSearchChange,
-    pageSize,
-    onPageSizeChange,
     onRefresh,
     onSync,
     isSyncing = false,
     isLoading,
-    isFetching,
+    isFetching = false,
     onAISearch,
     onClearAISearch,
     isAISearchActive = false,
     isAISearchLoading = false,
+    currentCategory = "inbox",
+    categoryOptions = [],
+    onCategoryChange,
+    onNewEmail,
 }: InboxControlsProps) {
     // Local search state to handle AI search button clicks
     const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
@@ -73,6 +83,13 @@ export function InboxControls({
     const handleClearAISearch = () => {
         if (onClearAISearch) {
             onClearAISearch();
+        }
+    };
+
+    // Handle category change
+    const handleCategoryChange = (value: string) => {
+        if (onCategoryChange) {
+            onCategoryChange(value);
         }
     };
 
@@ -132,39 +149,49 @@ export function InboxControls({
                     />
                 ) : (
                     <>
+                        {onNewEmail && (
+                            <Button
+                                size="s"
+                                weight="default"
+                                label="Compose"
+                                prefixIcon="edit"
+                                variant="primary"
+                                onClick={onNewEmail}
+                            />
+                        )}
+                        
                         {onSync && (
                             <Button
                                 size="s"
                                 weight="default"
-                                label="Gmail sync"
-                                prefixIcon="cloud"
+                                label="Sync & Refresh"
+                                prefixIcon="refresh"
                                 variant="secondary"
-                                onClick={onSync}
+                                onClick={() => {
+                                    onSync();
+                                    onRefresh();
+                                }}
                                 disabled={isLoading || isFetching || isSyncing}
                                 loading={isSyncing}
                             />
                         )}
 
-                        <IconButton
-                            size="m"
-                            tooltip="Star selected"
-                            icon="star"
-                            variant="secondary"
-                            disabled={true}
-                        />
+                        {/* Simple category buttons row */}
+                        {categoryOptions.length > 0 && onCategoryChange && (
+                            <Row gap="8" wrap>
+                                {categoryOptions.map((option) => (
+                                    <Button
+                                        key={option.value}
+                                        onClick={() => handleCategoryChange(option.value)}
+                                        variant={currentCategory === option.value ? "primary" : "secondary"}
+                                        label={option.label}
+                                        size="s"
+                                    />
+                                ))}
+                            </Row>
+                        )}
                     </>
                 )}
-
-                <Row gap="8" fillWidth horizontal="end">
-                    <IconButton
-                        size="m"
-                        icon="refresh"
-                        tooltip="Refresh"
-                        variant="secondary"
-                        onClick={onRefresh}
-                        disabled={isLoading || isFetching}
-                    />
-                </Row>
             </Row>
         </>
     );

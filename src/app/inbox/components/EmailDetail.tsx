@@ -16,20 +16,43 @@ import {
 import type { Email } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
 import DOMPurify from "dompurify";
+import { useState } from "react";
 
 interface EmailDetailProps {
     email: Email;
     onClose: () => void;
     onToggleStar?: (email: Email, e: React.MouseEvent<HTMLButtonElement>) => void;
+    onReply?: (email: Email) => void;
+    onForward?: (email: Email) => void;
 }
 
-export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) {
+export function EmailDetail({ 
+    email, 
+    onClose, 
+    onToggleStar,
+    onReply,
+    onForward 
+}: EmailDetailProps) {
     const senderName = extractName(email.from ?? "");
-
+    
     const handleStarClick = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
         if (onToggleStar) {
             onToggleStar(email, e);
+        }
+    };
+
+    const handleReplyClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
+        if (onReply) {
+            onReply(email);
+        }
+    };
+
+    const handleForwardClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
+        if (onForward) {
+            onForward(email);
         }
     };
 
@@ -182,8 +205,17 @@ export function EmailDetail({ email, onClose, onToggleStar }: EmailDetailProps) 
                     paddingY="8"
                     paddingX="16"
                 >
-                    <Button variant="secondary" label="Forward" prefixIcon="arrowRight" />
-                    <Button label="Reply" prefixIcon="reply" />
+                    <Button 
+                        variant="secondary" 
+                        label="Forward" 
+                        prefixIcon="arrowRight" 
+                        onClick={handleForwardClick}
+                    />
+                    <Button 
+                        label="Reply" 
+                        prefixIcon="reply" 
+                        onClick={handleReplyClick}
+                    />
                 </Row>
             </Column>
         </Column>

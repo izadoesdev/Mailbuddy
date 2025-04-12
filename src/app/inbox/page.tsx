@@ -16,6 +16,7 @@ import { useState, useCallback, useEffect, useRef, Suspense } from "react";
 import { useUser } from "@/libs/auth/client";
 import { redirect, useRouter } from "next/navigation";
 import { createParser, useQueryState } from "nuqs";
+import { ComposeEmail } from "./components/ComposeEmail";
 
 type CategoryOption = {
     value: string;
@@ -73,7 +74,6 @@ function InboxPage() {
 
     // Local state
     const [searchQuery, setSearchQuery] = useState("");
-    const [threadView, setThreadView] = useState(true);
     const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const hasSyncedRef = useRef(false);
@@ -82,6 +82,11 @@ function InboxPage() {
     const queryClient = useQueryClient();
     const { addToast } = useToast();
     const isAuthenticated = !!user && !isAuthLoading;
+
+    // Initialize state for compose email dialog
+    const [isComposingEmail, setIsComposingEmail] = useState(false);
+    const [replyTo, setReplyTo] = useState<Email | null>(null);
+    const [forwardFrom, setForwardFrom] = useState<Email | null>(null);
 
     // Redirect to login if not authenticated
     useEffect(() => {
@@ -94,7 +99,6 @@ function InboxPage() {
     const { emails, totalPages, totalCount, nextPageToken, isLoading, isFetching } = useInboxData({
         page,
         pageSize,
-        threadView,
         searchQuery: debouncedSearchQuery,
         category: currentCategory,
         pageToken,
@@ -193,12 +197,6 @@ function InboxPage() {
         setPage(1);
     }, [setPageSize, setPage]);
 
-    // Toggle thread view
-    const handleThreadViewChange = useCallback(() => {
-        setThreadView((prev) => !prev);
-        setPage(1);
-    }, [setPage]);
-
     // Handle refresh
     const handleRefresh = useCallback(() => {
         queryClient.invalidateQueries({ queryKey: ["emails"] });
@@ -222,13 +220,104 @@ function InboxPage() {
     const displayEmails = isAISearchActive ? similarEmails : emails;
     const displayTotalCount = isAISearchActive ? similarEmails.length : totalCount;
 
+    const handleNewEmail = useCallback(() => {
+        setIsComposingEmail(true);
+        setReplyTo(null);
+        setForwardFrom(null);
+    }, []);
+
+    const handleReply = useCallback((email: Email) => {
+        setReplyTo(email);
+        setForwardFrom(null);
+        setIsComposingEmail(true);
+    }, []);
+
+    const handleForward = useCallback((email: Email) => {
+        setForwardFrom(email);
+        setReplyTo(null);
+        setIsComposingEmail(true);
+    }, []);
+
+    const handleCloseCompose = useCallback(() => {
+        setIsComposingEmail(false);
+        setReplyTo(null);
+        setForwardFrom(null);
+    }, []);
+
+    const handleEmailSent = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: ["emails"] });
+    }, [queryClient]);
+
+    // Create initial values for compose email
+    const getComposeEmailProps = useCallback(() => {
+        // For reply
+        if (replyTo) {
+            const subject = (replyTo.subject || "").startsWith("Re:") 
+                ? (replyTo.subject || "") 
+                : `Re: ${replyTo.subject || ""}`;
+            
+            const originalSender = replyTo.from || "";
+            
+            // Format reply body with original message
+            const replyBody = `
+                <br/><br/>
+                <div style="padding-left: 20px; border-left: 3px solid #e0e0e0;">
+                    <p>On ${new Date(replyTo.createdAt || new Date()).toLocaleString()}, ${originalSender} wrote:</p>
+                    <div>${replyTo.body || ""}</div>
+                </div>
+            `;
+            
+            return {
+                initialTo: originalSender,
+                initialSubject: subject,
+                initialBody: replyBody,
+                threadId: replyTo.threadId
+            };
+        }
+        
+        // For forward
+        if (forwardFrom) {
+            const subject = (forwardFrom.subject || "").startsWith("Fwd:") 
+                ? (forwardFrom.subject || "") 
+                : `Fwd: ${forwardFrom.subject || ""}`;
+            
+            // Format forward body with original message
+            const forwardBody = `
+                <br/><br/>
+                <div style="padding: 10px; border-top: 1px solid #e0e0e0;">
+                    <p>---------- Forwarded message ---------</p>
+                    <p>From: ${forwardFrom.from || ""}</p>
+                    <p>Date: ${new Date(forwardFrom.createdAt || new Date()).toLocaleString()}</p>
+                    <p>Subject: ${forwardFrom.subject || ""}</p>
+                    <p>To: ${forwardFrom.to || ""}</p>
+                    <div>${forwardFrom.body || ""}</div>
+                </div>
+            `;
+            
+            return {
+                initialTo: "",
+                initialSubject: subject,
+                initialBody: forwardBody,
+                threadId: undefined // Start a new thread for forwards
+            };
+        }
+        
+        // Default for new email
+        return {
+            initialTo: "",
+            initialSubject: "",
+            initialBody: "",
+            threadId: undefined
+        };
+    }, [replyTo, forwardFrom]);
+
     // Conditional rendering logic
     if (isAuthLoading) {
         return (
             <Column fill paddingY="20" horizontal="center" vertical="center">
                 <Text variant="heading-default-l">Loading...</Text>
             </Column>
-        );
+        );  
     }
 
     if (!user) {
@@ -252,25 +341,17 @@ function InboxPage() {
                     onRefresh={handleRefresh}
                     onSync={handleSync}
                     isSyncing={isSyncing}
-                    pageSize={pageSize}
-                    onPageSizeChange={handlePageSizeChange}
                     onAISearch={handleAISearch}
                     onClearAISearch={handleClearAISearch}
                     isAISearchActive={isAISearchActive}
                     isAISearchLoading={isAISearchLoading}
+                    currentCategory={currentCategory}
+                    categoryOptions={CATEGORY_OPTIONS}
+                    onCategoryChange={handleCategoryChange}
+                    onNewEmail={handleNewEmail}
+                    pageSize={pageSize}
+                    onPageSizeChange={handlePageSizeChange}
                 />
-
-                <Row marginY="16" gap="8" wrap>
-                    {CATEGORY_OPTIONS.map((option) => (
-                        <Button
-                            key={option.value}
-                            variant={currentCategory === option.value ? "primary" : "secondary"}
-                            onClick={() => handleCategoryChange(option.value)}
-                        >
-                            {option.label}
-                        </Button>
-                    ))}
-                </Row>
 
                 <Column fill overflow="hidden">
                     <EmailList
@@ -305,18 +386,27 @@ function InboxPage() {
 
             {selectedEmail && (
                 <Column
-                    fillWidth
                     style={{
                         width: "50%",
                         transition: "width 0.3s ease",
                     }}
                 >
-                    <EmailDetail 
-                        email={selectedEmail} 
-                        onClose={() => setSelectedEmail(null)} 
+                    <EmailDetail
+                        email={selectedEmail}
+                        onClose={() => setSelectedEmail(null)}
                         onToggleStar={handleToggleStar}
+                        onReply={handleReply}
+                        onForward={handleForward}
                     />
                 </Column>
+            )}
+
+            {isComposingEmail && (
+                <ComposeEmail
+                    {...getComposeEmailProps()}
+                    onClose={handleCloseCompose}
+                    onSuccess={handleEmailSent}
+                />
             )}
         </Row>
     );

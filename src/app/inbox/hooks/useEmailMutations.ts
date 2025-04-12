@@ -6,6 +6,15 @@ interface ToggleStarParams {
     isStarred: boolean;
 }
 
+interface SendEmailParams {
+    to: string;
+    cc?: string;
+    bcc?: string;
+    subject: string;
+    body: string;
+    threadId?: string;
+}
+
 /**
  * Hook for email-related mutations (mark as read, toggle star)
  * @param options Configuration options
@@ -79,6 +88,29 @@ export function useEmailMutations({ enabled = true } = {}) {
         },
     });
 
+    // Send email mutation
+    const sendEmail = useMutation<SendEmailParams, Error, SendEmailParams>({
+        mutationFn: async (emailData: SendEmailParams) => {
+            const response = await fetch('/api/inbox/send', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(emailData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || "Failed to send email");
+            }
+            return emailData;
+        },
+        onSuccess: (_, __, ___) => {
+            // Invalidate emails queries to refresh inbox
+            queryClient.invalidateQueries({ queryKey: ["emails"] });
+        },
+    });
+
     // Wrapper functions that respect the enabled flag
     const safeMarkAsRead = {
         ...markAsRead,
@@ -110,8 +142,24 @@ export function useEmailMutations({ enabled = true } = {}) {
         },
     };
 
+    const safeSendEmail = {
+        ...sendEmail,
+        mutate: (params: SendEmailParams) => {
+            if (enabled) {
+                sendEmail.mutate(params);
+            }
+        },
+        mutateAsync: async (params: SendEmailParams) => {
+            if (enabled) {
+                return await sendEmail.mutateAsync(params);
+            }
+            return params;
+        },
+    };
+
     return {
         markAsRead: safeMarkAsRead,
         toggleStar: safeToggleStar,
+        sendEmail: safeSendEmail,
     };
 }
