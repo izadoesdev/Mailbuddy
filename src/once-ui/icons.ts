@@ -39,6 +39,9 @@ import {
     HiOutlinePaperAirplane,
     HiPaperAirplane,
     HiEnvelope,
+    HiOutlineArrowLeft,
+    HiOutlineArrowRight,
+    HiOutlineClock,
 } from "react-icons/hi2";
 
 import { RiVisaLine } from "react-icons/ri";
@@ -96,6 +99,10 @@ export const iconLibrary: Record<string, IconType> = {
     trash: FaTrash,
     mail: HiEnvelope,
     link: HiOutlineLink,
+    arrowLeft: HiOutlineArrowLeft,
+    arrowRight: HiOutlineArrowRight,
+    clock: HiOutlineClock,
+    lightning: HiOutlineBolt,
 };
 
 export type IconLibrary = typeof iconLibrary;
