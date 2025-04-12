@@ -26,7 +26,7 @@ export function useEmailMutations({ enabled = true } = {}) {
         },
         onSuccess: (emailId, _, context) => {
             // Update email cache for all queries
-            queryClient.invalidateQueries({ queryKey: ["emails"] });
+            // queryClient.invalidateQueries({ queryKey: ["emails"] });
 
             // Optimistic update for immediate UI feedback
             const queries = queryClient.getQueriesData({ queryKey: ["emails"] });
@@ -59,7 +59,7 @@ export function useEmailMutations({ enabled = true } = {}) {
         },
         onSuccess: ({ emailId, isStarred }, _, context) => {
             // Update email cache for all queries
-            queryClient.invalidateQueries({ queryKey: ["emails"] });
+            // queryClient.invalidateQueries({ queryKey: ["emails"] });
 
             // Optimistic update for immediate UI feedback
             const queries = queryClient.getQueriesData({ queryKey: ["emails"] });
