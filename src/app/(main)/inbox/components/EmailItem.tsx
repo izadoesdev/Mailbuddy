@@ -12,7 +12,6 @@ import {
 } from "@/once-ui/components";
 import type { Email } from "../types";
 import { extractName, formatDate } from "../utils";
-import { useState, useMemo } from "react";
 
 // Priority levels and their corresponding colors
 const PRIORITY_COLORS: Record<string, "warning" | "info" | "success" | "danger" | "neutral"> = {
