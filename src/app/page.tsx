@@ -340,7 +340,7 @@ export default function Home() {
                             maxWidth={32}
                             background="neutral-alpha-weak"
                             border="neutral-alpha-medium"
-                        >
+                        > 
                             {submitted ? (
                                 <Column gap="16" horizontal="center" paddingY="24">
                                     <Icon 
@@ -377,7 +377,6 @@ export default function Home() {
                                             required
                                             error={submitError ? true : undefined}
                                             errorMessage={submitError}
-                                            placeholder="example@email.com"
                                         />
                                         <Button
                                             type="submit"
