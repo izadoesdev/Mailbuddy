@@ -2,8 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/libs/db";
 import { auth } from "@/libs/auth";
 import { headers } from "next/headers";
-import { google } from "googleapis";
-import env from "@/libs/env";
+import { withGmailApi } from "@/app/api/utils/withGmail";
 
 // Helper function to log messages
 const log = (message: string, ...args: any[]) => {
@@ -32,6 +31,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const userId = session.user.id;
     const accessToken = session.user.accessToken;
+    const refreshToken = session.user.refreshToken;
 
     try {
         // Get request body to determine star status
@@ -64,15 +64,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             });
         }
 
-        // Sync with Gmail - Add or remove STARRED label
-        if (accessToken) {
-            try {
-                const oauth2Client = new google.auth.OAuth2();
-                oauth2Client.setCredentials({ access_token: accessToken });
-                const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-
+        // Sync with Gmail - Add or remove STARRED label using withGmailApi helper
+        const gmailResult = await withGmailApi(
+            userId,
+            accessToken,
+            refreshToken,
+            async (gmail) => {
                 // Add or remove 'STARRED' label based on isStarred value
-                await gmail.users.messages.modify({
+                const response = await gmail.users.messages.modify({
                     userId: GMAIL_USER_ID,
                     id,
                     requestBody: {
@@ -84,12 +83,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
                 log(
                     `Successfully ${isStarred ? "added" : "removed"} STARRED label in Gmail for message ${id}`,
                 );
-            } catch (gmailError) {
-                log(`Error updating Gmail labels: ${gmailError}`);
-                // Continue with database update even if Gmail sync fails
+                
+                return response.data;
             }
-        } else {
-            log("No access token available for Gmail sync");
+        );
+
+        if (!gmailResult) {
+            log("Gmail API operation failed, but continuing with database update");
         }
 
         // Update the star status in the database
@@ -113,6 +113,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         });
     } catch (error) {
         log("Error updating star status:", error);
+        
+        // Handle specific auth errors
+        if (error instanceof Error && error.message === "AUTH_REFRESH_FAILED") {
+            return NextResponse.json(
+                { error: "Authentication failed. Please sign in again." },
+                { status: 401 }
+            );
+        }
+        
         return NextResponse.json(
             {
                 error: error instanceof Error ? error.message : "An unexpected error occurred",
