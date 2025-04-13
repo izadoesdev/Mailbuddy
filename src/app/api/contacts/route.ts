@@ -2,10 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/libs/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/libs/db";
-import {
-    decryptText,
-    decodeEncryptedData,
-} from "@/libs/utils/encryption";
+import { Prisma } from "@prisma/client";
 
 /**
  * Interface for a contact with email metrics
@@ -20,17 +17,6 @@ interface Contact {
     priorities: { [key: string]: number };
     isStarred: boolean;
     unreadCount: number;
-}
-
-/**
- * Interface for the contacts response
- */
-interface ContactsResponse {
-    contacts: Contact[];
-    totalCount: number;
-    page: number;
-    pageSize: number;
-    hasMore: boolean;
 }
 
 /**
@@ -62,19 +48,6 @@ function decryptFrom(encryptedFrom: string): { name: string; email: string } {
 }
 
 /**
- * Decrypts an encrypted field
- */
-function decryptField(encryptedValue: string): string {
-    try {
-        const { encryptedData, iv, authTag } = decodeEncryptedData(encryptedValue);
-        return decryptText(encryptedData, iv, authTag);
-    } catch (error) {
-        console.error("Decryption failed:", error);
-        return "[Decryption failed]";
-    }
-}
-
-/**
  * Fetch contacts with their email metrics
  */
 export async function GET(request: NextRequest) {
@@ -100,25 +73,21 @@ export async function GET(request: NextRequest) {
         // Calculate pagination
         const skip = (page - 1) * pageSize;
 
-        // First, get all unique email "from" fields for this user
-        const uniqueFroms = await prisma.email.findMany({
-            where: {
-                userId,
-                ...(searchQuery && {
-                    from: {
-                        contains: searchQuery,
-                        mode: 'insensitive',
-                    },
-                }),
-            },
-            select: {
-                from: true,
-            },
-            distinct: ['from'],
-        });
+        // Get total count of unique contacts for pagination
+        const totalCountResult = await prisma.$queryRaw<{ count: bigint }[]>`
+            SELECT COUNT(DISTINCT e."from") as count 
+            FROM "emails" e
+            ${category || priority ? Prisma.sql`LEFT JOIN "email_ai_metadata" m ON e."id" = m."emailId"` : Prisma.empty}
+            WHERE e."userId" = ${userId}
+            ${searchQuery ? Prisma.sql`AND e."from" ILIKE ${`%${searchQuery}%`}` : Prisma.empty}
+            ${category ? Prisma.sql`AND m."category" = ${category}` : Prisma.empty}
+            ${priority ? Prisma.sql`AND m."priority" = ${priority}` : Prisma.empty}
+        `;
 
-        // Early return if no emails found
-        if (uniqueFroms.length === 0) {
+        const totalCount = Number(totalCountResult[0]?.count || 0);
+
+        // If no contacts found, return early
+        if (totalCount === 0) {
             return NextResponse.json({
                 contacts: [],
                 totalCount: 0,
@@ -128,127 +97,103 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        // Now we need to count emails per contact
-        const contactMap = new Map<string, Contact>();
-
-        // Get all emails for this user
-        const emails = await prisma.email.findMany({
-            where: {
-                userId,
-                ...(category && {
-                    aiMetadata: {
-                        category: { equals: category },
-                    },
-                }),
-                ...(priority && {
-                    aiMetadata: {
-                        priority: { equals: priority },
-                    },
-                }),
-            },
-            include: {
-                aiMetadata: true,
-            },
-            orderBy: {
-                internalDate: 'asc',
-            },
-        });
-
-        // Process all emails to build contact data
-        for (const email of emails) {
-            // Skip if missing from field
-            if (!email.from) continue;
-
-            // Decrypt from field
-            const { name, email: fromEmail } = decryptFrom(email.from);
-            
-            // Skip empty emails
-            if (!fromEmail) continue;
-
-            // Get or create a contact entry
-            if (!contactMap.has(fromEmail)) {
-                contactMap.set(fromEmail, {
-                    email: fromEmail,
-                    name: name || fromEmail,
-                    emailCount: 0,
-                    latestEmailDate: new Date(0),
-                    threadCount: 0,
-                    categories: {},
-                    priorities: {},
-                    isStarred: false,
-                    unreadCount: 0,
-                });
-            }
-
-            const contact = contactMap.get(fromEmail);
-            if (!contact) continue; // Satisfy type checker
-            
-            contact.emailCount++;
-
-            // Track threads
-            const threadIds = new Set<string>();
-            if (email.threadId && !threadIds.has(email.threadId)) {
-                contact.threadCount++;
-                threadIds.add(email.threadId);
-            }
-
-            // Track read status
-            if (!email.isRead) {
-                contact.unreadCount++;
-            }
-
-            // Track starred status (if any email from this contact is starred)
-            if (email.isStarred) {
-                contact.isStarred = true;
-            }
-
-            // Track latest email date
-            const emailDate = email.internalDate ? new Date(Number(email.internalDate)) : new Date(email.createdAt);
-            if (emailDate > new Date(contact.latestEmailDate)) {
-                contact.latestEmailDate = emailDate;
-            }
-
-            // Track AI metadata categories and priorities
-            if (email.aiMetadata) {
-                // Add to categories count
-                if (email.aiMetadata.category) {
-                    contact.categories[email.aiMetadata.category] = 
-                        (contact.categories[email.aiMetadata.category] || 0) + 1;
-                }
-
-                // Add to priorities count
-                if (email.aiMetadata.priority) {
-                    contact.priorities[email.aiMetadata.priority] = 
-                        (contact.priorities[email.aiMetadata.priority] || 0) + 1;
-                }
-            }
+        // Create sort order for SQL query
+        let orderBySql: Prisma.Sql;
+        if (sortBy === 'emailCount') {
+            orderBySql = sortOrder === 'asc' 
+                ? Prisma.sql`email_count ASC`
+                : Prisma.sql`email_count DESC`;
+        } else if (sortBy === 'latestEmailDate') {
+            orderBySql = sortOrder === 'asc' 
+                ? Prisma.sql`latest_date ASC`
+                : Prisma.sql`latest_date DESC`;
+        } else if (sortBy === 'name') {
+            // Name sorting will happen in JS after decryption
+            orderBySql = Prisma.sql`email_count DESC`; // Default sorting
+        } else {
+            orderBySql = Prisma.sql`email_count DESC`; // Default sorting
         }
 
-        // Convert map to array and sort
-        const contactsArray = Array.from(contactMap.values());
+        // Main query using raw SQL for efficient aggregation
+        const contactsRaw = await prisma.$queryRaw<any[]>`
+            SELECT 
+                e."from",
+                COUNT(*) as email_count,
+                COUNT(DISTINCT e."threadId") as thread_count,
+                MAX(e."internalDate") as latest_date,
+                SUM(CASE WHEN e."isRead" = false THEN 1 ELSE 0 END) as unread_count,
+                BOOL_OR(e."isStarred") as is_starred
+            FROM "emails" e
+            ${category || priority ? Prisma.sql`LEFT JOIN "email_ai_metadata" m ON e."id" = m."emailId"` : Prisma.empty}
+            WHERE e."userId" = ${userId}
+            ${searchQuery ? Prisma.sql`AND e."from" ILIKE ${`%${searchQuery}%`}` : Prisma.empty}
+            ${category ? Prisma.sql`AND m."category" = ${category}` : Prisma.empty}
+            ${priority ? Prisma.sql`AND m."priority" = ${priority}` : Prisma.empty}
+            GROUP BY e."from"
+            ORDER BY ${orderBySql}
+            LIMIT ${pageSize}
+            OFFSET ${skip}
+        `;
 
-        // Apply sorting
+        // Process the raw results to match the Contact interface
+        const contactPromises = contactsRaw.map(async (rawContact) => {
+            const { name, email } = decryptFrom(rawContact.from);
+            
+            // Get categories and priorities for this contact in a separate query
+            const metadataCounts = await prisma.$queryRaw<any[]>`
+                SELECT 
+                    m."category",
+                    COUNT(*) as category_count,
+                    m."priority",
+                    COUNT(*) as priority_count
+                FROM "emails" e
+                JOIN "email_ai_metadata" m ON e."id" = m."emailId"
+                WHERE e."userId" = ${userId}
+                AND e."from" = ${rawContact.from}
+                GROUP BY m."category", m."priority"
+            `;
+            
+            // Process metadata counts
+            const categories: { [key: string]: number } = {};
+            const priorities: { [key: string]: number } = {};
+            
+            for (const row of metadataCounts) {
+                if (row.category) {
+                    categories[row.category] = Number(row.category_count);
+                }
+                if (row.priority) {
+                    priorities[row.priority] = Number(row.priority_count);
+                }
+            }
+            
+            // Build the contact object
+            return {
+                email,
+                name: name || email,
+                emailCount: Number(rawContact.email_count),
+                latestEmailDate: rawContact.latest_date 
+                    ? new Date(Number(rawContact.latest_date))
+                    : new Date(0),
+                threadCount: Number(rawContact.thread_count),
+                categories,
+                priorities,
+                isStarred: rawContact.is_starred,
+                unreadCount: Number(rawContact.unread_count)
+            };
+        });
+        
+        const contacts = await Promise.all(contactPromises);
+        
+        // Sort by name if requested (after decryption)
         if (sortBy === 'name') {
-            contactsArray.sort((a, b) => {
+            contacts.sort((a, b) => {
                 return sortOrder === 'asc'
                     ? a.name.localeCompare(b.name)
                     : b.name.localeCompare(a.name);
             });
-        } else if (sortBy === 'emailCount') {
-            contactsArray.sort((a, b) => {
-                return sortOrder === 'asc'
-                    ? a.emailCount - b.emailCount
-                    : b.emailCount - a.emailCount;
-            });
-        } else if (sortBy === 'latestEmailDate') {
-            contactsArray.sort((a, b) => {
-                const dateA = new Date(a.latestEmailDate).getTime();
-                const dateB = new Date(b.latestEmailDate).getTime();
-                return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-            });
         } else if (sortBy === 'priority') {
             // Sort by contact with highest priority emails
-            contactsArray.sort((a, b) => {
+            contacts.sort((a, b) => {
                 const priorityOrder = { "Urgent": 4, "High": 3, "Medium": 2, "Low": 1 };
                 
                 // Calculate weighted priority score
@@ -256,7 +201,6 @@ export async function GET(request: NextRequest) {
                     let score = 0;
                     let total = 0;
                     
-                    // Use for...of instead of forEach
                     for (const [priority, count] of Object.entries(contact.priorities)) {
                         if (priority in priorityOrder) {
                             const prioValue = priorityOrder[priority as keyof typeof priorityOrder];
@@ -275,14 +219,11 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        // Apply pagination
-        const totalCount = contactsArray.length;
-        const paginatedContacts = contactsArray.slice(skip, skip + pageSize);
         const hasMore = (skip + pageSize) < totalCount;
 
         // Return the response
         return NextResponse.json({
-            contacts: paginatedContacts,
+            contacts,
             totalCount,
             page,
             pageSize,
