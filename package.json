@@ -34,6 +34,7 @@
         "pg": "^8.14.1",
         "postcss": "^8.4.39",
         "postcss-preset-env": "^9.5.15",
+        "prettier": "3.4.2",
         "prisma": "^6.5.0",
         "prismjs": "^1.29.0",
         "react": "19.0.0",
