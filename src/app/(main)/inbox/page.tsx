@@ -13,7 +13,7 @@ import { useEmailMutations } from "./hooks/useEmailMutations";
 import { useBackgroundSync } from "./hooks/useBackgroundSync";
 import { useAISearch } from "./hooks/useAISearch";
 import { useState, useCallback, useEffect, useRef, Suspense, useMemo } from "react";
-import { useUser } from "@/libs/auth/client";
+import { authClient, useUser } from "@/libs/auth/client";
 import { redirect, useRouter } from "next/navigation";
 import { createParser, useQueryState } from "nuqs";
 import { ComposeEmail } from "./components/ComposeEmail";
@@ -446,6 +446,44 @@ function InboxPage() {
         };
     }, [replyTo, forwardFrom]);
 
+    // Handle sign out
+    const handleSignOut = useCallback(async () => {
+        try {
+            // Clear inbox queries from cache
+            queryClient.removeQueries({ queryKey: ["inbox"] });
+            
+            // Call your sign out API endpoint
+            const response = await authClient.signOut();
+            
+            if (response.error) {
+                // Redirect to login pageafter successful sign out
+                router.push('/login'); 
+            } else {
+                addToast({
+                    variant: "success",
+                    message: "Signed out successfully"
+                });
+            }
+        } catch (error) {
+            console.error('Error signing out:', error);
+            addToast({
+                variant: "danger",
+                message: "An error occurred while signing out."
+            });
+        }
+    }, [router, addToast, queryClient]);
+    
+    // Format user data for the user menu
+    const userData = useMemo(() => {
+        if (!user) return undefined;
+        
+        return {
+            name: user.name || (user.email ? user.email.split('@')[0] : 'User'),
+            email: user.email,
+            image: user.image || undefined
+        };
+    }, [user]);
+
     // Conditional rendering logic
     if (isAuthLoading) {
         return (
@@ -486,6 +524,8 @@ function InboxPage() {
                     onNewEmail={handleNewEmail}
                     pageSize={pageSize}
                     onPageSizeChange={handlePageSizeChange}
+                    user={userData}
+                    onSignOut={handleSignOut}
                 />
 
                 <Column fill overflow="hidden">

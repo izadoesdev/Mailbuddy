@@ -8,6 +8,9 @@ import {
     Avatar,
     Scroller,
     Column,
+    UserMenu,
+    User,
+    Flex,
 } from "@/once-ui/components";
 
 interface CategoryOption {
@@ -39,6 +42,9 @@ interface InboxControlsProps {
     onCategoryChange?: (value: string) => void;
     // Compose new email
     onNewEmail?: () => void;
+    // User data
+    user?: { name?: string; email?: string; image?: string };
+    onSignOut?: () => void;
 }
 
 export function InboxControls({
@@ -59,6 +65,8 @@ export function InboxControls({
     onNewEmail,
     pageSize,
     onPageSizeChange,
+    user,
+    onSignOut,
 }: InboxControlsProps) {
     // Local search state to handle AI search button clicks
     const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
@@ -125,6 +133,13 @@ export function InboxControls({
         }
     };
 
+    // Handle sign out
+    const handleSignOut = () => {
+        if (onSignOut) {
+            onSignOut();
+        }
+    };
+
     // Group AI categories into sections
     const groupedAiCategories = useMemo(() => {
         const workBusiness = aiCategories.filter(c => 
@@ -177,6 +192,42 @@ export function InboxControls({
         return 'neutral';
     };
 
+    // User dropdown menu content
+    const userDropdownContent = (
+        <Flex direction="column" padding="8" minWidth={12}>
+            {user?.name && (
+                <Flex direction="column" padding="12" gap="4" borderBottom="neutral-alpha-medium">
+                    <Text variant="heading-strong-s">{user.name}</Text>
+                    <Text variant="body-default-s" onBackground="neutral-weak">{user.email}</Text>
+                </Flex>
+            )}
+            <Flex direction="column" padding="8">
+                <Button 
+                    variant="tertiary"
+                    label="Account Settings" 
+                    prefixIcon="settings"
+                    onClick={() => {
+                        window.location.href = '/settings';
+                    }}
+                />
+                <Button 
+                    variant="tertiary"
+                    label="Help & Support" 
+                    prefixIcon="helpCircle"
+                    onClick={() => {
+                        window.open('/support', '_blank');
+                    }}
+                />
+                <Button 
+                    variant="tertiary"
+                    label="Sign Out" 
+                    prefixIcon="logout"
+                    onClick={handleSignOut}
+                />
+            </Flex>
+        </Flex>
+    );
+
     return (
         <Column fillWidth gap="16">
             <Row
@@ -220,7 +271,15 @@ export function InboxControls({
                         }
                     />
                 </Row>
-                <Avatar />
+                <UserMenu 
+                    name={user?.name || "User"}
+                    subline={user?.email || "user@example.com"}
+                    avatarProps={{
+                        src: user?.image,
+                        value: user?.name?.charAt(0) || "U"
+                    }}
+                    dropdown={userDropdownContent}
+                />
             </Row>
 
             <Row paddingX="8" paddingY="8" gap="24" data-border="rounded" background="neutral-alpha-weak" topRadius="m" borderTop="neutral-alpha-medium" borderLeft="neutral-alpha-medium" borderRight="neutral-alpha-medium">
