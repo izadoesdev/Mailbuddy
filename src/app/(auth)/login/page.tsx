@@ -19,12 +19,6 @@ import {
 } from "@/once-ui/components";
 import { authClient, signIn } from "@/libs/auth/client";
 
-// Define a proper error interface
-interface AuthError {
-    message?: string;
-    code?: string;
-    [key: string]: any;
-}
 
 function LoginPage() {
     const router = useRouter();
@@ -605,7 +599,7 @@ function LoginPage() {
                             position="relative"
                         >
                             <Column fillWidth gap="8" horizontal="center">
-                                <Logo size="s" icon={false} href="/" />
+                                <Logo size="xl" icon={false} wordmarkSrc="/images/logo.webp" href="/" />
                                 
                                 {getHeaderContent()}
 

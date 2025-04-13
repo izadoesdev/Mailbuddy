@@ -595,7 +595,7 @@ export default function RegisterPage() {
                             position="relative"
                         >
                             <Column fillWidth gap="8" horizontal="center">
-                                <Logo size="s" icon={false} href="/" />
+                                <Logo size="xl" icon={false} wordmarkSrc="/images/logo.webp" href="/" />
                                 
                                 {getHeaderContent()}
                                 
