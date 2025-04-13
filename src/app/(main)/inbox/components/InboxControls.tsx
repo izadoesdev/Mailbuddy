@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import type { KeyboardEvent } from "react";
 import {
     Row,
     Text,
@@ -70,36 +71,35 @@ export function InboxControls({
 }: InboxControlsProps) {
     // Local search state to handle AI search button clicks
     const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
-    const [categoryTab, setCategoryTab] = useState<"standard" | "priority" | "smart">("standard");
 
     // Organize categories by type
-    const { standardCategories, priorityCategories, aiCategories } = useMemo(() => {
-        const standard: CategoryOption[] = [];
-        const priority: CategoryOption[] = [];
+    const { aiCategories } = useMemo(() => {
         const ai: CategoryOption[] = [];
 
         for (const option of categoryOptions) {
             if (option.value.startsWith('priority-')) {
-                priority.push(option);
-            } else if (option.value.startsWith('category-')) {
                 ai.push(option);
-            } else {
-                standard.push(option);
             }
         }
 
-        return { standardCategories: standard, priorityCategories: priority, aiCategories: ai };
+        return { aiCategories: ai };
     }, [categoryOptions]);
 
-    // Handle local search change and propagate to parent
+    // Handle local search change without triggering parent search
     const handleSearchChange = (value: string) => {
         setLocalSearchQuery(value);
-        onSearchChange(value);
-
-        // If AI search is active and the user is typing a new search query,
-        // automatically clear the AI search results
+        
+        // Don't call onSearchChange here anymore
+        // Only clear AI search if active
         if (isAISearchActive && onClearAISearch) {
             onClearAISearch();
+        }
+    };
+
+    // Handle search submission when Enter key is pressed
+    const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            onSearchChange(localSearchQuery);
         }
     };
 
@@ -120,16 +120,7 @@ export function InboxControls({
     // Handle category change
     const handleCategoryChange = (value: string) => {
         if (onCategoryChange) {
-            onCategoryChange(value);
-            
-            // Set the appropriate tab based on the category
-            if (value.startsWith('priority-')) {
-                setCategoryTab('priority');
-            } else if (value.startsWith('category-')) {
-                setCategoryTab('smart');
-            } else {
-                setCategoryTab('standard');
-            }
+            onCategoryChange(value);            
         }
     };
 
@@ -247,6 +238,7 @@ export function InboxControls({
                         labelAsPlaceholder
                         value={localSearchQuery}
                         onChange={(e) => handleSearchChange(e.target.value)}
+                        onKeyDown={handleSearchKeyDown}
                         hasPrefix={<Icon name="search" size="s" />}
                         hasSuffix={
                             onAISearch &&
@@ -284,11 +276,20 @@ export function InboxControls({
 
             <Row paddingX="8" paddingY="8" gap="24" data-border="rounded" background="neutral-alpha-weak" topRadius="m" borderTop="neutral-alpha-medium" borderLeft="neutral-alpha-medium" borderRight="neutral-alpha-medium">
                 {isAISearchActive && onClearAISearch ? (
-                    <Button
-                        label="Return to inbox"
-                        prefixIcon="arrowLeft"
-                        onClick={handleClearAISearch}
-                    />
+                    <Row fillWidth horizontal="space-between" vertical="center">
+                        <Button
+                            label="Return to inbox"
+                            prefixIcon="arrowLeft"
+                            onClick={handleClearAISearch}
+                        />
+                        {isAISearchLoading ? (
+                            <Text variant="body-default-s" onBackground="neutral-weak">Searching...</Text>
+                        ) : (
+                            <Text variant="body-default-s" onBackground="neutral-weak">
+                                {localSearchQuery ? `AI searching for: "${localSearchQuery}"` : "AI search results"}
+                            </Text>
+                        )}
+                    </Row>
                 ) : (
                     <>
                         {onNewEmail && (

@@ -314,19 +314,6 @@ function decryptEmailContent(email: any): any {
 }
 
 /**
- * Sanitize AI metadata by removing sensitive details
- */
-function sanitizeAIMetadata(metadata: any): any {
-    if (!metadata) return null;
-    
-    return {
-        category: metadata.category,
-        priority: metadata.priority,
-        summary: metadata.summary
-    };
-}
-
-/**
  * Process emails for thread view
  */
 function processThreadView(emails: any[]): any[] {

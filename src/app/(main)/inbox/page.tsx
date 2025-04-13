@@ -522,7 +522,11 @@ function InboxPage() {
                     {isAISearchActive && (
                         <Row paddingX="16" marginTop="16" horizontal="center">
                             <Text variant="body-default-m">
-                                Found {similarEmails.length} similar emails
+                                {similarEmails.length > 0 
+                                    ? `Found ${similarEmails.length} similar emails` 
+                                    : isAISearchLoading 
+                                        ? "Searching..." 
+                                        : "No similar emails found"}
                             </Text>
                         </Row>
                     )}
