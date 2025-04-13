@@ -13,6 +13,14 @@ import {
 import type { Email } from "../types";
 import { extractName, formatDate } from "../utils";
 
+// Priority levels and their corresponding colors
+const PRIORITY_COLORS: Record<string, "warning" | "info" | "success" | "danger" | "neutral"> = {
+    urgent: "danger",
+    high: "warning",
+    medium: "info",
+    low: "success",
+};
+
 interface EmailItemProps {
     email: Email;
     index: number;
@@ -31,6 +39,27 @@ export function EmailItem({
     onToggleStar,
 }: EmailItemProps) {
     const senderName = (email as any).fromName || extractName(email.from ?? "");
+    
+    // Get AI metadata
+    const aiMetadata = email.aiMetadata;
+    const aiPriority = aiMetadata?.priority?.toLowerCase();
+    const aiCategory = aiMetadata?.category?.split(',').map(c => c.trim()).filter(Boolean);
+    const priorityColor = aiPriority ? PRIORITY_COLORS[aiPriority] || "neutral" : undefined;
+    
+    // Prepare labels for rendering
+    const importantLabel = email.labels?.includes("IMPORTANT");
+    const customLabels = email.labels
+        ?.filter(label => !["IMPORTANT", "UNREAD", "INBOX"].includes(label))
+        .map(label => label.replace("CATEGORY_", ""));
+    
+    // Ensure no duplicates between AI categories and Gmail labels
+    const aiCategoriesToShow = aiCategory?.filter(
+        cat => !customLabels?.some(label => label.toLowerCase() === cat.toLowerCase())
+    );
+    
+    // Calculate remaining labels count
+    const shownLabelsCount = 2;
+    const remainingLabelsCount = (customLabels?.length || 0) + (aiCategoriesToShow?.length || 0) - shownLabelsCount;
 
     return (
         <React.Fragment>
@@ -43,6 +72,7 @@ export function EmailItem({
                         onSelect(email);
                     }
                 }}
+                tabIndex={0}
             >
                 <Row
                     fillWidth
@@ -51,15 +81,20 @@ export function EmailItem({
                     transition="micro-medium"
                     background={isSelected ? "neutral-medium" : email.isRead ? "page" : "overlay"}
                 >
-                    <Row gap="12" vertical="center">
+                    <Column vertical="center" gap="8">
                         <IconButton
                             variant="ghost"
                             size="s"
                             onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
                                 onToggleStar(email, e)
                             }
+                            aria-label={email.isStarred ? "Unstar email" : "Star email"}
                         >
-                            <Icon size="s" onBackground={email.isStarred ? "warning-weak" : "neutral-medium"} name={email.isStarred ? "starFill" : "star"} />
+                            <Icon 
+                                size="s" 
+                                onBackground={email.isStarred ? "warning-weak" : "neutral-medium"} 
+                                name={email.isStarred ? "starFill" : "star"} 
+                            />
                         </IconButton>
                         <Row width={8}>
                             <Text
@@ -74,9 +109,9 @@ export function EmailItem({
                                 {senderName}
                             </Text>
                         </Row>
-                    </Row>
+                    </Column>
 
-                    <Column gap="4" fill>
+                    <Column fillWidth gap="8">
                         <Row fillWidth horizontal="space-between" gap="24">
                             <Row vertical="center" gap="8" fillWidth>
                                 <Text
@@ -89,18 +124,33 @@ export function EmailItem({
                                 >
                                     {email.subject}
                                 </Text>
-                                {email.aiMetadata && (
-                                    <Icon onBackground="brand-medium" name="sparkles" size="xs" />
+                                
+                                {/* AI priority badge */}
+                                {aiPriority && (
+                                    <Tag 
+                                        label={aiMetadata?.priority || ""}
+                                        variant={priorityColor}
+                                        size="s"
+                                    />
                                 )}
                             </Row>
                             <Row gap="8" vertical="center">
+                                {/* AI enhanced indicator */}
+                                {aiMetadata && (
+                                    <Icon 
+                                        onBackground="brand-medium" 
+                                        name="sparkles" 
+                                        size="xs"
+                                    />
+                                )}
                                 <Text variant="label-default-s" onBackground="neutral-weak" wrap="nowrap">
                                     {formatDate(email.createdAt)}
                                 </Text>
                             </Row>
                         </Row>
 
-                        <Row fillWidth horizontal="space-between" gap="40">
+                        <Row fillWidth gap="8" horizontal="space-between">
+                            {/* Email snippet */}
                             <Text
                                 variant="body-default-s"
                                 onBackground="neutral-weak"
@@ -108,50 +158,43 @@ export function EmailItem({
                                     overflow: "hidden",
                                     textOverflow: "ellipsis",
                                     whiteSpace: "nowrap",
+                                    maxWidth: "70%",
                                 }}
                             >
-                                {(email as any).aiScore ? (
-                                    <span style={{ color: "#0070f3" }}>
-                                        AI Score: {(email as any).aiScore.toFixed(4)} -{" "}
-                                        {email.snippet}
+                                {aiMetadata?.summary ? (
+                                    <span style={{ color: "var(--brand-on-background-medium)" }}>
+                                        {aiMetadata.summary}
                                     </span>
                                 ) : (
                                     email.snippet
                                 )}
                             </Text>
                             
-                            {email.labels?.length > 0 &&
-                                email.labels.some(
-                                    (l: string) => !["IMPORTANT", "UNREAD", "INBOX"].includes(l),
-                                ) && (
-                                    <Row gap="4">
-                                        <Row gap="8" vertical="center">
-                                            {email.labels?.includes("IMPORTANT") && (
-                                                <Tag variant="neutral" label="Important" />
-                                            )}
-                                        </Row>
-                                        {email.labels
-                                            .filter(
-                                                (label: string) =>
-                                                    !["IMPORTANT", "UNREAD", "INBOX"].includes(
-                                                        label,
-                                                    ),
-                                            )
-                                            .slice(0, 2)
-                                            .map((label: string) => (
-                                                <Tag
-                                                    key={label}
-                                                    label={label.replace("CATEGORY_", "")}
-                                                />
-                                            ))}
-                                        {email.labels.filter(
-                                            (l: string) =>
-                                                !["IMPORTANT", "UNREAD", "INBOX"].includes(l),
-                                        ).length > 2 && (
-                                            <Chip label={`+${email.labels.length - 2}`} />
-                                        )}
-                                    </Row>
-                                )}
+                            {/* Labels section */}
+                            {(importantLabel || (customLabels && customLabels.length > 0) || (aiCategoriesToShow && aiCategoriesToShow.length > 0)) && (
+                                <Row gap="4" wrap={false} style={{ flexShrink: 0 }}>
+                                    {/* Important tag */}
+                                    
+                                    {/* Display first set of labels (mix of Gmail + AI) */}
+
+                                    {/* Display AI categories */}
+                                    {aiCategoriesToShow?.slice(0, shownLabelsCount - (customLabels?.slice(0, shownLabelsCount - (aiCategoriesToShow?.length || 0)).length || 0)).map(category => (
+                                        <Tag
+                                            key={`ai-cat-${category}`}
+                                            label={category}
+                                            size="s"
+                                            variant="brand"
+                                        />
+                                    ))}
+                                    
+                                    {/* Count chip for remaining labels */}
+                                    {remainingLabelsCount > 0 && (
+                                        <Chip 
+                                            label={`+${remainingLabelsCount}`} 
+                                        />
+                                    )}
+                                </Row>
+                            )}
                         </Row>
                     </Column>
                 </Row>
