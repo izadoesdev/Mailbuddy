@@ -12,6 +12,7 @@ import {
 } from "@/once-ui/components";
 import type { Email } from "../types";
 import { extractName, formatDate } from "../utils";
+import { useState, useMemo } from "react";
 
 // Priority levels and their corresponding colors
 const PRIORITY_COLORS: Record<string, "warning" | "info" | "success" | "danger" | "neutral"> = {
@@ -20,6 +21,21 @@ const PRIORITY_COLORS: Record<string, "warning" | "info" | "success" | "danger" 
     medium: "info",
     low: "success",
 };
+
+/**
+ * Decodes HTML entities in a string
+ * @param html String with potential HTML entities
+ * @returns Decoded string
+ */
+function decodeHtmlEntities(html: string): string {
+    if (!html) return "";
+    
+    // Create a temporary DOM element
+    const txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    // Get the decoded text
+    return txt.value;
+}
 
 interface EmailItemProps {
     email: Email;
@@ -166,7 +182,7 @@ export function EmailItem({
                                         {aiMetadata.summary}
                                     </span>
                                 ) : (
-                                    email.snippet
+                                    decodeHtmlEntities(email.snippet || "")
                                 )}
                             </Text>
                             

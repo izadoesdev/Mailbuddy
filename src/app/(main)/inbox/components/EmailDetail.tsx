@@ -26,6 +26,21 @@ interface EmailDetailProps {
     onTrash?: (email: Email) => void;
 }
 
+/**
+ * Decodes HTML entities in a string
+ * @param html String with potential HTML entities
+ * @returns Decoded string
+ */
+function decodeHtmlEntities(html: string): string {
+    if (!html) return "";
+    
+    // Create a temporary DOM element
+    const txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    // Get the decoded text
+    return txt.value;
+}
+
 export function EmailDetail({ 
     email, 
     onClose, 
@@ -230,7 +245,7 @@ export function EmailDetail({
                     <div
                         className="email-body"
                         dangerouslySetInnerHTML={{
-                            __html: DOMPurify.sanitize(email.body || email.snippet || ""),
+                            __html: DOMPurify.sanitize(email.body || decodeHtmlEntities(email.snippet || "")),
                         }}
                         style={{ width: "100%", height: "100%", borderRadius: "12px", background: "var(--static-white)", padding: "var(--static-space-20)", color: "var(--static-black)" }}
                     />
