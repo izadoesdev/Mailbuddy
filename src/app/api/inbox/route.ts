@@ -6,51 +6,19 @@ import {
     decryptText,
     decodeEncryptedData,
 } from "@/libs/utils/encryption";
-import { extractContentFromParts } from "@/libs/utils/email-content";
-import { withGmailApi } from "../utils/withGmail";
 import { enhanceEmail} from "@/app/(dev)/ai/new/ai";
 import type { Prisma } from "@prisma/client";
-import type { gmail_v1 } from "googleapis";
 import { checkForMissingEmails, fetchMissingEmails } from "../utils/getFromGmail";
-import { PRIORITY_LEVELS, EMAIL_CATEGORIES } from "@/app/(dev)/ai/new/constants";
+import { PRIORITY_LEVELS } from "@/app/(dev)/ai/new/constants";
 
 // Constants
-const GMAIL_USER_ID = "me";
 const PAGE_SIZE = 20;
-const FETCH_BATCH_SIZE = 20;
 const EXCLUDED_LABELS = ["TRASH", "DRAFT", "SPAM"];
 const CATEGORY_PREFIXED_LABELS = ["SOCIAL", "UPDATES", "FORUMS", "PROMOTIONS", "PERSONAL"];
 
-// Types
-interface Email {
-    id: string;
-    threadId: string;
-    subject: string;
-    from: string;
-    to: string;
-    snippet: string;
-    body: string;
-    isRead: boolean;
-    isStarred: boolean;
-    labels: string[];
-    internalDate: string | null;
-    aiMetadata?: any;
-    userId?: string;
-    createdAt?: Date;
-}
-
 interface EmailQueryResult {
     emails: any[];
-    totalCount: any[];
-}
-
-interface MissingEmailId {
-    id: string;
-}
-
-interface GmailMessageResponse {
-    messages: Array<{id: string}>;
-    nextPageToken: string | null;
+    totalCount: number;
 }
 
 /**
@@ -69,7 +37,8 @@ async function fetchEmailsFromDb(
     const baseFilters: any = { userId };
     
     // Apply category filters for standard Gmail categories
-    if (category && !aiCategory && !aiPriority) {
+    // Only apply specific category filters if not "inbox" and not null
+    if (category && category.toLowerCase() !== "inbox") {
         if (category.toUpperCase() === "STARRED") {
             baseFilters.isStarred = true;
         } else {
@@ -79,6 +48,9 @@ async function fetchEmailsFromDb(
             }
             baseFilters.labels = { has: labelToMatch };
         }
+    } else if (category && category.toLowerCase() === "inbox") {
+        // For "inbox" category, specifically look for emails with INBOX label
+        baseFilters.labels = { has: "INBOX" };
     }
 
     // Add text search if provided
@@ -98,8 +70,86 @@ async function fetchEmailsFromDb(
         }
     };
 
-    const queryOptions = {
-        where: baseFilters,
+    // Add AI Priority filter to database query if present
+    if (aiPriority) {
+        let priorityValue = '';
+        switch (aiPriority) {
+            case 'urgent':
+                priorityValue = PRIORITY_LEVELS.URGENT;
+                break;
+            case 'high':
+                priorityValue = PRIORITY_LEVELS.HIGH;
+                break;
+            case 'medium':
+                priorityValue = PRIORITY_LEVELS.MEDIUM;
+                break;
+            case 'low':
+                priorityValue = PRIORITY_LEVELS.LOW;
+                break;
+        }
+        
+        if (priorityValue) {
+            baseFilters.aiMetadata = {
+                path: ['priority'],
+                equals: priorityValue
+            };
+        }
+    }
+    
+    // Add AI Category filter to database query if present
+    if (aiCategory) {
+        const categorySynonyms = getCategorySynonyms(aiCategory);
+        // Create OR conditions for category synonyms
+        const categoryConditions = categorySynonyms.map(synonym => ({
+            aiMetadata: {
+                path: ['category'],
+                string_contains: synonym.toLowerCase()
+            }
+        }));
+        
+        // Combine with existing OR conditions if any
+        if (baseFilters.OR) {
+            baseFilters.OR = [...baseFilters.OR, ...categoryConditions];
+        } else {
+            baseFilters.OR = categoryConditions;
+        }
+    }
+
+    // First get message IDs from the messages table to ensure complete pagination
+    // This approach ensures we paginate based on all messages, not just synced emails
+    const messageQuery = {
+        where: { userId },
+        select: { id: true },
+        orderBy: { createdAt: 'desc' as const },
+        distinct: ['threadId'] as Prisma.Enumerable<Prisma.MessageScalarFieldEnum>,
+        skip,
+        take: pageSize
+    };
+
+    const messageIds = await prisma.message.findMany(messageQuery);
+
+    // Extract IDs to use in email query
+    const messageIdValues = messageIds.map(m => m.id);
+
+    // Get total count based on message threads
+    const totalCount = await prisma.message.groupBy({
+        by: ['threadId'],
+        where: { userId },
+        _count: true
+    });
+
+    // If there are no messages, return empty result
+    if (messageIdValues.length === 0) {
+        return { emails: [], totalCount: totalCount.length };
+    }
+
+    // Now fetch emails with these IDs, applying all filters
+    // Note: This might return fewer emails than requested if some don't match filters
+    const emailsQueryOptions = {
+        where: {
+            ...baseFilters,
+            id: { in: messageIdValues }
+        },
         select: {
             id: true,
             threadId: true,
@@ -115,65 +165,52 @@ async function fetchEmailsFromDb(
             aiMetadata: true,
         },
         orderBy: { internalDate: 'desc' as const },
-        distinct: ['threadId'] as Prisma.Enumerable<Prisma.EmailScalarFieldEnum>,
-        skip,
-        take: pageSize
     };
 
-    const [emails, totalCount] = await Promise.all([
-        prisma.email.findMany(queryOptions),
-        prisma.message.groupBy({ 
-            by: ['threadId'] as Prisma.MessageScalarFieldEnum[],
-            where: { userId },
-            _count: true
-        } as any)
-    ]);
+    const emails = await prisma.email.findMany(emailsQueryOptions);
 
-    // Apply AI metadata filters if needed (client-side filtering as Prisma doesn't support jsonb well)
-    let filteredEmails = emails;
+    console.log(`Found ${emails.length} emails out of ${messageIdValues.length} messages`);
+    return { emails, totalCount: totalCount.length };
+}
+
+/**
+ * Find missing emails by checking messages that exist but don't have a corresponding email
+ */
+async function findMissingEmails(userId: string, page: number, pageSize: number): Promise<string[]> {
+    // Calculate the actual skip based on the page number
+    const skip = (page - 1) * pageSize;
     
-    // Handle AI priority filtering
-    if (aiPriority) {
-        switch (aiPriority) {
-            case 'urgent':
-                filteredEmails = filteredEmails.filter(email => 
-                    email.aiMetadata?.priority === PRIORITY_LEVELS.URGENT
-                );
-                break;
-            case 'high':
-                filteredEmails = filteredEmails.filter(email => 
-                    email.aiMetadata?.priority === PRIORITY_LEVELS.HIGH
-                );
-                break;
-            case 'medium':
-                filteredEmails = filteredEmails.filter(email => 
-                    email.aiMetadata?.priority === PRIORITY_LEVELS.MEDIUM
-                );
-                break;
-            case 'low':
-                filteredEmails = filteredEmails.filter(email => 
-                    email.aiMetadata?.priority === PRIORITY_LEVELS.LOW
-                );
-                break;
-        }
-    }
-    
-    // Handle AI category filtering
-    if (aiCategory) {
-        const categorySynonyms = getCategorySynonyms(aiCategory);
-        
-        filteredEmails = filteredEmails.filter(email => {
-            if (!email.aiMetadata?.category) return false;
-            
-            const lowerCaseCategory = email.aiMetadata.category.toLowerCase();
-            return categorySynonyms.some(synonym => 
-                lowerCaseCategory.includes(synonym)
-            );
-        });
+    // Get the next set of message IDs from the messages table based on skip/limit
+    const messages = await prisma.message.findMany({
+        where: { userId },
+        select: { id: true },
+        orderBy: { createdAt: 'desc' },
+        distinct: ['threadId'],
+        skip,
+        take: pageSize
+    });
+
+    if (!messages.length) {
+        return [];
     }
 
-    console.log(`Found ${filteredEmails.length} emails after applying all filters`);
-    return { emails: filteredEmails, totalCount };
+    // Get the message IDs
+    const messageIds = messages.map(msg => msg.id);
+    
+    // Find which of these IDs are missing from the emails table
+    const existingEmails = await prisma.email.findMany({
+        where: { 
+            id: { in: messageIds },
+            userId 
+        },
+        select: { id: true }
+    });
+    
+    // Create a set of existing email IDs for fast lookup
+    const existingEmailIdSet = new Set(existingEmails.map(email => email.id));
+    
+    // Return the IDs that are in messages but not in emails
+    return messageIds.filter(id => !existingEmailIdSet.has(id));
 }
 
 /**
@@ -207,18 +244,6 @@ function getCategorySynonyms(category: string): string[] {
             return [category];
     }
 }
-
-/**
- * Get thread count for a user
- */
-async function getThreadCount(userId: string): Promise<any[]> {
-    return prisma.message.groupBy({ 
-        by: ['threadId'] as Prisma.MessageScalarFieldEnum[],
-        where: { userId },
-        _count: true
-    } as any);
-}
-
 /**
  * Decrypt an encrypted field
  */
@@ -227,6 +252,7 @@ function decryptField(encryptedValue: string): string {
         const { encryptedData, iv, authTag } = decodeEncryptedData(encryptedValue);
         return decryptText(encryptedData, iv, authTag);
     } catch (error) {
+        console.error("Decryption failed:", error);
         return "[Decryption failed]";
     }
 }
@@ -288,6 +314,19 @@ function decryptEmailContent(email: any): any {
 }
 
 /**
+ * Sanitize AI metadata by removing sensitive details
+ */
+function sanitizeAIMetadata(metadata: any): any {
+    if (!metadata) return null;
+    
+    return {
+        category: metadata.category,
+        priority: metadata.priority,
+        summary: metadata.summary
+    };
+}
+
+/**
  * Process emails for thread view
  */
 function processThreadView(emails: any[]): any[] {
@@ -309,88 +348,6 @@ function processThreadView(emails: any[]): any[] {
         (a, b) => new Date(b.internalDate || 0).getTime() - new Date(a.internalDate || 0).getTime()
     );
 }
-/**
- * Fetch messages from Gmail API with pagination
- */
-async function fetchMessagesFromGmail(
-    userId: string,
-    accessToken: string | null,
-    refreshToken: string | null,
-    maxResults: number,
-    pageToken?: string | null
-): Promise<GmailMessageResponse | null> {
-    console.log(`Fetching messages from Gmail API, maxResults: ${maxResults}, pageToken: ${pageToken || 'none'}`);
-    return withGmailApi(
-        userId,
-        accessToken,
-        refreshToken,
-        async (gmail: gmail_v1.Gmail) => {
-            try {
-                const response = await gmail.users.messages.list({
-                    userId: GMAIL_USER_ID,
-                    maxResults,
-                    pageToken: pageToken || undefined
-                });
-                
-                // Filter out invalid IDs and return with the nextPageToken
-                const result = {
-                    messages: (response.data.messages || [])
-                        .map(m => ({id: m.id || ''}))
-                        .filter(m => m.id),
-                    nextPageToken: response.data.nextPageToken || null
-                };
-                
-                console.log(`Fetched ${result.messages.length} messages from Gmail API, nextPageToken: ${result.nextPageToken || 'none'}`);
-                return result;
-            } catch (error) {
-                console.error("Error fetching messages:", error);
-                return null;
-            }
-        }
-    );
-}
-
-/**
- * Fetch emails directly from Gmail with pagination
- */
-async function fetchDirectFromGmail(
-    userId: string,
-    accessToken: string | null,
-    refreshToken: string | null,
-    pageSize: number,
-    pageToken?: string | null
-): Promise<{ emails: any[], nextPageToken: string | null }> {
-    try {
-        const response = await fetchMessagesFromGmail(
-            userId, 
-            accessToken, 
-            refreshToken, 
-            pageSize, 
-            pageToken
-        );
-        
-        if (!response?.messages?.length) {
-            return { emails: [], nextPageToken: null };
-        }
-        
-        const messageIds = response.messages.map(m => m.id);
-        const fetchedEmails = await fetchMissingEmails(
-            messageIds,
-            userId,
-            accessToken,
-            refreshToken,
-            userId
-        );
-        
-        return {
-            emails: fetchedEmails,
-            nextPageToken: response.nextPageToken
-        };
-    } catch (error) {
-        console.error("Error fetching emails directly from Gmail:", error);
-        return { emails: [], nextPageToken: null };
-    }
-}
 
 /**
  * GET handler for inbox API
@@ -409,31 +366,21 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const page = Number.parseInt(searchParams.get('page') || '1', 10);
     const pageSize = Number.parseInt(searchParams.get('pageSize') || `${PAGE_SIZE}`, 10);
-    const category = searchParams.get('category');
-    const pageToken = searchParams.get('pageToken');
+    const rawCategory = searchParams.get('category');
+    // Pass through the raw category, our fetchEmailsFromDb will handle "inbox" properly
+    const category = rawCategory;
     const searchQuery = searchParams.get('search');
     
     // Get AI-specific parameters directly from the query
     const aiCategory = searchParams.get('aiCategory');
     const aiPriority = searchParams.get('aiPriority');
     
-    // If aiCategory or aiPriority weren't provided directly but can be derived from category
-    if (!aiCategory && !aiPriority && category) {
-        if (category.startsWith('category-')) {
-            const derivedAiCategory = category.replace('category-', '');
-            // Only use parameters from query string - don't pass category params for API filtering
-            // ...
-        } else if (category.startsWith('priority-')) {
-            const derivedAiPriority = category.replace('priority-', '');
-            // Only use parameters from query string - don't pass category params for API filtering
-            // ...
-        }
-    }
 
     try {
         let emails: any[] = [];
-        let nextPageToken: string | null = null;
-        const skip = pageToken ? 0 : (page - 1) * pageSize;
+        let totalEmailCount = 0;
+        // Calculate skip based on page
+        const skip = (page - 1) * pageSize;
 
         // 1. Fetch from database first
         const { emails: dbEmails, totalCount } = await fetchEmailsFromDb(
@@ -445,25 +392,23 @@ export async function GET(request: NextRequest) {
             aiCategory,
             aiPriority
         );
+        
+        totalEmailCount = totalCount;
+        
+        // If we have fewer emails than messages, some might need to be synced
+        const missingEmailsCount = pageSize - dbEmails.length;
 
-        // 2. Check for missing emails on Gmail
-        if (!searchQuery && dbEmails.length < pageSize && !aiCategory && !aiPriority) {
+        // 2. Check for missing emails that exist in messages but not in emails table
+        if (missingEmailsCount > 0 && !searchQuery && !aiCategory && !aiPriority) {
             try {
-                // Check if we need to fetch missing emails
-                const missingEmailIds = await checkForMissingEmails(
-                    userId,
-                    1, // page
-                    pageSize,
-                    pageToken || undefined, // Convert null to undefined
-                    accessToken,
-                    refreshToken
-                );
+                // Find message IDs that exist but don't have emails
+                const missingEmailIds = await findMissingEmails(userId, page, pageSize);
 
                 if (missingEmailIds.length > 0) {
                     console.log(`Found ${missingEmailIds.length} emails missing from DB, fetching them`);
                     // Fetch and store missing emails
                     await fetchMissingEmails(
-                        missingEmailIds.map(item => item.id),
+                        missingEmailIds,
                         userId,
                         accessToken,
                         refreshToken,
@@ -482,6 +427,7 @@ export async function GET(request: NextRequest) {
                     );
                     
                     emails = retry.emails;
+                    totalEmailCount = retry.totalCount;
                 } else {
                     emails = dbEmails;
                 }
@@ -500,8 +446,16 @@ export async function GET(request: NextRequest) {
         const processedEmails = processThreadView(decryptedEmails);
         
         // 5. Try to fetch and attach AI metadata for emails that don't have it yet
-        const enhancedEmails = await Promise.all(processedEmails.map(async (email) => {
-            if (!email.aiMetadata && !searchQuery && !aiCategory && !aiPriority) {
+        // Limit to only process a few emails at a time to prevent excessive API calls
+        const MAX_ENHANCEMENT_PER_REQUEST = 3;
+        const needEnhancement = processedEmails.filter(email => !email.aiMetadata);
+        const toEnhance = needEnhancement.slice(0, MAX_ENHANCEMENT_PER_REQUEST);
+        
+        let enhancedEmails = [...processedEmails];
+        
+        if (toEnhance.length > 0) {
+            console.log(`Enhancing ${toEnhance.length} emails with AI metadata`);
+            const enhancedResults = await Promise.all(toEnhance.map(async (email) => {
                 try {
                     const enhanced = await enhanceEmail(email);
                     if (enhanced.success && enhanced.data) {
@@ -510,29 +464,31 @@ export async function GET(request: NextRequest) {
                 } catch (err) {
                     console.warn(`Error enhancing email ${email.id}:`, err);
                 }
-            }
-            return email;
-        }));
-
-        // 6. Calculate if there are more emails available
-        const hasMore = processedEmails.length === pageSize;
-        
-        // 7. Generate nextPageToken if needed
-        if (hasMore) {
-            // Use the timestamp of the last email as the next page token
-            const lastEmail = processedEmails[processedEmails.length - 1];
-            if (lastEmail?.internalDate) {
-                nextPageToken = lastEmail.internalDate;
-            }
+                return email;
+            }));
+            
+            // Replace enhanced emails in the processed list
+            enhancedEmails = processedEmails.map(email => {
+                const enhanced = enhancedResults.find(e => e && e.id === email.id);
+                return enhanced || email;
+            });
         }
 
+        // 6. Calculate if there are more emails available based on total count
+        const hasMore = (skip + pageSize) < totalEmailCount;
+
+        // 7. Sanitize AI metadata before sending the response
+        const sanitizedEmails = enhancedEmails.map(email => ({
+            ...email,
+            aiMetadata: sanitizeAIMetadata(email.aiMetadata)
+        }));
+
         return NextResponse.json({
-            emails: enhancedEmails,
-            totalCount: totalCount.length,
+            emails: sanitizedEmails,
+            totalCount: totalEmailCount,
             page,
             pageSize,
-            hasMore,
-            nextPageToken
+            hasMore
         });
     } catch (error) {
         console.error("Error fetching emails:", error);

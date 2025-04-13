@@ -28,9 +28,9 @@ export function Pagination({
     }
 
     // Calculate current range of items being displayed
-    const startItem = (page - 1) * pageSize + 1;
-    const endItem = Math.min(page * pageSize, totalCount || page * pageSize);
-    const showCount = totalCount !== undefined;
+    const startItem = totalCount ? Math.min((page - 1) * pageSize + 1, totalCount) : 0;
+    const endItem = totalCount ? Math.min(page * pageSize, totalCount) : 0;
+    const showCount = totalCount !== undefined && totalCount > 0;
 
     // Generate page options for the dropdown (up to current page + 1 if hasMore)
     const maxPage = hasMore ? Math.max(totalPages, page + 1) : totalPages;

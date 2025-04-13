@@ -143,14 +143,16 @@ function InboxPage() {
     }, [user, isAuthLoading, router]);
 
     // Only fetch emails if user is authenticated
-    const { emails, totalPages, totalCount, nextPageToken, isLoading, isFetching } = useInboxData({
+    const { emails, totalCount, isLoading, isFetching, hasMore } = useInboxData({
         page,
         pageSize,
         searchQuery: debouncedSearchQuery,
         category: currentCategory,
-        pageToken,
         enabled: isAuthenticated,
     });
+    
+    // Calculate total pages based on totalCount and pageSize
+    const totalPages = totalCount ? Math.ceil(totalCount / pageSize) : 1;
 
     // Combine all category options
     const allCategoryOptions = useMemo(() => {
@@ -160,9 +162,6 @@ function InboxPage() {
             ...AI_CATEGORIES
         ];
     }, []);
-
-    // Determine if there are more pages available based on nextPageToken
-    const hasMorePages = !!nextPageToken;
 
     // Use AI search hook
     const { similarEmails, isAISearchActive, isAISearchLoading, performAISearch, clearAISearch } =
@@ -236,8 +235,8 @@ function InboxPage() {
     // Handle page change
     const handlePageChange = useCallback((newPage: number) => {
         // If we're moving forward and have a nextPageToken, use it
-        if (newPage > page && nextPageToken) {
-            setPageTokenState(nextPageToken);
+        if (newPage > page && hasMore) {
+            setPageTokenState("next"); // Just use a string token
         } else if (newPage < page) {
             // If going back, reset token and use offset-based pagination
             setPageTokenState(null);
@@ -254,7 +253,7 @@ function InboxPage() {
             return;
         }
         setPage(newPage);
-    }, [setPage, setPageTokenState, page, nextPageToken]);
+    }, [setPage, setPageTokenState, page, hasMore]);
 
     // Handle page size change
     const handlePageSizeChange = useCallback((size: number) => {
@@ -264,7 +263,7 @@ function InboxPage() {
 
     // Handle refresh
     const handleRefresh = useCallback(() => {
-        queryClient.invalidateQueries({ queryKey: ["emails"] });
+        queryClient.invalidateQueries({ queryKey: ["inbox"] });
     }, [queryClient]);
 
     // Handle sync
@@ -384,7 +383,7 @@ function InboxPage() {
     }, []);
 
     const handleEmailSent = useCallback(() => {
-        queryClient.invalidateQueries({ queryKey: ["emails"] });
+        queryClient.invalidateQueries({ queryKey: ["inbox"] });
     }, [queryClient]);
 
     // Create initial values for compose email
@@ -511,8 +510,8 @@ function InboxPage() {
                         isLoading={isLoading}
                         isFetching={isFetching}
                         pageSize={pageSize}
-                        totalCount={isAISearchActive ? similarEmails.length : displayedEmails.length}
-                        hasMore={hasMorePages}
+                        totalCount={isAISearchActive ? similarEmails.length : totalCount}
+                        hasMore={hasMore}
                     />
                 </Column>
 

@@ -53,7 +53,7 @@ export function InboxControls({
     onClearAISearch,
     isAISearchActive = false,
     isAISearchLoading = false,
-    currentCategory = "inbox",
+    currentCategory = "",
     categoryOptions = [],
     onCategoryChange,
     onNewEmail,
