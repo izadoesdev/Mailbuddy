@@ -10,7 +10,7 @@ import {
     Icon,
     useToast,
 } from "@/once-ui/components";
-import type { Email } from "../types";
+import type { Email, Thread } from "../types";
 import { extractName, formatDate } from "../utils";
 
 // Priority levels and their corresponding colors
@@ -37,12 +37,12 @@ function decodeHtmlEntities(html: string): string {
 }
 
 interface EmailItemProps {
-    email: Email;
+    email: Email | Thread;
     index: number;
     isSelected: boolean;
     totalEmails: number;
-    onSelect: (email: Email) => void;
-    onToggleStar: (email: Email, e: React.MouseEvent<HTMLButtonElement>) => void;
+    onSelect: (email: Email | Thread) => void;
+    onToggleStar: (email: Email | Thread, e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export function EmailItem({
@@ -54,6 +54,10 @@ export function EmailItem({
     onToggleStar,
 }: EmailItemProps) {
     const senderName = (email as any).fromName || extractName(email.from ?? "");
+    
+    // Determine if this is a thread object or a single email
+    const isThread = 'threadId' in email && 'emails' in email;
+    const emailCount = isThread ? (email as Thread).emailCount : 1;
     
     // Get AI metadata
     const aiMetadata = email.aiMetadata;
@@ -140,6 +144,13 @@ export function EmailItem({
                                     {email.subject}
                                 </Text>
                                 
+                                {/* Thread count badge */}
+                                {isThread && emailCount > 1 && (
+                                    <Chip 
+                                        label={emailCount.toString()} 
+                                    />
+                                )}
+                                
                                 {/* AI priority badge */}
                                 {aiPriority && (
                                     <Tag 
@@ -159,7 +170,13 @@ export function EmailItem({
                                     />
                                 )}
                                 <Text variant="label-default-s" onBackground="neutral-weak" wrap="nowrap">
-                                    {formatDate(email.createdAt)}
+                                    {formatDate(
+                                        'createdAt' in email 
+                                            ? email.createdAt 
+                                            : email.internalDate
+                                                ? new Date(Number.parseInt(email.internalDate))
+                                                : new Date()
+                                    )}
                                 </Text>
                             </Row>
                         </Row>

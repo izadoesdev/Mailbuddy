@@ -6,8 +6,23 @@ export interface Email extends PrismaEmail {
     fromEmail?: string;
 }
 
-export interface InboxResponse {
+export interface Thread {
+    threadId: string;
     emails: Email[];
+    subject: string;
+    from: string;
+    to: string;
+    snippet: string;
+    isRead: boolean;
+    isStarred: boolean;
+    labels: string[];
+    internalDate: string;
+    aiMetadata: EmailAIMetadata | null;
+    emailCount: number;
+}
+
+export interface InboxResponse {
+    threads: Thread[];
     totalCount: number;
     hasMore: boolean;
     page: number;

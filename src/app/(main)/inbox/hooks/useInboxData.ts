@@ -1,5 +1,5 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
-import type { InboxResponse, Email } from "../types";
+import type { InboxResponse, Thread, Email } from "../types";
 import { useToast } from "@/once-ui/components";
 import { useEffect, useRef } from "react";
 
@@ -51,7 +51,7 @@ const fetchEmails = async ({
         // We'll return an empty inbox rather than throwing an error
         if (response.status === 404) {
             return {
-                emails: [],
+                threads: [],
                 totalCount: 0,
                 page,
                 pageSize,
@@ -64,7 +64,7 @@ const fetchEmails = async ({
         if (!response.ok) {
             console.warn(`API returned status ${response.status} when fetching emails`);
             return {
-                emails: [],
+                threads: [],
                 totalCount: 0,
                 page,
                 pageSize,
@@ -73,10 +73,10 @@ const fetchEmails = async ({
         }
 
         const data = await response.json();
-        if (!data || !Array.isArray(data.emails)) {
+        if (!data || !Array.isArray(data.threads)) {
             console.warn("Invalid response format from API");
             return {
-                emails: [],
+                threads: [],
                 totalCount: 0,
                 page,
                 pageSize,
@@ -84,16 +84,31 @@ const fetchEmails = async ({
             };
         }
 
-        // Process emails to ensure dates are correctly formatted
-        data.emails = data.emails.map((email: Email) => ({
-            ...email,
-            createdAt: email.internalDate
-                ? new Date(Number.parseInt(email.internalDate))
-                : new Date(email.createdAt),
-        }));
+        // Process threads to ensure dates are correctly formatted
+        data.threads = data.threads.map((thread: Thread) => {
+            // Format thread dates
+            const formattedThread = {
+                ...thread,
+                createdAt: thread.internalDate
+                    ? new Date(Number.parseInt(thread.internalDate))
+                    : new Date(),
+            };
+            
+            // Format dates for all emails in the thread
+            if (thread.emails && Array.isArray(thread.emails)) {
+                formattedThread.emails = thread.emails.map((email: Email) => ({
+                    ...email,
+                    createdAt: email.internalDate
+                        ? new Date(Number.parseInt(email.internalDate))
+                        : new Date(email.createdAt),
+                }));
+            }
+            
+            return formattedThread;
+        });
 
         return {
-            emails: data.emails,
+            threads: data.threads,
             totalCount: data.totalCount || 0,
             page: data.page || page,
             pageSize: data.pageSize || pageSize,
@@ -103,7 +118,7 @@ const fetchEmails = async ({
         console.warn("Error in fetchEmails:", error);
         // Return empty inbox instead of throwing
         return {
-            emails: [],
+            threads: [],
             totalCount: 0,
             page,
             pageSize,
@@ -168,7 +183,8 @@ export function useInboxData({
 
     // Return the data in a more convenient format
     return {
-        emails: data?.emails || [],
+        threads: data?.threads || [],
+        emails: data?.threads ? data.threads.flatMap(thread => thread.emails) : [],
         totalCount: data?.totalCount || 0,
         hasMore: data?.hasMore || false,
         isLoading,

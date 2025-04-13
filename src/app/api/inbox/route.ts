@@ -332,19 +332,49 @@ function sanitizeAIMetadata(metadata: any): any {
 function processThreadView(emails: any[]): any[] {
     if (emails.length === 0) return [];
     
-    const threadMap = new Map<string, any>();
+    // Group emails by threadId
+    const threadMap = new Map<string, any[]>();
     
     for (const email of emails) {
         const threadId = email.threadId;
-        if (
-            !threadMap.has(threadId) ||
-            new Date(email.internalDate || 0) > new Date(threadMap.get(threadId)?.internalDate || 0)
-        ) {
-            threadMap.set(threadId, email);
+        if (!threadMap.has(threadId)) {
+            threadMap.set(threadId, []);
         }
+        threadMap.get(threadId)?.push(email);
     }
     
-    return Array.from(threadMap.values()).sort(
+    // Sort emails within each thread by date
+    threadMap.forEach((emailsInThread, threadId) => {
+        emailsInThread.sort((a, b) => 
+            new Date(b.internalDate || 0).getTime() - new Date(a.internalDate || 0).getTime()
+        );
+    });
+    
+    // Create array of thread objects, each containing all its emails
+    // Sort threads by the date of their newest email
+    const threads = Array.from(threadMap.entries()).map(([threadId, emailsInThread]) => {
+        // The first email in the array will be the newest one after sorting
+        const newestEmail = emailsInThread[0];
+        return {
+            threadId,
+            emails: emailsInThread,
+            // Use newestEmail properties for thread-level display
+            subject: newestEmail.subject,
+            from: newestEmail.from,
+            to: newestEmail.to,
+            snippet: newestEmail.snippet,
+            isRead: emailsInThread.every(email => email.isRead),
+            isStarred: newestEmail.isStarred,
+            labels: newestEmail.labels,
+            internalDate: newestEmail.internalDate,
+            aiMetadata: newestEmail.aiMetadata,
+            // Add count of emails in thread
+            emailCount: emailsInThread.length
+        };
+    });
+    
+    // Sort threads by date of newest email in each thread
+    return threads.sort(
         (a, b) => new Date(b.internalDate || 0).getTime() - new Date(a.internalDate || 0).getTime()
     );
 }
@@ -443,34 +473,41 @@ export async function GET(request: NextRequest) {
         const decryptedEmails = emails.map(decryptEmailContent);
         
         // 4. Process for thread view
-        const processedEmails = processThreadView(decryptedEmails);
+        const processedThreads = processThreadView(decryptedEmails);
         
         // 5. Try to fetch and attach AI metadata for emails that don't have it yet
         // Limit to only process a few emails at a time to prevent excessive API calls
         const MAX_ENHANCEMENT_PER_REQUEST = 3;
-        const needEnhancement = processedEmails.filter(email => !email.aiMetadata);
-        const toEnhance = needEnhancement.slice(0, MAX_ENHANCEMENT_PER_REQUEST);
         
-        let enhancedEmails = [...processedEmails];
+        // Find threads with emails missing AI metadata
+        const threadsNeedingEnhancement = processedThreads.filter(thread => !thread.aiMetadata);
+        const threadsToEnhance = threadsNeedingEnhancement.slice(0, MAX_ENHANCEMENT_PER_REQUEST);
         
-        if (toEnhance.length > 0) {
-            console.log(`Enhancing ${toEnhance.length} emails with AI metadata`);
-            const enhancedResults = await Promise.all(toEnhance.map(async (email) => {
+        let enhancedThreads = [...processedThreads];
+        
+        if (threadsToEnhance.length > 0) {
+            console.log(`Enhancing ${threadsToEnhance.length} thread emails with AI metadata`);
+            const enhancedResults = await Promise.all(threadsToEnhance.map(async (thread) => {
                 try {
-                    const enhanced = await enhanceEmail(email);
+                    // Use the newest email in the thread for AI enhancement
+                    const enhanced = await enhanceEmail(thread);
                     if (enhanced.success && enhanced.data) {
-                        return enhanced.data;
+                        // Update the thread with enhanced metadata
+                        return {
+                            ...thread,
+                            aiMetadata: enhanced.data.aiMetadata
+                        };
                     }
                 } catch (err) {
-                    console.warn(`Error enhancing email ${email.id}:`, err);
+                    console.warn(`Error enhancing thread ${thread.threadId}:`, err);
                 }
-                return email;
+                return thread;
             }));
             
-            // Replace enhanced emails in the processed list
-            enhancedEmails = processedEmails.map(email => {
-                const enhanced = enhancedResults.find(e => e && e.id === email.id);
-                return enhanced || email;
+            // Replace enhanced threads in the processed list
+            enhancedThreads = processedThreads.map(thread => {
+                const enhanced = enhancedResults.find(t => t && t.threadId === thread.threadId);
+                return enhanced || thread;
             });
         }
 
@@ -478,13 +515,18 @@ export async function GET(request: NextRequest) {
         const hasMore = (skip + pageSize) < totalEmailCount;
 
         // 7. Sanitize AI metadata before sending the response
-        const sanitizedEmails = enhancedEmails.map(email => ({
-            ...email,
-            aiMetadata: sanitizeAIMetadata(email.aiMetadata)
+        const sanitizedThreads = enhancedThreads.map(thread => ({
+            ...thread,
+            aiMetadata: sanitizeAIMetadata(thread.aiMetadata),
+            // Also sanitize AI metadata for each email in the thread
+            emails: thread.emails.map((email: any) => ({
+                ...email,
+                aiMetadata: sanitizeAIMetadata(email.aiMetadata)
+            }))
         }));
 
         return NextResponse.json({
-            emails: sanitizedEmails,
+            threads: sanitizedThreads,
             totalCount: totalEmailCount,
             page,
             pageSize,

@@ -1,23 +1,25 @@
 import type React from "react";
 import { Column, Text, Skeleton, Icon } from "@/once-ui/components";
-import type { Email } from "../types";
+import type { Email, Thread } from "../types";
 import { EmailItem } from "./EmailItem";
 
 interface EmailListProps {
-    emails: Email[];
+    threads: Thread[];
     isLoading: boolean;
+    selectedThreadId: string | null;
     selectedEmailId: string | null;
     searchQuery: string;
-    onSelectEmail: (email: Email) => void;
-    onToggleStar: (email: Email, e: React.MouseEvent<HTMLButtonElement>) => void;
+    onSelectThread: (thread: Thread) => void;
+    onToggleStar: (thread: Thread, e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export function EmailList({
-    emails,
+    threads,
     isLoading,
+    selectedThreadId,
     selectedEmailId,
     searchQuery,
-    onSelectEmail,
+    onSelectThread,
     onToggleStar,
 }: EmailListProps) {
     // If loading, show skeletons
@@ -31,8 +33,8 @@ export function EmailList({
         );
     }
 
-    // If no emails, show empty state
-    if (emails.length === 0) {
+    // If no threads, show empty state
+    if (threads.length === 0) {
         return (
             <Column fill center padding="64" horizontal="center" vertical="center" gap="16" border="neutral-alpha-medium" bottomRadius="m">
                 <Icon name="inbox" size="m" />
@@ -46,19 +48,19 @@ export function EmailList({
         );
     }
 
-    // Render list of emails
+    // Render list of threads
     return (
         <Column fill overflow="hidden" bottomRadius="m" border="neutral-alpha-medium">
             <Column fill overflowY="auto">
-                {emails.map((email, index) => (
-                    <Column fillWidth key={email.id}>
+                {threads.map((thread, index) => (
+                    <Column fillWidth key={thread.threadId}>
                         <EmailItem
-                            email={email}
+                            email={thread}
                             index={index}
-                            isSelected={selectedEmailId === email.id}
-                            totalEmails={emails.length}
-                            onSelect={onSelectEmail}
-                            onToggleStar={onToggleStar}
+                            isSelected={selectedThreadId === thread.threadId}
+                            totalEmails={threads.length}
+                            onSelect={(item) => onSelectThread(item as Thread)}
+                            onToggleStar={(item, e) => onToggleStar(item as Thread, e)}
                         />
                     </Column>
                 ))}

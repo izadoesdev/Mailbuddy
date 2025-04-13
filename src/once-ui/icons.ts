@@ -58,7 +58,7 @@ import {
 } from "react-icons/fa6";
 
 // Remix Icons
-import { RiVisaLine } from "react-icons/ri";
+import { RiReplyAllFill, RiVisaLine } from "react-icons/ri";
 
 // Lucide Icons
 import { LuChevronsLeftRight } from "react-icons/lu";
@@ -132,6 +132,8 @@ export const iconLibrary: Record<string, IconType> = {
     bolt: HiOutlineBolt,
     lightning: HiOutlineBolt,
     cloud: HiOutlineCloud,
+    forward: HiOutlineArrowRight,
+    reply: RiReplyAllFill,
 };
 
 export type IconLibrary = typeof iconLibrary;

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Email } from "./types";
+import type { Email, Thread } from "./types";
 import { Row, Column, useToast, Text, Spinner } from "@/once-ui/components";
 import { EmailList } from "./components/EmailList";
 import { EmailDetail } from "./components/EmailDetail";
@@ -11,12 +11,14 @@ import { useDebounce } from "./hooks/useDebounce";
 import { useInboxData } from "./hooks/useInboxData";
 import { useEmailMutations } from "./hooks/useEmailMutations";
 import { useBackgroundSync } from "./hooks/useBackgroundSync";
+// import { useInitialSync } from "./hooks/useInitialSync";
 import { useAISearch } from "./hooks/useAISearch";
 import { useState, useCallback, useEffect, useRef, Suspense, useMemo } from "react";
 import { authClient, useUser } from "@/libs/auth/client";
 import { redirect, useRouter } from "next/navigation";
 import { createParser, useQueryState } from "nuqs";
 import { ComposeEmail } from "./components/ComposeEmail";
+import { SyncOverlay } from "./components/SyncOverlay";
 import { EMAIL_CATEGORIES, PRIORITY_LEVELS } from "@/app/(dev)/ai/new/constants";
 
 type CategoryOption = {
@@ -117,6 +119,7 @@ function InboxPage() {
 
     // Local state
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
     const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const hasSyncedRef = useRef(false);
@@ -139,7 +142,7 @@ function InboxPage() {
     }, [user, isAuthLoading, router]);
 
     // Only fetch emails if user is authenticated
-    const { emails, totalCount, isLoading, isFetching, hasMore } = useInboxData({
+    const { threads, emails, totalCount, isLoading, isFetching, hasMore } = useInboxData({
         page,
         pageSize,
         searchQuery: debouncedSearchQuery,
@@ -166,17 +169,56 @@ function InboxPage() {
     // Pass authentication state to hooks
     const { markAsRead, toggleStar, trashEmail } = useEmailMutations({ enabled: isAuthenticated });
     const { triggerSync, isSyncing } = useBackgroundSync({ enabled: isAuthenticated });
+    
+    // Use the new initial sync hook to check if initial sync is needed
+    // const { 
+    //     syncStatus,
+    //     progress,
+    //     message,
+    //     isInitialSyncInProgress,
+    //     performInitialSync
+    // } = useInitialSync({ 
+    //     enabled: isAuthenticated,
+    //     redirectAfterSync: false,
+    // });
 
-    // Trigger a sync when the inbox is first loaded, but only once
-    useEffect(() => {
-        // Only trigger on first render, when authenticated, and not already synced
-        if (isAuthenticated && !hasSyncedRef.current && !isLoading && !isFetching) {
-            hasSyncedRef.current = true; // Mark as synced to prevent future attempts
-            triggerSync();
-        }
-    }, [isAuthenticated, isLoading, isFetching, triggerSync]);
+    // Keep the existing sync trigger for backward compatibility
+    // useEffect(() => {
+    //     // Only trigger on first render, when authenticated, and not already synced
+    //     if (isAuthenticated && !hasSyncedRef.current && !isLoading && !isFetching && !isInitialSyncInProgress) {
+    //         hasSyncedRef.current = true; // Mark as synced to prevent future attempts
+    //         triggerSync();
+    //     }
+    // }, [isAuthenticated, isLoading, isFetching, triggerSync, isInitialSyncInProgress]);
 
-    // Handle email selection
+    // Handle thread selection
+    const handleThreadSelect = useCallback(
+        (thread: Thread) => {
+            // Close thread if already selected
+            if (selectedThread?.threadId === thread.threadId) {
+                setSelectedThread(null);
+                setSelectedEmail(null);
+                return;
+            }
+            
+            // Set the selected thread
+            setSelectedThread(thread);
+            
+            // If thread has multiple emails, select the newest one
+            if (thread.emails && thread.emails.length > 0) {
+                setSelectedEmail(thread.emails[0]);
+                // Mark as read if not already
+                if (!thread.isRead) {
+                    markAsRead.mutate(thread.emails[0].id);
+                }
+            } else {
+                setSelectedEmail(null);
+            }
+        },
+        [markAsRead, selectedThread],
+    );
+
+    // Handle email selection within a thread
     const handleEmailSelect = useCallback(
         (email: Email) => {
             setSelectedEmail((prev) => (prev?.id === email.id ? null : email));
@@ -187,23 +229,34 @@ function InboxPage() {
         [markAsRead],
     );
 
-    // Toggle star status
+    // Toggle star status for thread or email
     const handleToggleStar = useCallback(
-        (email: Email, e: React.MouseEvent<HTMLButtonElement>) => {
-            e.stopPropagation();
-            toggleStar.mutate({
-                emailId: email.id,
-                isStarred: !email.isStarred,
-            });
+        (item: Thread | Email, e?: React.MouseEvent<HTMLButtonElement>) => {
+            if (e) e.stopPropagation();
+            
+            // If it's a thread, toggle star on the newest email in the thread
+            if ('emails' in item && item.emails.length > 0) {
+                toggleStar.mutate({
+                    emailId: item.emails[0].id,
+                    isStarred: !item.isStarred,
+                });
+            } else if ('id' in item) {
+                // It's a single email
+                toggleStar.mutate({
+                    emailId: item.id,
+                    isStarred: !item.isStarred,
+                });
+            }
         },
         [toggleStar],
     );
 
     // Handle trash email
-    const handleTrash = useCallback(
+    const handleTrashEmail = useCallback(
         (email: Email) => {
             trashEmail.mutate(email.id);
-            setSelectedEmail(null); // Close the email detail view after trashing
+            setSelectedEmail(null);
+            setSelectedThread(null);
         },
         [trashEmail],
     );
@@ -271,210 +324,49 @@ function InboxPage() {
         setPage(1);
     }, [setCurrentCategory, setPage]);
 
-    // Calculate width for main content
-    const mainContentWidth = selectedEmail ? "50%" : "100%";
-
-    // Filter emails based on selected AI category
-    const displayedEmails = useMemo(() => {
-        if (isAISearchActive) {
-            return similarEmails;
-        }
-        
-        // For standard categories, just return the server-filtered emails
-        if (STANDARD_CATEGORIES.some(c => c.value === currentCategory)) {
-            return emails;
-        }
-        
-        // For priority-based categories, filter client-side by priority
-        if (currentCategory.startsWith('priority-')) {
-            const priorityLevel = currentCategory.replace('priority-', '');
-            
-            switch (priorityLevel) {
-                case 'urgent':
-                    return emails.filter(email => 
-                        email.aiMetadata?.priority === PRIORITY_LEVELS.URGENT
-                    );
-                case 'high':
-                    return emails.filter(email => 
-                        email.aiMetadata?.priority === PRIORITY_LEVELS.HIGH
-                    );
-                case 'medium':
-                    return emails.filter(email => 
-                        email.aiMetadata?.priority === PRIORITY_LEVELS.MEDIUM
-                    );
-                case 'low':
-                    return emails.filter(email => 
-                        email.aiMetadata?.priority === PRIORITY_LEVELS.LOW
-                    );
-                default:
-                    return emails;
-            }
-        }
-        
-        // For AI categories, filter client-side by category
-        if (currentCategory.startsWith('category-')) {
-            const categoryName = currentCategory.replace('category-', '');
-            
-            // Match the category against AI metadata
-            return emails.filter(email => {
-                if (!email.aiMetadata?.category) return false;
-                
-                const lowerCaseCategory = email.aiMetadata.category.toLowerCase();
-                const categorySynonyms = getCategorySynonyms(categoryName);
-                
-                return categorySynonyms.some(synonym => 
-                    lowerCaseCategory.includes(synonym)
-                );
-            });
-        }
-        
-        return emails;
-    }, [emails, similarEmails, isAISearchActive, currentCategory]);
-
-    // Helper to get synonyms for a category
-    function getCategorySynonyms(category: string): string[] {
-        switch (category) {
-            case 'work':
-                return ['work', 'business', 'professional'];
-            case 'financial':
-                return ['financial', 'finance', 'bank', 'money', 'payment'];
-            case 'events':
-                return ['event', 'invitation', 'party', 'meeting'];
-            case 'travel':
-                return ['travel', 'flight', 'hotel', 'booking', 'trip', 'vacation'];
-            case 'newsletters':
-                return ['newsletter', 'subscription', 'update'];
-            case 'receipts':
-                return ['receipt', 'purchase', 'order confirmation'];
-            // Add more synonyms for other categories as needed
-            default:
-                return [category];
-        }
-    }
-
-    const handleNewEmail = useCallback(() => {
+    // Handle compose email
+    const handleComposeNew = useCallback(() => {
         setIsComposingEmail(true);
         setReplyTo(null);
         setForwardFrom(null);
     }, []);
 
-    const handleReply = useCallback((email: Email) => {
-        setReplyTo(email);
-        setForwardFrom(null);
-        setIsComposingEmail(true);
-    }, []);
-
-    const handleForward = useCallback((email: Email) => {
-        setForwardFrom(email);
-        setReplyTo(null);
-        setIsComposingEmail(true);
-    }, []);
-
+    // Handle close compose
     const handleCloseCompose = useCallback(() => {
         setIsComposingEmail(false);
         setReplyTo(null);
         setForwardFrom(null);
     }, []);
 
+    // Handle email sent
     const handleEmailSent = useCallback(() => {
-        queryClient.invalidateQueries({ queryKey: ["inbox"] });
-    }, [queryClient]);
+        handleCloseCompose();
+        addToast({
+            variant: "success",
+            message: "Email sent successfully!",
+        });
+        // Refresh sent folder if we're in it
+        if (currentCategory === "sent") {
+            queryClient.invalidateQueries({ queryKey: ["inbox"] });
+        }
+    }, [addToast, currentCategory, queryClient, handleCloseCompose]);
 
-    // Create initial values for compose email
+    // Handle signout
+    const handleSignOut = useCallback(() => {
+        authClient.signOut();
+    }, []);
+
+    // Get compose email props
     const getComposeEmailProps = useCallback(() => {
-        // For reply
-        if (replyTo) {
-            const subject = (replyTo.subject || "").startsWith("Re:") 
-                ? (replyTo.subject || "") 
-                : `Re: ${replyTo.subject || ""}`;
-            
-            const originalSender = replyTo.from || "";
-            
-            // Format reply body with original message
-            const replyBody = `
-                <br/><br/>
-                <div style="background: rgb(47, 47, 47);">
-                    <div style="display: flex; justify-content: space-between; font-size: 13px; color: white;">
-                        <p style="padding: 1rem; font-weight: bold;">${originalSender}</p>
-                        <p style="padding: 1rem;">${new Date(replyTo.createdAt || new Date()).toLocaleString()}</p>
-                    </div>
-                    <div>${replyTo.body || ""}</div>
-                </div>
-            `;
-            
-            return {
-                initialTo: originalSender,
-                initialSubject: subject,
-                initialBody: replyBody,
-                threadId: replyTo.threadId
-            };
-        }
-        
-        // For forward
-        if (forwardFrom) {
-            const subject = (forwardFrom.subject || "").startsWith("Fwd:") 
-                ? (forwardFrom.subject || "") 
-                : `Fwd: ${forwardFrom.subject || ""}`;
-            
-            // Format forward body with original message
-            const forwardBody = `
-                <br/><br/>
-                <div style="padding: 10px; border-top: 1px solid #e0e0e0;">
-                    <p>---------- Forwarded message ---------</p>
-                    <p>From: ${forwardFrom.from || ""}</p>
-                    <p>Date: ${new Date(forwardFrom.createdAt || new Date()).toLocaleString()}</p>
-                    <p>Subject: ${forwardFrom.subject || ""}</p>
-                    <p>To: ${forwardFrom.to || ""}</p>
-                    <div>${forwardFrom.body || ""}</div>
-                </div>
-            `;
-            
-            return {
-                initialTo: "",
-                initialSubject: subject,
-                initialBody: forwardBody,
-                threadId: undefined // Start a new thread for forwards
-            };
-        }
-        
-        // Default for new email
         return {
-            initialTo: "",
-            initialSubject: "",
-            initialBody: "",
-            threadId: undefined
+            replyTo,
+            forwardFrom,
+            onSuccess: handleEmailSent,
         };
-    }, [replyTo, forwardFrom]);
+    }, [replyTo, forwardFrom, handleEmailSent]);
 
-    // Handle sign out
-    const handleSignOut = useCallback(async () => {
-        try {
-            // Clear inbox queries from cache
-            queryClient.removeQueries({ queryKey: ["inbox"] });
-            
-            // Call your sign out API endpoint
-            const response = await authClient.signOut();
-            
-            if (response.error) {
-                // Redirect to login pageafter successful sign out
-                router.push('/login'); 
-            } else {
-                addToast({
-                    variant: "success",
-                    message: "Signed out successfully"
-                });
-            }
-        } catch (error) {
-            console.error('Error signing out:', error);
-            addToast({
-                variant: "danger",
-                message: "An error occurred while signing out."
-            });
-        }
-    }, [router, addToast, queryClient]);
-    
     // Format user data for the user menu
-    const userData = useMemo(() => {
+    const formattedUser = useMemo(() => {
         if (!user) return undefined;
         
         return {
@@ -484,99 +376,168 @@ function InboxPage() {
         };
     }, [user]);
 
-    // Conditional rendering logic
-    if (isAuthLoading) {
-        return (
-            <Column>
-            </Column>
-        );  
-    }
+    // Display emails based on AI search or normal inbox
+    const displayedThreads = isAISearchActive 
+        ? similarEmails.map(email => ({
+            threadId: email.threadId,
+            emails: [email],
+            subject: email.subject || "",
+            from: email.from || "",
+            to: email.to || "",
+            snippet: email.snippet || "",
+            isRead: email.isRead,
+            isStarred: email.isStarred,
+            labels: email.labels || [],
+            internalDate: email.internalDate || "",
+            aiMetadata: email.aiMetadata,
+            emailCount: 1
+        }))
+        : threads;
 
-    if (!user) {
-        return null;
-    }
+    // Determine whether to show the sync overlay
+    // const showSyncOverlay = isInitialSyncInProgress && syncStatus !== 'complete';
+
+    // Calculate content widths for responsive layout
+    const mainContentWidth = selectedEmail ? "50%" : "100%";
+    const detailWidth = selectedEmail ? "50%" : "0";
+
+    // Handle sync cancellation - create this function to pass to the SyncOverlay
+    const handleCancelSync = useCallback(() => {
+        // There is no direct cancel function in the hook, but we can add a message
+        addToast({
+            variant: "success",
+            message: "Sync has been canceled"
+        });
+        // We can't actually cancel it, but we can hide the overlay
+        hasSyncedRef.current = true;
+    }, [addToast]);
+
+    // Handle email/thread close
+    const handleClose = useCallback(() => {
+        setSelectedThread(null);
+        setSelectedEmail(null);
+    }, []);
+
+    // Add keyboard shortcut for Escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && (selectedEmail || selectedThread)) {
+                handleClose();
+            }
+        };
+        
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [selectedEmail, selectedThread, handleClose]);
 
     return (
-        <Row fill padding="8" gap="8">
-            <Column
-                gap="-1"
-                fillWidth
-                style={{
-                    width: mainContentWidth,
-                    transition: "width 0.3s ease",
-                }}
-            >
-                <InboxControls
-                    searchQuery={searchQuery}
-                    onSearchChange={handleSearchChange}
-                    isLoading={isLoading}
-                    isFetching={isFetching}
-                    onRefresh={handleRefresh}
-                    onSync={handleSync}
-                    isSyncing={isSyncing}
-                    onAISearch={handleAISearch}
-                    onClearAISearch={handleClearAISearch}
-                    isAISearchActive={isAISearchActive}
-                    isAISearchLoading={isAISearchLoading}
-                    currentCategory={currentCategory}
-                    categoryOptions={allCategoryOptions}
-                    onCategoryChange={handleCategoryChange}
-                    onNewEmail={handleNewEmail}
-                    pageSize={pageSize}
-                    onPageSizeChange={handlePageSizeChange}
-                    user={userData}
-                    onSignOut={handleSignOut}
-                />
-
-                <Column fill overflow="hidden">
-                    <EmailList
-                        emails={displayedEmails}
-                        isLoading={isAISearchActive ? isAISearchLoading : isLoading}
-                        selectedEmailId={selectedEmail?.id || null}
-                        searchQuery={debouncedSearchQuery}
-                        onSelectEmail={handleEmailSelect}
-                        onToggleStar={handleToggleStar}
-                    />
-                    <Pagination
-                        page={page}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                        isLoading={isLoading}
-                        isFetching={isFetching}
-                        pageSize={pageSize}
-                        totalCount={isAISearchActive ? similarEmails.length : totalCount}
-                        hasMore={hasMore}
-                    />
-                </Column>
-
-                {/* Show a simple count for AI search results */}
-                {isAISearchActive && (
-                    <Row paddingX="16" marginTop="16" horizontal="center">
-                        <Text variant="body-default-m">
-                            Found {similarEmails.length} similar emails
-                        </Text>
-                    </Row>
-                )}
-            </Column>
-
-            {selectedEmail && (
+        <>
+            {/* <SyncOverlay 
+                isVisible={showSyncOverlay}
+                progress={progress}
+                message={message}
+                onCancel={handleCancelSync}
+            /> */}
+            
+            <Row fill padding="8" gap="8">
                 <Column
+                    gap="-1"
+                    fillWidth
                     style={{
-                        width: "50%",
+                        width: mainContentWidth,
                         transition: "width 0.3s ease",
                     }}
                 >
-                    <EmailDetail
-                        email={selectedEmail}
-                        onClose={() => setSelectedEmail(null)}
-                        onToggleStar={handleToggleStar}
-                        onReply={handleReply}
-                        onForward={handleForward}
-                        onTrash={handleTrash}
+                    <InboxControls
+                        searchQuery={searchQuery}
+                        onSearchChange={handleSearchChange}
+                        isLoading={isLoading}
+                        isFetching={isFetching}
+                        onRefresh={handleRefresh}
+                        onSync={handleSync}
+                        isSyncing={isSyncing}
+                        onAISearch={handleAISearch}
+                        onClearAISearch={handleClearAISearch}
+                        isAISearchActive={isAISearchActive}
+                        isAISearchLoading={isAISearchLoading}
+                        currentCategory={currentCategory}
+                        categoryOptions={allCategoryOptions}
+                        onCategoryChange={handleCategoryChange}
+                        onNewEmail={handleComposeNew}
+                        pageSize={pageSize}
+                        onPageSizeChange={handlePageSizeChange}
+                        user={formattedUser}
+                        onSignOut={handleSignOut}
                     />
-                </Column>
-            )}
 
+                    <Column fill overflow="hidden">
+                        <EmailList
+                            threads={displayedThreads}
+                            isLoading={isAISearchActive ? isAISearchLoading : isLoading}
+                            selectedThreadId={selectedThread?.threadId || null}
+                            selectedEmailId={selectedEmail?.id || null}
+                            searchQuery={debouncedSearchQuery}
+                            onSelectThread={handleThreadSelect}
+                            onToggleStar={handleToggleStar}
+                        />
+                        <Pagination
+                            page={page}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                            isLoading={isLoading}
+                            isFetching={isFetching}
+                            pageSize={pageSize}
+                            totalCount={isAISearchActive ? similarEmails.length : totalCount}
+                            hasMore={hasMore}
+                        />
+                    </Column>
+
+                    {/* Show a simple count for AI search results */}
+                    {isAISearchActive && (
+                        <Row paddingX="16" marginTop="16" horizontal="center">
+                            <Text variant="body-default-m">
+                                Found {similarEmails.length} similar emails
+                            </Text>
+                        </Row>
+                    )}
+                </Column>
+
+                {/* Email detail view */}
+                {selectedEmail && (
+                    <Column 
+                        gap="-1"
+                        fillWidth
+                        style={{ 
+                            width: detailWidth, 
+                            transition: "width 0.3s ease",
+                            overflow: "hidden"
+                        }}
+                    >
+                        <EmailDetail
+                            email={selectedEmail}
+                            thread={selectedThread}
+                            onClose={handleClose}
+                            onReply={() => {
+                                setReplyTo(selectedEmail);
+                                setForwardFrom(null);
+                                setIsComposingEmail(true);
+                            }}
+                            onForward={() => {
+                                setForwardFrom(selectedEmail);
+                                setReplyTo(null);
+                                setIsComposingEmail(true);
+                            }}
+                            onTrash={handleTrashEmail}
+                            onToggleStar={handleToggleStar}
+                            onSelectEmail={handleEmailSelect}
+                        />
+                    </Column>
+                )}
+            </Row>
+
+            {/* Compose email dialog */}
             {isComposingEmail && (
                 <ComposeEmail
                     {...getComposeEmailProps()}
@@ -584,14 +545,14 @@ function InboxPage() {
                     onSuccess={handleEmailSent}
                 />
             )}
-        </Row>
+        </>
     );
 }
 
 export default function Page() {
     return (
-        <Suspense fallback={<Spinner/>}>
+        <Suspense fallback={<Spinner />}>
             <InboxPage />
         </Suspense>
-    )
+    );
 }

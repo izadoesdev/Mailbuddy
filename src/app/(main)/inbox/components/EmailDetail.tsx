@@ -13,17 +13,19 @@ import {
     Tag,
     Icon,
 } from "@/once-ui/components";
-import type { Email } from "../types";
+import type { Email, Thread } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
 import DOMPurify from "dompurify";
 
 interface EmailDetailProps {
     email: Email;
+    thread?: Thread | null;
     onClose: () => void;
-    onToggleStar?: (email: Email, e: React.MouseEvent<HTMLButtonElement>) => void;
+    onToggleStar?: (item: Email | Thread, e?: React.MouseEvent<HTMLButtonElement>) => void;
     onReply?: (email: Email) => void;
     onForward?: (email: Email) => void;
     onTrash?: (email: Email) => void;
+    onSelectEmail?: (email: Email) => void;
 }
 
 /**
@@ -43,11 +45,13 @@ function decodeHtmlEntities(html: string): string {
 
 export function EmailDetail({ 
     email, 
+    thread,
     onClose, 
     onToggleStar,
     onReply,
     onForward,
-    onTrash 
+    onTrash,
+    onSelectEmail
 }: EmailDetailProps) {
     // Use fromName if available, otherwise extract from the from field
     const senderName = (email as any).fromName || extractName(email.from ?? "");
@@ -82,6 +86,12 @@ export function EmailDetail({
         }
     };
 
+    const handleEmailSelect = (emailToSelect: Email) => {
+        if (onSelectEmail) {
+            onSelectEmail(emailToSelect);
+        }
+    };
+
     // Helper function to get the appropriate color for priority
     const getPriorityColor = (priority?: string) => {
         if (!priority) return "neutral";
@@ -98,6 +108,9 @@ export function EmailDetail({
                 return "neutral";
         }
     };
+
+    // Check if we have other emails in this thread
+    const hasMultipleEmails = thread?.emails?.length && thread.emails.length > 1;
 
     return (
         <Column fill radius="m" border="neutral-alpha-medium" overflow="hidden">
@@ -119,8 +132,31 @@ export function EmailDetail({
                             aria-label={email.isStarred ? "Unstar email" : "Star email"}
                             onClick={handleStarClick}
                         />
+                        {hasMultipleEmails && (
+                            <Chip 
+                                label={`${thread?.emails?.length || 0} emails in thread`}
+                            />
+                        )}
                     </Row>
                     <Row gap="8">
+                        {onReply && (
+                            <IconButton
+                                tooltip="Reply"
+                                tooltipPosition="bottom"
+                                variant="ghost"
+                                icon="reply"
+                                onClick={handleReplyClick}
+                            />
+                        )}
+                        {onForward && (
+                            <IconButton
+                                tooltip="Forward"
+                                tooltipPosition="bottom"
+                                variant="ghost"
+                                icon="forward"
+                                onClick={handleForwardClick}
+                            />
+                        )}
                         {onTrash && (
                             <IconButton
                                 tooltip="Move to trash"
@@ -140,6 +176,67 @@ export function EmailDetail({
                         />
                     </Row>
                 </Row>
+                
+                {/* Thread emails list if we have multiple emails */}
+                {hasMultipleEmails && (
+                    <Column fillWidth paddingX="16" paddingY="8" gap="8" borderBottom="neutral-alpha-medium">
+                        <Row fillWidth horizontal="space-between" paddingX="8">
+                            <Text variant="body-strong-s">Emails in this thread</Text>
+                            <Text variant="body-default-xs" onBackground="neutral-weak">
+                                {thread?.emails?.length} messages
+                            </Text>
+                        </Row>
+                        <Column fillWidth gap="4" style={{ maxHeight: "200px" }} overflowY="auto">
+                            {thread?.emails?.map((threadEmail) => (
+                                <Row 
+                                    key={threadEmail.id}
+                                    fillWidth
+                                    paddingX="8"
+                                    paddingY="4"
+                                    radius="s"
+                                    background={threadEmail.id === email.id ? "neutral-alpha-medium" : "transparent"}
+                                    cursor="pointer"
+                                    onClick={() => handleEmailSelect(threadEmail)}
+                                >
+                                    <Column fillWidth gap="2">
+                                        <Row fillWidth horizontal="space-between">
+                                            <Text 
+                                                variant={threadEmail.isRead ? "body-default-s" : "body-strong-s"}
+                                                style={{ 
+                                                    maxWidth: "70%",
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
+                                                    whiteSpace: "nowrap" 
+                                                }}
+                                            >
+                                                {extractName(threadEmail.from || "")}
+                                            </Text>
+                                            <Text variant="label-default-xs" onBackground="neutral-weak">
+                                                {formatDate(
+                                                    threadEmail.internalDate
+                                                        ? new Date(Number.parseInt(threadEmail.internalDate))
+                                                        : new Date(threadEmail.createdAt)
+                                                )}
+                                            </Text>
+                                        </Row>
+                                        <Text 
+                                            variant="body-default-xs" 
+                                            onBackground="neutral-weak"
+                                            style={{ 
+                                                overflow: "hidden",
+                                                textOverflow: "ellipsis",
+                                                whiteSpace: "nowrap" 
+                                            }}
+                                        >
+                                            {threadEmail.snippet || "No preview available"}
+                                        </Text>
+                                    </Column>
+                                </Row>
+                            ))}
+                        </Column>
+                    </Column>
+                )}
+
                 <Column fill overflowY="auto" paddingY="12" gap="16">
                 <Row gap="16" vertical="center" paddingX="24" fillWidth fitHeight>
                     <Avatar size="l" value={getInitials(senderName)} />
@@ -157,7 +254,11 @@ export function EmailDetail({
                         onBackground="neutral-weak"
                         style={{ marginLeft: "auto" }}
                     >
-                        {formatDate(email.createdAt)}
+                        {formatDate(
+                            email.internalDate
+                                ? new Date(Number.parseInt(email.internalDate))
+                                : new Date(email.createdAt)
+                        )}
                     </Text>
                 </Row>
 
