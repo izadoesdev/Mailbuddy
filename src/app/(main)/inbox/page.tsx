@@ -114,10 +114,6 @@ function InboxPage() {
         defaultValue: 'inbox',
         history: 'replace'
     });
-    const [pageTokenState, setPageTokenState] = useQueryState('pageToken', stringParser);
-    
-    // Derived pageToken value - convert empty string to null
-    const pageToken = pageTokenState || null;
 
     // Local state
     const [searchQuery, setSearchQuery] = useState("");
@@ -236,10 +232,8 @@ function InboxPage() {
     const handlePageChange = useCallback((newPage: number) => {
         // If we're moving forward and have a nextPageToken, use it
         if (newPage > page && hasMore) {
-            setPageTokenState("next"); // Just use a string token
         } else if (newPage < page) {
             // If going back, reset token and use offset-based pagination
-            setPageTokenState(null);
             // If skipping back multiple pages, just go back to page 1 and re-fetch
             if (newPage < page - 1) {
                 setPage(1);
@@ -253,7 +247,7 @@ function InboxPage() {
             return;
         }
         setPage(newPage);
-    }, [setPage, setPageTokenState, page, hasMore]);
+    }, [setPage, page, hasMore]);
 
     // Handle page size change
     const handlePageSizeChange = useCallback((size: number) => {

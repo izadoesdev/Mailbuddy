@@ -340,9 +340,15 @@ export function ComposeEmail({
                 onMouseUp={handleTextSelection}
                 style={{
                   minHeight: "200px",
-                  border: "1px solid var(--color-neutral-alpha-medium)",
+                  width: "100%", 
+                  height: "100%",
                   borderRadius: "var(--radius-m)",
-                  padding: "12px",
+                  padding: "var(--static-space-20)",
+                  background: "var(--static-white)",
+                  color: "var(--static-black)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "var(--font-size-body-m)",
+                  lineHeight: "1.6",
                   outline: "none",
                   overflowY: "auto",
                 }}
@@ -371,10 +377,21 @@ export function ComposeEmail({
                   <Column 
                     padding="12" 
                     radius="m" 
-                    background="neutral-alpha-weak"
+                    background="neutral-weak"
                     border="neutral-alpha-medium"
+                    style={{
+                      background: "var(--static-white)"
+                    }}
                   >
-                    <div dangerouslySetInnerHTML={{ __html: enhancedContent }} />
+                    <div 
+                      dangerouslySetInnerHTML={{ __html: enhancedContent }} 
+                      style={{
+                        color: "var(--static-black)",
+                        fontFamily: "var(--font-sans)",
+                        fontSize: "var(--font-size-body-m)",
+                        lineHeight: "1.6"
+                      }}
+                    />
                   </Column>
                 </Column>
               )}

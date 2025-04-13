@@ -173,10 +173,6 @@ export function EmailItem({
                             {/* Labels section */}
                             {(importantLabel || (customLabels && customLabels.length > 0) || (aiCategoriesToShow && aiCategoriesToShow.length > 0)) && (
                                 <Row gap="4" wrap={false} style={{ flexShrink: 0 }}>
-                                    {/* Important tag */}
-                                    
-                                    {/* Display first set of labels (mix of Gmail + AI) */}
-
                                     {/* Display AI categories */}
                                     {aiCategoriesToShow?.slice(0, shownLabelsCount - (customLabels?.slice(0, shownLabelsCount - (aiCategoriesToShow?.length || 0)).length || 0)).map(category => (
                                         <Tag

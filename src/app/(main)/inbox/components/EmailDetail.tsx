@@ -16,7 +16,6 @@ import {
 import type { Email } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
 import DOMPurify from "dompurify";
-import { useState } from "react";
 
 interface EmailDetailProps {
     email: Email;
