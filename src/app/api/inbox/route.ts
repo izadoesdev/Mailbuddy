@@ -517,11 +517,11 @@ export async function GET(request: NextRequest) {
         // 7. Sanitize AI metadata before sending the response
         const sanitizedThreads = enhancedThreads.map(thread => ({
             ...thread,
-            aiMetadata: sanitizeAIMetadata(thread.aiMetadata),
+            // aiMetadata: sanitizeAIMetadata(thread.aiMetadata),
             // Also sanitize AI metadata for each email in the thread
             emails: thread.emails.map((email: any) => ({
                 ...email,
-                aiMetadata: sanitizeAIMetadata(email.aiMetadata)
+                // aiMetadata: sanitizeAIMetadata(email.aiMetadata)
             }))
         }));
 

@@ -13,6 +13,7 @@ import {
     Tag,
     Icon,
 } from "@/once-ui/components";
+import { TiltFx } from "@/once-ui/components/TiltFx";
 import type { Email, Thread } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
 import DOMPurify from "dompurify";
@@ -288,58 +289,114 @@ export function EmailDetail({
                     </Row>
                 )}
 
-                {/* AI Metadata Card */}
+                {/* AI Metadata Card - With TiltFx effect */}
                 {email.aiMetadata && (
-                    <Column fillWidth paddingX="24" gap="12">
-                            <Column fillWidth radius="l" border="neutral-alpha-medium" background="neutral-alpha-weak" paddingBottom="16">
-                                <Row gap="8" paddingX="8" paddingY="8">
+                    <Column fillWidth paddingX="24" gap="8">
+                        <TiltFx>
+                            <Column 
+                                fillWidth 
+                                radius="l" 
+                                border="brand-alpha-medium" 
+                                background="brand-alpha-weak" 
+                                padding="16"
+                                gap="12"
+                                position="relative"
+                            >
+                                <Icon 
+                                    radius="full" 
+                                    padding="8" 
+                                    solid="brand-medium" 
+                                    position="absolute" 
+                                    right="16" 
+                                    top="16" 
+                                    onSolid="brand-strong" 
+                                    name="sparkles" 
+                                    size="xs" 
+                                />
+                                
+                                {/* AI Insights Header */}
+                                <Row vertical="center" gap="8">
+                                    <Icon name="sparkles" size="s" onBackground="brand-strong" />
+                                    <Heading variant="heading-strong-s" color="brand">
+                                        AI Insights
+                                    </Heading>
+                                </Row>
+                                
+                                {/* Category and Priority in a single row */}
+                                <Row gap="8" wrap>
                                     {email.aiMetadata.category && (
-                                        <Column width={8} border="neutral-alpha-medium" radius="m" paddingX="12" paddingY="8" gap="4" background={getPriorityColor(
-                                            email.aiMetadata.priority ?? undefined,
-                                        ) as any}>
-                                            <Text variant="label-default-s" onBackground="neutral-weak">Category</Text>
-                                            <Text variant="label-strong-s">{email.aiMetadata.category}</Text>
-                                        </Column>
+                                        <Tag 
+                                            label={`Category: ${email.aiMetadata.category}`}
+                                            variant={getPriorityColor(email.aiMetadata.priority || undefined) as any}
+                                        />
                                     )}
-
+                                    
                                     {email.aiMetadata.priority && (
-                                        <Column width={8} border="neutral-alpha-medium" radius="m" paddingX="12" paddingY="8" gap="4" background={getPriorityColor(
-                                            email.aiMetadata.priority,
-                                        ) as any}>
-                                            <Text variant="label-default-s" onBackground="neutral-weak">Priority</Text>
-                                            <Text variant="label-strong-s">{email.aiMetadata.priority}</Text>
-                                        </Column>
+                                        <Tag 
+                                            label={`Priority: ${email.aiMetadata.priority}`}
+                                            variant={getPriorityColor(email.aiMetadata.priority) as any}
+                                        />
                                     )}
                                 </Row>
 
-                                <Icon radius="full" padding="8" solid="brand-medium" position="absolute" right="16" top="16" onSolid="brand-strong" name="sparkles" size="xs" />
-
+                                {/* Summary */}
                                 {email.aiMetadata.summary && (
-                                    <Column gap="4" paddingX="16" paddingTop="8">
-                                        <Text variant="label-default-s" onBackground="neutral-weak">Summary</Text>
+                                    <Column 
+                                        gap="4" 
+                                        padding="8" 
+                                        radius="s" 
+                                        background="page"
+                                    >
+                                        <Text variant="label-strong-s" onBackground="brand-medium">
+                                            Summary
+                                        </Text>
                                         <Text variant="body-default-m">
                                             {email.aiMetadata.summary}
                                         </Text>
                                     </Column>
                                 )}
 
-                                {email.aiMetadata.priorityExplanation && (
-                                    <Row gap="8" paddingX="16" paddingTop="16">
-                                        <Icon onBackground="neutral-weak" size="xs" name="infoCircle"/><Text onBackground="neutral-medium" variant="label-default-s">{email.aiMetadata.priorityExplanation}</Text>
-                                    </Row>
-                                )}
-                                
+                                {/* Key Points */}
                                 {email.aiMetadata.keywords && email.aiMetadata.keywords.length > 0 && (
                                     <Column gap="4">
-                                        <Text variant="body-strong-s">Key Points:</Text>
-                                        <ul>
+                                        <Text variant="label-strong-s" onBackground="brand-medium">
+                                            Key Points
+                                        </Text>
+                                        <Column gap="4" paddingLeft="8">
                                             {email.aiMetadata.keywords.map((keyword: string) => (
-                                                <li key={`keyword-${keyword}`}>{keyword}</li>
+                                                <Row 
+                                                    key={`keyword-${keyword}`} 
+                                                    gap="8" 
+                                                    vertical="center"
+                                                    padding="4"
+                                                    radius="s"
+                                                    background="brand-alpha-weak"
+                                                >
+                                                    <Icon name="checkCircle" size="s" onBackground="brand-strong" />
+                                                    <Text variant="body-default-s">{keyword}</Text>
+                                                </Row>
                                             ))}
-                                        </ul>
+                                        </Column>
                                     </Column>
                                 )}
+
+                                {/* Priority Explanation - only if exists */}
+                                {email.aiMetadata.priorityExplanation && (
+                                    <Row 
+                                        gap="8" 
+                                        vertical="center" 
+                                        padding="8"
+                                        radius="s"
+                                        background="brand-alpha-weak"
+                                    >
+                                        <Icon onBackground="brand-medium" size="s" name="infoCircle"/>
+                                        <Text onBackground="brand-strong" variant="body-default-s">
+                                            {email.aiMetadata.priorityExplanation}
+                                        </Text>
+                                    </Row>
+                                )}
                             </Column>
+                        </TiltFx>
                     </Column>
                 )}
 
