@@ -23,7 +23,8 @@ const fetchEmails = async ({
     category,
     isStarred,
     isUnread,
-}: Omit<FetchEmailsParams, "enabled">): Promise<InboxResponse> => {
+    signal,
+}: Omit<FetchEmailsParams, "enabled"> & { signal?: AbortSignal }): Promise<InboxResponse> => {
     try {
         const params = new URLSearchParams();
         params.append("page", page.toString());
@@ -45,7 +46,7 @@ const fetchEmails = async ({
             }
         }
         
-        const response = await fetch(`/api/inbox?${params.toString()}`);
+        const response = await fetch(`/api/inbox?${params.toString()}`, { signal });
 
         // Special case: If we get a 404, it might just mean no emails yet
         // We'll return an empty inbox rather than throwing an error
@@ -115,7 +116,14 @@ const fetchEmails = async ({
             hasMore: data.hasMore || false,
         };
     } catch (error) {
-        console.warn("Error in fetchEmails:", error);
+        // Check if this was an abort error from the AbortController
+        if (error instanceof DOMException && error.name === 'AbortError') {
+            // This is an expected error when we abort a request, no need to log it
+            console.log("Request was cancelled");
+        } else {
+            console.warn("Error in fetchEmails:", error);
+        }
+        
         // Return empty inbox instead of throwing
         return {
             threads: [],
@@ -142,17 +150,48 @@ export function useInboxData({
     const { addToast } = useToast();
     const hasShownErrorToast = useRef(false);
     const isFirstLoad = useRef(true);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     // Define the query options
     const queryOptions: UseQueryOptions<InboxResponse, Error> = {
         queryKey: ["inbox", page, pageSize, searchQuery, category, isStarred, isUnread],
-        queryFn: () => fetchEmails({ page, pageSize, searchQuery, category, isStarred, isUnread }),
+        queryFn: ({ signal }) => {
+            // Cancel any existing request
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            
+            // Create a new AbortController for this request
+            if (!signal) {
+                abortControllerRef.current = new AbortController();
+                signal = abortControllerRef.current.signal;
+            }
+            
+            return fetchEmails({ 
+                page, 
+                pageSize, 
+                searchQuery, 
+                category, 
+                isStarred, 
+                isUnread,
+                signal 
+            });
+        },
         staleTime: 60 * 1000, // 1 minute
         retry: false, // Disable retries to prevent multiple error messages
         enabled, // Only run the query when enabled is true
     };
 
     const queryResult = useQuery<InboxResponse, Error>(queryOptions);
+
+    // Cancel pending requests when component unmounts
+    useEffect(() => {
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
+    }, []);
 
     // Extract data from query result
     const { data, isLoading, isFetching, isError, error } = queryResult;
@@ -166,12 +205,15 @@ export function useInboxData({
         }
 
         if (error && !hasShownErrorToast.current && enabled && !isFirstLoad.current) {
-            console.error("Error fetching emails:", error);
-            addToast({
-                variant: "danger",
-                message: "Failed to load emails. Please try again later.",
-            });
-            hasShownErrorToast.current = true;
+            // Don't show error toast for aborted requests
+            if (!(error instanceof DOMException && error.name === 'AbortError')) {
+                console.error("Error fetching emails:", error);
+                addToast({
+                    variant: "danger",
+                    message: "Failed to load emails. Please try again later.",
+                });
+                hasShownErrorToast.current = true;
+            }
         } else if (!error) {
             // Reset the flag when there's no error
             hasShownErrorToast.current = false;

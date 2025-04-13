@@ -133,9 +133,13 @@ export function EmailDetail({
                             onClick={handleStarClick}
                         />
                         {hasMultipleEmails && (
-                            <Chip 
-                                label={`${thread?.emails?.length || 0} emails in thread`}
-                            />
+                            <Row vertical="center" gap="4">
+                                <Icon name="chat" size="s" onBackground="brand-medium" />
+                                <Tag 
+                                    variant="brand"
+                                    label={`${thread?.emails?.length || 0} emails in thread`}
+                                />
+                            </Row>
                         )}
                     </Row>
                     <Row gap="8">
@@ -180,14 +184,18 @@ export function EmailDetail({
                 {/* Thread emails list if we have multiple emails */}
                 {hasMultipleEmails && (
                     <Column fillWidth paddingX="16" paddingY="8" gap="8" borderBottom="neutral-alpha-medium">
-                        <Row fillWidth horizontal="space-between" paddingX="8">
-                            <Text variant="body-strong-s">Emails in this thread</Text>
-                            <Text variant="body-default-xs" onBackground="neutral-weak">
-                                {thread?.emails?.length} messages
-                            </Text>
+                        <Row fillWidth horizontal="space-between" paddingX="8" vertical="center">
+                            <Row vertical="center" gap="4">
+                                <Icon name="chat" size="s" onBackground="brand-medium" />
+                                <Text variant="body-strong-s">Emails in this thread</Text>
+                            </Row>
+                            <Tag 
+                                variant="brand"
+                                label={`${thread?.emails?.length} total`}
+                            />
                         </Row>
                         <Column fillWidth gap="4" style={{ maxHeight: "200px" }} overflowY="auto">
-                            {thread?.emails?.map((threadEmail) => (
+                            {thread?.emails?.map((threadEmail, index) => (
                                 <Row 
                                     key={threadEmail.id}
                                     fillWidth
@@ -200,17 +208,25 @@ export function EmailDetail({
                                 >
                                     <Column fillWidth gap="2">
                                         <Row fillWidth horizontal="space-between">
-                                            <Text 
-                                                variant={threadEmail.isRead ? "body-default-s" : "body-strong-s"}
-                                                style={{ 
-                                                    maxWidth: "70%",
-                                                    overflow: "hidden",
-                                                    textOverflow: "ellipsis",
-                                                    whiteSpace: "nowrap" 
-                                                }}
-                                            >
-                                                {extractName(threadEmail.from || "")}
-                                            </Text>
+                                            <Row gap="4" vertical="center">
+                                                <Text 
+                                                    variant="label-default-xs" 
+                                                    onBackground="neutral-weak"
+                                                >
+                                                    #{index + 1}
+                                                </Text>
+                                                <Text 
+                                                    variant={threadEmail.isRead ? "body-default-s" : "body-strong-s"}
+                                                    style={{ 
+                                                        maxWidth: "70%",
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
+                                                        whiteSpace: "nowrap" 
+                                                    }}
+                                                >
+                                                    {extractName(threadEmail.from || "")}
+                                                </Text>
+                                            </Row>
                                             <Text variant="label-default-xs" onBackground="neutral-weak">
                                                 {formatDate(
                                                     threadEmail.internalDate

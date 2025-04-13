@@ -146,9 +146,18 @@ export function EmailItem({
                                 
                                 {/* Thread count badge */}
                                 {isThread && emailCount > 1 && (
-                                    <Chip 
-                                        label={emailCount.toString()} 
-                                    />
+                                    <Row vertical="center" gap="2">
+                                        <Icon 
+                                            name="chat" 
+                                            size="xs" 
+                                            onBackground="brand-medium" 
+                                        />
+                                        <Tag
+                                            variant="brand"
+                                            size="s"
+                                            label={`${emailCount}`}
+                                        />
+                                    </Row>
                                 )}
                                 
                                 {/* AI priority badge */}

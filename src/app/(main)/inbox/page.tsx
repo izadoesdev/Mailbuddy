@@ -319,10 +319,34 @@ function InboxPage() {
     }, [triggerSync]);
 
     // Handle category change
-    const handleCategoryChange = useCallback((category: string) => {
-        setCurrentCategory(category);
+    const handleCategoryChange = useCallback(async (newCategory: string) => {
+        // Close any open emails/threads when changing categories
+        setSelectedEmail(null);
+        setSelectedThread(null);
+        
+        // Clear any active AI search when changing categories
+        if (isAISearchActive) {
+            clearAISearch();
+        }
+        
+        // Reset to first page when changing categories
         setPage(1);
-    }, [setCurrentCategory, setPage]);
+        
+        // Update the category
+        await setCurrentCategory(newCategory);
+        
+        // Invalidate the query to ensure fresh data
+        queryClient.invalidateQueries({ queryKey: ["inbox"] });
+    }, [setCurrentCategory, setPage, queryClient, isAISearchActive, clearAISearch]);
+
+    // When mounting the component, ensure the category is set from URL params
+    useEffect(() => {
+        if (currentCategory) {
+            // When category changes in URL, clear selected items
+            setSelectedEmail(null);
+            setSelectedThread(null);
+        }
+    }, [currentCategory]);
 
     // Handle compose email
     const handleComposeNew = useCallback(() => {
