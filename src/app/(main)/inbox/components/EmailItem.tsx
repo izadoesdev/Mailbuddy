@@ -101,6 +101,8 @@ export function EmailItem({
                     background={isSelected ? "neutral-medium" : email.isRead ? "page" : "overlay"}
                 >
                     <Column vertical="center" gap="8">
+
+                        <Row width={8} vertical="center" gap="4">
                         <IconButton
                             variant="ghost"
                             size="s"
@@ -115,7 +117,6 @@ export function EmailItem({
                                 name={email.isStarred ? "starFill" : "star"} 
                             />
                         </IconButton>
-                        <Row width={8}>
                             <Text
                                 variant={email.isRead ? "body-default-s" : "body-strong-s"}
                                 onBackground={email.isRead ? "neutral-weak" : "neutral-strong"}

@@ -475,63 +475,69 @@ export async function GET(request: NextRequest) {
         // 4. Process for thread view
         const processedThreads = processThreadView(decryptedEmails);
         
-        // 5. Try to fetch and attach AI metadata for emails that don't have it yet
-        // Limit to only process a few emails at a time to prevent excessive API calls
-        const MAX_ENHANCEMENT_PER_REQUEST = 3;
+        // Find ALL emails missing AI metadata, not just one per thread
+        const emailsNeedingEnhancement = decryptedEmails.filter(email => !email.aiMetadata);
         
-        // Find threads with emails missing AI metadata
-        const threadsNeedingEnhancement = processedThreads.filter(thread => !thread.aiMetadata);
-        const threadsToEnhance = threadsNeedingEnhancement.slice(0, MAX_ENHANCEMENT_PER_REQUEST);
-        
-        let enhancedThreads = [...processedThreads];
-        
-        if (threadsToEnhance.length > 0) {
-            console.log(`Enhancing ${threadsToEnhance.length} thread emails with AI metadata`);
-            const enhancedResults = await Promise.all(threadsToEnhance.map(async (thread) => {
+        if (emailsNeedingEnhancement.length > 0) {
+            console.log(`Enhancing ${emailsNeedingEnhancement.length} emails with AI metadata`);
+            
+            // Process all emails that need enhancement
+            const enhancedEmails = await Promise.all(emailsNeedingEnhancement.map(async (email) => {
                 try {
-                    // Use the newest email in the thread for AI enhancement
-                    const enhanced = await enhanceEmail(thread);
+                    // Make sure email has userId field required by enhanceEmail
+                    const emailWithUserId = {
+                        ...email,
+                        userId: userId // Ensure userId is set from the session
+                    };
+                    
+                    const enhanced = await enhanceEmail(emailWithUserId);
                     if (enhanced.success && enhanced.data) {
-                        // Update the thread with enhanced metadata
                         return {
-                            ...thread,
+                            ...email,
                             aiMetadata: enhanced.data.aiMetadata
                         };
                     }
                 } catch (err) {
-                    console.warn(`Error enhancing thread ${thread.threadId}:`, err);
+                    console.warn(`Error enhancing email ${email.id}:`, err);
                 }
-                return thread;
+                return email;
             }));
             
-            // Replace enhanced threads in the processed list
-            enhancedThreads = processedThreads.map(thread => {
-                const enhanced = enhancedResults.find(t => t && t.threadId === thread.threadId);
-                return enhanced || thread;
+            // Create mapping of enhanced emails by ID for quick lookup
+            const enhancedEmailsMap = new Map<string, any>();
+            
+            // Use for...of instead of forEach
+            for (const email of enhancedEmails) {
+                if (email?.id) {
+                    enhancedEmailsMap.set(email.id, email);
+                }
+            }
+            
+            // Update threads with enhanced emails
+            const enhancedThreads = processedThreads.map(thread => {
+                // Update each email in the thread if it was enhanced
+                const updatedEmails = thread.emails.map((email: any) => {
+                    if (email?.id && enhancedEmailsMap.has(email.id)) {
+                        return enhancedEmailsMap.get(email.id);
+                    }
+                    return email;
+                });
+                
+                // Update thread with enhanced emails
+                return {
+                    ...thread,
+                    emails: updatedEmails,
+                    // Update thread-level aiMetadata from the newest email
+                    aiMetadata: updatedEmails[0]?.aiMetadata || thread.aiMetadata
+                };
             });
+            
+            // Use the enhanced threads
+            return generateResponse(enhancedThreads, totalEmailCount, page, pageSize);
         }
 
-        // 6. Calculate if there are more emails available based on total count
-        const hasMore = (skip + pageSize) < totalEmailCount;
-
-        // 7. Sanitize AI metadata before sending the response
-        const sanitizedThreads = enhancedThreads.map(thread => ({
-            ...thread,
-            // aiMetadata: sanitizeAIMetadata(thread.aiMetadata),
-            // Also sanitize AI metadata for each email in the thread
-            emails: thread.emails.map((email: any) => ({
-                ...email,
-                // aiMetadata: sanitizeAIMetadata(email.aiMetadata)
-            }))
-        }));
-
-        return NextResponse.json({
-            threads: sanitizedThreads,
-            totalCount: totalEmailCount,
-            page,
-            pageSize,
-            hasMore
-        });
+        // If no enhancement needed, return original threads
+        return generateResponse(processedThreads, totalEmailCount, page, pageSize);
     } catch (error) {
         console.error("Error fetching emails:", error);
         return NextResponse.json(
@@ -539,4 +545,30 @@ export async function GET(request: NextRequest) {
             { status: 500 }
         );
     }
+}
+
+/**
+ * Generate standardized API response
+ */
+function generateResponse(threads: any[], totalEmailCount: number, page: number, pageSize: number) {
+    // Calculate if there are more emails available based on total count
+    const skip = (page - 1) * pageSize;
+    const hasMore = (skip + pageSize) < totalEmailCount;
+
+    // Sanitize threads for response
+    const sanitizedThreads = threads.map(thread => ({
+        ...thread,
+        // Also sanitize AI metadata for each email in the thread
+        emails: thread.emails.map((email: any) => ({
+            ...email,
+        }))
+    }));
+
+    return NextResponse.json({
+        threads: sanitizedThreads,
+        totalCount: totalEmailCount,
+        page,
+        pageSize,
+        hasMore
+    });
 }

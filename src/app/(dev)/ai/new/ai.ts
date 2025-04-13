@@ -74,7 +74,7 @@ export {
  */
 export async function enhanceEmail(email: any) {
     if (!email || !email.id || !email.userId) {
-        return { success: false, error: "Invalid email data" };
+        throw new Error("Invalid email data");
     }
 
     try {
@@ -160,6 +160,6 @@ export async function enhanceEmail(email: any) {
         };
     } catch (error) {
         console.error("Error enhancing email:", error);
-        return { success: false, error: String(error) };
+        throw error;
     }
 }

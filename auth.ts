@@ -61,7 +61,6 @@ export const auth = betterAuth({
     },
     plugins: [
         customSession(async ({ user, session }) => {
-            // Fetch the user's role from the database
             const dbUser = await prisma.user.findUnique({
                 where: { id: user.id },
                 select: { emailVerified: true, accounts: true },
