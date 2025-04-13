@@ -56,7 +56,7 @@ export function ContactList({
   }
 
   return (
-    <Column fill gap="16" paddingY="16">
+    <Column fill gap="0">
       {contacts.map((contact) => (
         <ContactCard 
           key={contact.email} 

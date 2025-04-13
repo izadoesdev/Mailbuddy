@@ -3,6 +3,7 @@ import { auth } from "@/libs/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/libs/db";
 import { Prisma } from "@prisma/client";
+import { shouldExcludeFromContacts } from "../utils/constants";
 
 /**
  * Interface for a contact with email metrics
@@ -68,6 +69,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const priority = searchParams.get('priority');
     const searchQuery = searchParams.get('query');
+    const includeAutomated = searchParams.get('includeAutomated') === 'true';
 
     try {
         // Calculate pagination
@@ -131,13 +133,18 @@ export async function GET(request: NextRequest) {
             ${priority ? Prisma.sql`AND m."priority" = ${priority}` : Prisma.empty}
             GROUP BY e."from"
             ORDER BY ${orderBySql}
-            LIMIT ${pageSize}
+            LIMIT ${pageSize * 2} 
             OFFSET ${skip}
         `;
 
         // Process the raw results to match the Contact interface
         const contactPromises = contactsRaw.map(async (rawContact) => {
             const { name, email } = decryptFrom(rawContact.from);
+            
+            // Skip automated senders unless explicitly included
+            if (!includeAutomated && shouldExcludeFromContacts(email)) {
+                return null;
+            }
             
             // Get categories and priorities for this contact in a separate query
             const metadataCounts = await prisma.$queryRaw<any[]>`
@@ -182,7 +189,12 @@ export async function GET(request: NextRequest) {
             };
         });
         
-        const contacts = await Promise.all(contactPromises);
+        // Process all contacts and filter out null values (automated senders)
+        let contacts = (await Promise.all(contactPromises)).filter(contact => contact !== null) as Contact[];
+        
+        // We fetch more items than needed to account for filtered automated senders
+        // Now trim to the actual page size
+        contacts = contacts.slice(0, pageSize);
         
         // Sort by name if requested (after decryption)
         if (sortBy === 'name') {
@@ -219,12 +231,14 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        const hasMore = (skip + pageSize) < totalCount;
+        // Recalculate hasMore since we've filtered out some contacts
+        const actualTotalCount = totalCount - (contactsRaw.length - contacts.length);
+        const hasMore = (skip + contacts.length) < actualTotalCount;
 
         // Return the response
         return NextResponse.json({
             contacts,
-            totalCount,
+            totalCount: actualTotalCount,
             page,
             pageSize,
             hasMore
