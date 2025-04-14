@@ -18,23 +18,13 @@ import {
   Tag,
   Select,
   Badge,
-  Checkbox
+  Checkbox,
+  Spinner
 } from "@/once-ui/components";
 import { useUser } from "@/libs/auth/client";
 import { redirect } from "next/navigation";
-
-// Types
-interface CalendarEvent {
-  id: string;
-  title: string;
-  description: string;
-  date: Date;
-  color: string;
-  category: string;
-  priority?: "low" | "medium" | "high" | "urgent";
-  isDeadline?: boolean;
-  isOptional?: boolean;
-}
+import { useUpcomingEvents } from "./queries";
+import type { CalendarEvent } from "./types";
 
 // Event options
 const EVENT_OPTIONS = {
@@ -56,63 +46,6 @@ const EVENT_OPTIONS = {
     { value: "urgent", label: "Urgent" }
   ]
 };
-
-// Mock data generator
-function generateMockEvents(userId: string): CalendarEvent[] {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  
-  return [
-    {
-      id: "mock-1",
-      title: "Project Deadline",
-      description: "Final submission for the Q2 project",
-      date: new Date(year, month, today.getDate() + 5),
-      color: "danger",
-      category: "work",
-      priority: "urgent",
-      isDeadline: true
-    },
-    {
-      id: "mock-2",
-      title: "Team Meeting",
-      description: "Weekly sync with the development team",
-      date: new Date(year, month, today.getDate() + 1),
-      color: "brand",
-      category: "work",
-      priority: "medium"
-    },
-    {
-      id: "mock-3",
-      title: "Coffee Chat",
-      description: "Casual meeting with Alex to discuss career growth",
-      date: new Date(year, month, today.getDate() + 3),
-      color: "success",
-      category: "personal",
-      isOptional: true,
-      priority: "low"
-    },
-    {
-      id: "mock-4",
-      title: "Review Documentation",
-      description: "Go through the updated API documentation",
-      date: new Date(year, month, today.getDate() - 1),
-      color: "warning",
-      category: "work",
-      priority: "high"
-    },
-    {
-      id: "mock-5",
-      title: "Birthday Party",
-      description: "Sarah's birthday celebration",
-      date: new Date(year, month, today.getDate() + 10),
-      color: "brand",
-      category: "social",
-      priority: "medium"
-    }
-  ];
-}
 
 export default function CalendarPage() {
   // Auth check
@@ -139,6 +72,27 @@ export default function CalendarPage() {
   const [eventPriority, setEventPriority] = useState<string>("medium");
   const [isDeadline, setIsDeadline] = useState(false);
   const [isOptional, setIsOptional] = useState(false);
+
+  // Fetch AI-derived events 
+  const { 
+    data: aiEvents = [], 
+    isLoading: isLoadingEvents,
+    refetch: refetchEvents
+  } = useUpcomingEvents(user?.id || "");
+
+  // Combine AI events with manually created events
+  useEffect(() => {
+    if (aiEvents && aiEvents.length > 0) {
+      // Only set events if we don't already have user-created events
+      // or if we need to combine with existing events
+      setEvents(prevEvents => {
+        // Keep only user-created events, remove AI events
+        const userEvents = prevEvents.filter(e => e.sourceType === 'user');
+        // Add all AI events
+        return [...userEvents, ...aiEvents];
+      });
+    }
+  }, [aiEvents]);
 
   // Calculate calendar days
   const calendarDays = useMemo(() => {
@@ -207,7 +161,7 @@ export default function CalendarPage() {
     }
     
     const newEvent: CalendarEvent = {
-      id: Date.now().toString(),
+      id: `user-${Date.now()}`,
       title: eventTitle,
       description: eventDescription,
       date: eventDate,
@@ -215,7 +169,8 @@ export default function CalendarPage() {
       category: eventCategory,
       priority: eventPriority as "low" | "medium" | "high" | "urgent",
       isDeadline,
-      isOptional
+      isOptional,
+      sourceType: "user"
     };
     
     setEvents(prev => [...prev, newEvent]);
@@ -230,6 +185,16 @@ export default function CalendarPage() {
   
   const handleDeleteEvent = () => {
     if (!selectedEvent) return;
+    
+    // Only allow deletion of user-created events
+    if (selectedEvent.sourceType === "ai") {
+      addToast({
+        variant: "success",
+        message: "AI-detected events cannot be deleted directly. They're based on your emails."
+      });
+      setIsDetailsOpen(false);
+      return;
+    }
     
     // First update the events array
     setEvents(prev => prev.filter(e => e.id !== selectedEvent.id));
@@ -276,40 +241,46 @@ export default function CalendarPage() {
            date.getDate() === today.getDate();
   };
   
-  // Generate and load mock data
-  const loadMockData = () => {
+  // Load events (manual example events)
+  const loadDemoEvents = () => {
     if (!user) return;
-    const mockEvents = generateMockEvents(user.id);
-    setEvents(mockEvents);
+    
+    // Sample manually created events
+    const demoEvents: CalendarEvent[] = [
+      {
+        id: "user-1",
+        title: "Team Sync",
+        description: "Weekly team meeting",
+        date: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 2),
+        color: "brand",
+        category: "work",
+        priority: "medium",
+        sourceType: "user"
+      },
+      {
+        id: "user-2",
+        title: "Lunch with Alex",
+        description: "Discuss project collaboration",
+        date: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 5),
+        color: "success",
+        category: "personal",
+        priority: "low",
+        isOptional: true,
+        sourceType: "user"
+      }
+    ];
+    
+    // Keep AI events, replace user events
+    setEvents(prevEvents => {
+      const aiEvents = prevEvents.filter(e => e.sourceType === 'ai');
+      return [...aiEvents, ...demoEvents];
+    });
     
     addToast({
       variant: "success",
-      message: "Mock events loaded"
+      message: "Demo events loaded"
     });
   };
-  
-  // Load/save events from localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined' && user) {
-      const key = `calendar-events-${user.id}`;
-      
-      // Load from storage
-      if (!events.length) {
-        const saved = localStorage.getItem(key);
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved) as CalendarEvent[];
-            setEvents(parsed.map(e => ({...e, date: new Date(e.date)})));
-          } catch (err) {
-            console.error("Error loading events", err);
-          }
-        }
-      }
-      
-      // Save to storage
-      localStorage.setItem(key, JSON.stringify(events));
-    }
-  }, [events, user]);
   
   // Get priority badge variant
   const getPriorityBadge = (priority?: string) => {
@@ -324,6 +295,18 @@ export default function CalendarPage() {
         return <Tag label="Medium" variant="success" />;
       case "low":
         return <Tag label="Low" variant="info" />;
+      default:
+        return null;
+    }
+  };
+  
+  // Get source type badge
+  const getSourceBadge = (sourceType: string) => {
+    switch (sourceType) {
+      case "ai":
+        return <Tag label="AI Detected" variant="neutral" />;
+      case "user":
+        return <Tag label="Manual" variant="neutral" />;
       default:
         return null;
     }
@@ -345,7 +328,15 @@ export default function CalendarPage() {
         
         <Row gap="8">
           <Button variant="secondary" size="s" label="Today" onClick={handleToday} />
-          <Button variant="secondary" size="s" label="Load Demo Data" onClick={loadMockData} />
+          <Button variant="secondary" size="s" label="Load Demo Events" onClick={loadDemoEvents} />
+          <Button 
+            variant="tertiary" 
+            size="s" 
+            onClick={() => refetchEvents()} 
+            prefixIcon={isLoadingEvents ? "spinner" : "refresh"}
+            disabled={isLoadingEvents}
+            aria-label="Refresh" 
+          />
           <Button variant="tertiary" size="s" onClick={handlePrevMonth} aria-label="Previous">
             <Icon name="chevronLeft" size="s" />
           </Button>
@@ -357,6 +348,14 @@ export default function CalendarPage() {
           </Button>
         </Row>
       </Row>
+      
+      {/* Loading state */}
+      {isLoadingEvents && (
+        <Row horizontal="center" padding="24">
+          <Spinner size="m" />
+          <Text>Loading events...</Text>
+        </Row>
+      )}
       
       {/* Day labels */}
       <Grid columns={7} gap="0" fillWidth paddingX="24">
@@ -434,6 +433,9 @@ export default function CalendarPage() {
                         setIsDetailsOpen(true);
                       }}
                     />
+                    {event.sourceType === "ai" && (
+                      <Icon name="sparkles" size="xs" color={event.color} />
+                    )}
                     {event.isDeadline && (
                       <Icon name="alert" size="xs" color="danger" />
                     )}
@@ -558,7 +560,7 @@ export default function CalendarPage() {
             <Row gap="8" fillWidth>
               <Tag
                 label={selectedEvent.category}
-                variant={selectedEvent.color as any}
+                variant="neutral"
               />
               
               {selectedEvent.priority && getPriorityBadge(selectedEvent.priority)}
@@ -570,19 +572,35 @@ export default function CalendarPage() {
               {selectedEvent.isOptional && (
                 <Tag label="Optional" variant="neutral" />
               )}
+              
+              {getSourceBadge(selectedEvent.sourceType)}
             </Row>
             
             {selectedEvent.description && (
               <Text variant="body-default-m">{selectedEvent.description}</Text>
             )}
+            
+            {selectedEvent.emailId && (
+              <Row gap="8" vertical="center">
+                <Icon name="mail" size="s" />
+                <Button
+                  variant="tertiary"
+                  size="s"
+                  label="View Source Email"
+                  href={`/inbox/email/${selectedEvent.emailId}`}
+                />
+              </Row>
+            )}
           </Column>
           
           <Row horizontal="end" gap="16" paddingTop="16">
-            <Button
-              variant="danger"
-              label="Delete"
-              onClick={handleDeleteEvent}
-            />
+            {selectedEvent.sourceType === "user" && (
+              <Button
+                variant="danger"
+                label="Delete"
+                onClick={handleDeleteEvent}
+              />
+            )}
             <Button
               variant="primary"
               label="Close"
