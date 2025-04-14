@@ -310,48 +310,59 @@ export async function processEmail(email: Email, userSettings?: any) {
         // Add the user's custom prompt if it exists
         const customPromptSection = userSettings?.customPrompt 
             ? `
-USER'S CUSTOM INSTRUCTIONS: ${userSettings.customPrompt}
-            
-Follow the custom instructions above in addition to these standard instructions.
+IMPORTANT - USER'S CUSTOM INSTRUCTIONS:
+${userSettings.customPrompt}
+
+THE ABOVE INSTRUCTIONS FROM THE USER TAKE PRECEDENCE OVER ANY CONFLICTING STANDARD INSTRUCTIONS BELOW.
 `
             : '';
 
         // Create a comprehensive prompt that extracts all information at once
         const prompt = `Analyze this email that was sent directly to the user and provide insights with a personal touch.
     
-${customPromptSection}IMPORTANT: Your output MUST follow this exact JSON format with all fields properly quoted:
+${customPromptSection}Your output must follow this JSON format with all fields properly quoted:
 {
   "category": "Choose from this list: ${AI_PROMPTS.CATEGORIZE}",
   "priority": "Choose one from this list: ${Object.values(PRIORITY_LEVELS).join(", ")}",
   "priorityExplanation": "Briefly explain why this matters to the user, addressing them directly with 'you' and 'your'",
   "summary": "Write a personalized 2-3 sentence summary in the format 'You have...' or 'You need to...' - always use second-person perspective. Make it feel like it's written directly to the user.",
-  "actionItems": ["List specific actions the user personally needs to take, starting with verbs like 'Prepare', 'Attend', 'Respond'. If none, use empty array, but don't return 'No action items'"],
-  "importantDates": ["Extract any specific dates, times, or deadlines that matter to the user in format: 'Event: YYYY-MM-DD' or 'Event: Date/Time description'"],
+  "actionItems": ["Specific actions with verbs like 'Review the Q3 report' or 'Respond to John by Friday', not generic labels like 'URGENT' or 'MEETING', only include 1-3 actions"],
+  "importantDates": ["Format as 'Meeting with Team: 2023-05-15' or 'Project Deadline: 2023-06-01' with descriptive event names"],
   "deadlines": {
-    "event1": {"event": "Name of event/task", "date": "YYYY-MM-DD", "description": "Brief description including the time if specified"},
-    "event2": {"event": "Name of event/task", "date": "YYYY-MM-DD", "description": "Brief description"}
+    "meeting1": {"event": "Meeting with Team", "date": "2023-05-15", "description": "Weekly team sync at 10:00 AM"},
+    "deadline1": {"event": "Project Deadline", "date": "2023-06-01", "description": "Final deliverables due"}
   },
   "contactInfo": {"name": "Sender's name", "email": "sender's email if found", "phone": "phone if found"}
 }
     
-EMAIL:
+EMAIL SENT AT ${email.internalDate?.toLocaleString()}:
 ${emailText.substring(0, 3000)}
 
-For "importantDates" and "deadlines":
-- Look for any due dates, scheduled meetings, expiration dates, or time-sensitive events
-- Scan for phrases like "by Friday", "due on", "deadline is", "no later than", etc.
-- For "deadlines" specifically, ensure each entry has a parseable date in YYYY-MM-DD format
-- If only partial dates are provided (like "next Monday"), do your best to convert to an actual calendar date
-- If no deadlines or important dates are mentioned, use empty arrays/objects
+Guidelines:
+1. For "importantDates" and "deadlines":
+   - Use descriptive event names that clearly identify what the event is (not generic terms like "Event")
+   - All dates should be in YYYY-MM-DD format
+   - Include time information in the description when available
+   - The "event" field should be a clear title like "Team Meeting" or "Project Deadline" 
 
-Remember to make all insights feel personal and directly relevant to the user - use 'you' and 'your' consistently in all applicable fields. The summary should feel like a personal assistant giving a quick briefing directly to the user.
+2. For "actionItems":
+   - List ONLY specific actionable tasks the user needs to complete
+   - Each action item MUST start with a verb and include details (e.g., "Review the budget proposal")
+   - DO NOT include generic category labels like "URGENT", "DEADLINE", or "MEETING" as separate items
+   - Include 2-4 specific, detailed actions - quality over quantity
+   - If there are truly no actions required, use an empty array []
+
+3. For all fields:
+   - Make insights feel personal and directly relevant to the user
+   - Always use second-person language (you/your)
+   - Don't include placeholder text or template language
+   - Make sure all JSON keys and values are properly escaped and formatted
 
 You MUST ONLY return a valid JSON object without any other text before or after. This is critical - no explanatory text, just return the properly formatted JSON.`;
 
         // Max retries for parsing the JSON response
         const MAX_JSON_PARSING_RETRIES = 3;
         let jsonParsingAttempts = 0;
-        console.log(prompt)
 
         // Loop until we get valid JSON or hit retry limit
         while (jsonParsingAttempts < MAX_JSON_PARSING_RETRIES) {

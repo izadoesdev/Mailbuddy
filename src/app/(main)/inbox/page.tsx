@@ -472,7 +472,7 @@ function InboxPage() {
 
     return (
         <>
-            <SyncOverlay 
+            {/* <SyncOverlay 
                 isVisible={isSyncing || isInitialSyncInProgress || syncStatus === "error"}
                 progress={progress}
                 message={syncStatus === "error" ? syncError || "Error occurred during sync" : message}
@@ -480,7 +480,7 @@ function InboxPage() {
                 onReset={resetSyncError}
                 error={syncStatus === "error"}
                 errorType={errorType}
-            />
+            /> */}
             
             <Row fill padding="8" gap="8">
                 <Column

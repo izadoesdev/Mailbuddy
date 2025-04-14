@@ -54,6 +54,17 @@ export async function saveEmailAIMetadata({
                   // Otherwise convert to string directly
                   return String(k);
               })
+              // Filter out generic category labels that aren't actionable
+              .filter(keyword => {
+                  // Skip common generic labels that aren't actual action items
+                  const genericLabels = ["URGENT", "DEADLINE", "MEETING", "FINANCIAL", "PERSONAL", "LEGAL"];
+                  // Only keep keywords that:
+                  // 1. Aren't just a generic label
+                  // 2. Start with a verb (typical for action items)
+                  // 3. Or contain detailed information
+                  return !genericLabels.includes(keyword) && 
+                         (keyword.length > 10 || /^[A-Z][a-z]+\s/.test(keyword));
+              })
             : [];
 
         // Process deadlines and importantDates

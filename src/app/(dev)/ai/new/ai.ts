@@ -216,27 +216,58 @@ export async function enhanceEmail(email: any) {
         // Process importantDates if available
         if (aiData.importantDates && Array.isArray(aiData.importantDates)) {
             aiData.importantDates.forEach((dateItem, index) => {
-                // Format could be "Event: Date/Time" or just a date string
+                // Format could be "Event Name: Date/Time" or just a date string
                 const parts = typeof dateItem === 'string' ? dateItem.split(':') : [];
                 
                 if (parts.length > 1) {
                     const event = parts[0].trim();
                     const dateTime = parts.slice(1).join(':').trim();
                     
-                    deadlineData[`deadline_${index}`] = {
-                        event,
-                        date: dateTime,
-                        description: dateItem
-                    };
+                    // Skip generic event names like "Event" or "Date"
+                    if (event && !["event", "date", "deadline"].includes(event.toLowerCase())) {
+                        deadlineData[`deadline_${index}`] = {
+                            event,
+                            date: dateTime,
+                            description: dateItem
+                        };
+                    }
                 } else if (typeof dateItem === 'string') {
-                    // Just a date without an event description
+                    // Just a date without an event description - try to extract a meaningful name
+                    // This is a fallback, the new prompt should provide better structured data
+                    const lowerDateItem = dateItem.toLowerCase();
+                    let eventName = "Deadline";
+                    
+                    // Try to infer event type from the date string
+                    if (lowerDateItem.includes("meet") || lowerDateItem.includes("call")) {
+                        eventName = "Meeting";
+                    } else if (lowerDateItem.includes("due") || lowerDateItem.includes("deadline")) {
+                        eventName = "Project Deadline";
+                    } else if (lowerDateItem.includes("submit") || lowerDateItem.includes("deliver")) {
+                        eventName = "Submission";
+                    }
+                    
                     deadlineData[`deadline_${index}`] = {
-                        event: "Deadline",
+                        event: eventName,
                         date: dateItem,
                         description: dateItem
                     };
                 }
             });
+        }
+
+        // Also process structured deadlines already provided by the AI
+        if (aiData.deadlines && typeof aiData.deadlines === 'object') {
+            for (const [key, value] of Object.entries(aiData.deadlines)) {
+                if (value && typeof value === 'object' && 'date' in value && 'event' in value) {
+                    // The AI model already provided properly structured deadline data
+                    // Just make sure we don't accept generic event names
+                    const eventName = value.event;
+                    if (eventName && typeof eventName === 'string' && 
+                        !["event", "date", "deadline"].includes(eventName.toLowerCase())) {
+                        deadlineData[key] = value;
+                    }
+                }
+            }
         }
 
         const dbMetadata: EmailMetadata = {
@@ -259,7 +290,18 @@ export async function enhanceEmail(email: any) {
 
         // Add action items/keywords if extractActions is enabled
         if (userSettings?.analysisPreferences?.extractActions && "actionItems" in aiData) {
-            dbMetadata.keywords = Array.isArray(aiData.actionItems) ? [...aiData.actionItems] : [];
+            // Only use action items that are specific and not just generic labels
+            dbMetadata.keywords = Array.isArray(aiData.actionItems) 
+                ? aiData.actionItems.filter(item => {
+                    // Skip generic labels
+                    const genericLabels = ["URGENT", "DEADLINE", "MEETING", "FINANCIAL", "PERSONAL", "LEGAL"];
+                    // Ensure it's not just a generic label and starts with a verb or has meaningful content
+                    return item && 
+                           typeof item === 'string' && 
+                           !genericLabels.includes(item) &&
+                           (item.length > 10 || /^[A-Z][a-z]+\s/.test(item));
+                  })
+                : [];
         } else {
             dbMetadata.keywords = [];
         }
