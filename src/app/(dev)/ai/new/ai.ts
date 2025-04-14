@@ -9,6 +9,7 @@
 import { processEmail as processEmailOpenRouter } from "./utils/openrouter";
 import { storeEmail } from "./utils/vectors";
 import { saveEmailAIMetadata, getEmailAIMetadata } from "./utils/database";
+import { prisma } from "@/libs/db";
 
 // Vector operations
 export {
@@ -66,6 +67,64 @@ export {
     BATCH_SIZES,
 } from "./constants";
 
+// Define the interface for user settings
+interface AIUserSettings {
+    userId: string;
+    enabled: boolean;
+    preserveMetadata?: boolean;
+    priorityKeywords?: string[];
+    contentAlerts?: {
+        urgentRequests: boolean;
+        financialContent: boolean;
+        deadlines: boolean;
+        meetings: boolean;
+        legalDocuments: boolean;
+        personalInfo: boolean;
+    };
+    analysisPreferences?: {
+        summarize: boolean;
+        categorize: boolean;
+        extractActions: boolean;
+        detectSentiment: boolean;
+        highlightImportant: boolean;
+    };
+}
+
+// Define the interface for AI data
+interface AIData {
+    category?: string;
+    priority?: string;
+    summary?: string;
+    priorityExplanation?: string;
+    actionItems?: string[];
+    importantDates?: string[];
+    deadlines?: Record<string, { 
+        event: string; 
+        date: string; 
+        description?: string 
+    }>;
+    contactInfo?: Record<string, string>;
+    [key: string]: any;
+}
+
+// Define the interface for email metadata
+interface EmailMetadata {
+    emailId: string;
+    category?: string;
+    priority?: string;
+    summary?: string;
+    processingTime?: number;
+    modelUsed?: string;
+    priorityExplanation?: string;
+    keywords?: string[];
+    deadlines?: Record<string, { 
+        event: string; 
+        date: string; 
+        description?: string 
+    }>;
+    importantDates?: string[];
+}
+
 /**
  * Process an email with AI to extract useful information
  *
@@ -92,8 +151,27 @@ export async function enhanceEmail(email: any) {
             };
         }
 
+        // Get user's AI settings
+        const userSettings = await prisma.aIUserSettings.findUnique({
+            where: { userId: email.userId }
+        }) as AIUserSettings | null;
+
+        // If AI is disabled for this user, return with no metadata
+        if (userSettings && !userSettings.enabled) {
+            console.log(`AI analysis disabled for user ${email.userId}, skipping analysis`);
+            return {
+                success: true,
+                data: {
+                    ...email,
+                    aiMetadata: null,
+                },
+                fromCache: false,
+            };
+        }
+
         // Process the email with OpenRouter to extract all AI metadata at once
-        const aiData = await processEmailOpenRouter(email);
+        // Pass the user settings as context to improve processing
+        const aiData = await processEmailOpenRouter(email, userSettings) as AIData;
 
         // Check if we got valid AI data - don't proceed if invalid
         if (!aiData || !aiData.summary || aiData.summary === "Error processing email") {
@@ -105,33 +183,73 @@ export async function enhanceEmail(email: any) {
             };
         }
 
-        // Store the email in the vector database for future searches
-        await storeEmail(email);
+        // If user has preserveMetadata disabled, don't store in vector DB
+        if (!userSettings || userSettings.preserveMetadata) {
+            // Store the email in the vector database for future searches
+            await storeEmail(email);
+        }
 
         // Save the AI analysis results to the database
         const startTime = Date.now();
 
-        // Create metadata object with proper typing
-        interface EmailMetadata {
-            emailId: string;
-            category?: string;
-            priority?: string;
-            summary?: string;
-            processingTime?: number;
-            modelUsed?: string;
-            priorityExplanation?: string;
-            keywords?: string[];
+        // Determine priority based on user settings
+        // Check if any priority keywords match the email content
+        let calculatedPriority = aiData.priority || "Medium";
+        if (userSettings?.priorityKeywords && userSettings.priorityKeywords.length > 0) {
+            const emailContent = [
+                email.subject || "",
+                email.snippet || "",
+                email.body || ""
+            ].join(" ").toLowerCase();
+
+            for (const keyword of userSettings.priorityKeywords) {
+                if (emailContent.includes(keyword.toLowerCase())) {
+                    calculatedPriority = "High";
+                    break;
+                }
+            }
+        }
+
+        // Create structured deadline information from importantDates
+        const deadlineData: Record<string, { event: string; date: string; description?: string }> = {};
+        
+        // Process importantDates if available
+        if (aiData.importantDates && Array.isArray(aiData.importantDates)) {
+            aiData.importantDates.forEach((dateItem, index) => {
+                // Format could be "Event: Date/Time" or just a date string
+                const parts = typeof dateItem === 'string' ? dateItem.split(':') : [];
+                
+                if (parts.length > 1) {
+                    const event = parts[0].trim();
+                    const dateTime = parts.slice(1).join(':').trim();
+                    
+                    deadlineData[`deadline_${index}`] = {
+                        event,
+                        date: dateTime,
+                        description: dateItem
+                    };
+                } else if (typeof dateItem === 'string') {
+                    // Just a date without an event description
+                    deadlineData[`deadline_${index}`] = {
+                        event: "Deadline",
+                        date: dateItem,
+                        description: dateItem
+                    };
+                }
+            });
         }
 
         const dbMetadata: EmailMetadata = {
             emailId: email.id,
-            category: aiData.category || "Uncategorized",
-            priority: aiData.priority || "Medium",
-            summary: aiData.summary || "No summary available",
+            category: userSettings?.analysisPreferences?.categorize ? (aiData.category || "Uncategorized") : undefined,
+            priority: calculatedPriority,
+            summary: userSettings?.analysisPreferences?.summarize ? (aiData.summary || "No summary available") : undefined,
             processingTime: Date.now() - startTime,
             modelUsed: "groq",
             priorityExplanation: aiData.priorityExplanation || "",
-            keywords: Array.isArray(aiData.actionItems) ? aiData.actionItems : [],
+            keywords: [],
+            deadlines: deadlineData,
+            importantDates: Array.isArray(aiData.importantDates) ? aiData.importantDates.map(String) : []
         };
 
         // Add priorityExplanation if available
@@ -139,9 +257,56 @@ export async function enhanceEmail(email: any) {
             dbMetadata.priorityExplanation = aiData.priorityExplanation;
         }
 
-        // Add action items if available
-        if ("actionItems" in aiData && Array.isArray(aiData.actionItems)) {
-            dbMetadata.keywords = aiData.actionItems;
+        // Add action items/keywords if extractActions is enabled
+        if (userSettings?.analysisPreferences?.extractActions && "actionItems" in aiData) {
+            dbMetadata.keywords = Array.isArray(aiData.actionItems) ? [...aiData.actionItems] : [];
+        } else {
+            dbMetadata.keywords = [];
+        }
+
+        // Check content alerts if enabled
+        if (userSettings?.contentAlerts) {
+            // Detect urgency based on content and priority
+            const isUrgent = calculatedPriority === "High" || calculatedPriority === "Urgent";
+            
+            // Logic for content alerts based on settings
+            if (userSettings.contentAlerts.urgentRequests && isUrgent) {
+                dbMetadata.keywords = [...(dbMetadata.keywords || []), "URGENT"];
+            }
+
+            // For other alerts, we'd need to analyze the email content
+            // Here we're just doing a basic check to demonstrate
+            const emailContent = `${email.subject || ""} ${email.body || ""}`.toLowerCase();
+            
+            if (userSettings.contentAlerts.financialContent && 
+                /\$|payment|invoice|receipt|transaction|credit card|bank|money|financial|finance/.test(emailContent)) {
+                dbMetadata.keywords = [...(dbMetadata.keywords || []), "FINANCIAL"];
+            }
+
+            if (userSettings.contentAlerts.deadlines && 
+                /deadline|due date|by tomorrow|by next|due by|due on|expires|expiring/.test(emailContent)) {
+                dbMetadata.keywords = [...(dbMetadata.keywords || []), "DEADLINE"];
+            }
+
+            if (userSettings.contentAlerts.meetings && 
+                /meeting|call|zoom|teams|google meet|conference|webinar|schedule/.test(emailContent)) {
+                dbMetadata.keywords = [...(dbMetadata.keywords || []), "MEETING"];
+            }
+
+            if (userSettings.contentAlerts.legalDocuments && 
+                /legal|contract|agreement|terms|conditions|policy|compliance|law|attorney/.test(emailContent)) {
+                dbMetadata.keywords = [...(dbMetadata.keywords || []), "LEGAL"];
+            }
+
+            if (userSettings.contentAlerts.personalInfo && 
+                /ssn|social security|passport|birth|address|private|confidential|personal/.test(emailContent)) {
+                dbMetadata.keywords = [...(dbMetadata.keywords || []), "PERSONAL"];
+            }
+        }
+
+        // Remove duplicates from keywords
+        if (dbMetadata.keywords) {
+            dbMetadata.keywords = [...new Set(dbMetadata.keywords)];
         }
 
         const saveResult = await saveEmailAIMetadata(dbMetadata);

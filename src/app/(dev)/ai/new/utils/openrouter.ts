@@ -291,7 +291,7 @@ export async function extractContactInfo(email: Email): Promise<Record<string, s
 /**
  * Process all AI enhancements for an email in a single call
  */
-export async function processEmail(email: Email) {
+export async function processEmail(email: Email, userSettings?: any) {
     try {
         // Prepare email text once to avoid repetitive cleaning
         const emailText = cleanEmail(email);
@@ -307,22 +307,42 @@ export async function processEmail(email: Email) {
             };
         }
 
+        // Add the user's custom prompt if it exists
+        const customPromptSection = userSettings?.customPrompt 
+            ? `
+USER'S CUSTOM INSTRUCTIONS: ${userSettings.customPrompt}
+            
+Follow the custom instructions above in addition to these standard instructions.
+`
+            : '';
+
         // Create a comprehensive prompt that extracts all information at once
         const prompt = `Analyze this email that was sent directly to the user and provide insights with a personal touch.
     
-IMPORTANT: Your output MUST follow this exact JSON format with all fields properly quoted:
+${customPromptSection}IMPORTANT: Your output MUST follow this exact JSON format with all fields properly quoted:
 {
   "category": "Choose from this list: ${AI_PROMPTS.CATEGORIZE}",
   "priority": "Choose one from this list: ${Object.values(PRIORITY_LEVELS).join(", ")}",
   "priorityExplanation": "Briefly explain why this matters to the user, addressing them directly with 'you' and 'your'",
   "summary": "Write a personalized 2-3 sentence summary in the format 'You have...' or 'You need to...' - always use second-person perspective. Make it feel like it's written directly to the user.",
-  "actionItems": ["List specific actions the user personally needs to take, starting with verbs like 'Prepare', 'Attend', 'Respond'. If none, use empty array"],
-  "importantDates": ["Extract any specific dates, times, or deadlines that matter to the user in format: 'Event: Date/Time'"],
+  "actionItems": ["List specific actions the user personally needs to take, starting with verbs like 'Prepare', 'Attend', 'Respond'. If none, use empty array, but don't return 'No action items'"],
+  "importantDates": ["Extract any specific dates, times, or deadlines that matter to the user in format: 'Event: YYYY-MM-DD' or 'Event: Date/Time description'"],
+  "deadlines": {
+    "event1": {"event": "Name of event/task", "date": "YYYY-MM-DD", "description": "Brief description including the time if specified"},
+    "event2": {"event": "Name of event/task", "date": "YYYY-MM-DD", "description": "Brief description"}
+  },
   "contactInfo": {"name": "Sender's name", "email": "sender's email if found", "phone": "phone if found"}
 }
     
 EMAIL:
 ${emailText.substring(0, 3000)}
+
+For "importantDates" and "deadlines":
+- Look for any due dates, scheduled meetings, expiration dates, or time-sensitive events
+- Scan for phrases like "by Friday", "due on", "deadline is", "no later than", etc.
+- For "deadlines" specifically, ensure each entry has a parseable date in YYYY-MM-DD format
+- If only partial dates are provided (like "next Monday"), do your best to convert to an actual calendar date
+- If no deadlines or important dates are mentioned, use empty arrays/objects
 
 Remember to make all insights feel personal and directly relevant to the user - use 'you' and 'your' consistently in all applicable fields. The summary should feel like a personal assistant giving a quick briefing directly to the user.
 
@@ -331,6 +351,7 @@ You MUST ONLY return a valid JSON object without any other text before or after.
         // Max retries for parsing the JSON response
         const MAX_JSON_PARSING_RETRIES = 3;
         let jsonParsingAttempts = 0;
+        console.log(prompt)
 
         // Loop until we get valid JSON or hit retry limit
         while (jsonParsingAttempts < MAX_JSON_PARSING_RETRIES) {
@@ -372,6 +393,7 @@ You MUST ONLY return a valid JSON object without any other text before or after.
                         summary: parsedData.summary || "No summary available",
                         actionItems: Array.isArray(parsedData.actionItems) ? parsedData.actionItems : [],
                         importantDates: Array.isArray(parsedData.importantDates) ? parsedData.importantDates : [],
+                        deadlines: typeof parsedData.deadlines === "object" ? parsedData.deadlines : {},
                         contactInfo: typeof parsedData.contactInfo === "object" ? parsedData.contactInfo : {},
                     };
                 }
@@ -409,6 +431,7 @@ You MUST ONLY return a valid JSON object without any other text before or after.
             summary: "Error processing email",
             actionItems: [],
             importantDates: [],
+            deadlines: {},
             contactInfo: {},
         };
     }

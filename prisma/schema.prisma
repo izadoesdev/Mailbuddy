@@ -163,6 +163,10 @@ model EmailAIMetadata {
   requiresResponse   Boolean? // Whether the email requires a response
   responseTimeframe  String?  // Suggested timeframe for response
   keywords           String[] // Key topics or keywords from the email
+  deadlines          Json?    // Store structured deadline information (event, date, time)
+  importantDates     String[] // Store array of important dates in string format
+  hasDeadline        Boolean? @default(false) // Quick flag to identify emails with deadlines
+  nextDeadline       DateTime? // The nearest upcoming deadline if present
   processingTime     Int?     // Time taken to process in milliseconds
   modelUsed          String?  // Store which model was used for analysis
   tokensUsed         Int?     // Store token usage for analytics
@@ -176,5 +180,7 @@ model EmailAIMetadata {
   @@index([sentiment])
   @@index([importance])
   @@index([requiresResponse])
+  @@index([hasDeadline])
+  @@index([nextDeadline])
   @@map("email_ai_metadata")
 }
