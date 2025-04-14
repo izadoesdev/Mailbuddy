@@ -1,5 +1,5 @@
-import { CSSProperties, ElementType, HTMLAttributes, ReactNode } from "react";
-import {
+import type { CSSProperties, ElementType, HTMLAttributes, ReactNode } from "react";
+import type {
     ColorScheme,
     ColorWeight,
     flex,

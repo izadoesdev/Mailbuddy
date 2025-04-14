@@ -21,14 +21,11 @@ import {
 import { useUser } from "@/libs/auth/client";
 
 export default function Home() {
-    const router = useRouter();
-    const { user, isLoading } = useUser();
     const [wishlistEmail, setWishlistEmail] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState("");
     const [userCount, setUserCount] = useState(0);
-    const [successMessage, setSuccessMessage] = useState("");
     const [alreadySubscribed, setAlreadySubscribed] = useState(false);
     
     useEffect(() => {
@@ -87,7 +84,6 @@ export default function Home() {
             const data = await response.json();
             
             if (data.success) {
-                setSuccessMessage(data.message || "Successfully added to wishlist");
                 const isAlreadySubscribed = data.message?.includes("already");
                 setAlreadySubscribed(isAlreadySubscribed);
                 
@@ -106,18 +102,6 @@ export default function Home() {
             setIsSubmitting(false);
         }
     };
-
-    // Redirect to inbox if user is logged in
-    // useEffect(() => {
-    //     // Only redirect when authentication check is complete and user exists
-    //     if (!isLoading && user) {
-    //         router.push("/inbox");
-    //     }
-    // }, [user, isLoading, router]);
-
-    if (isLoading) {
-        return <Column fillWidth paddingTop="80" horizontal="center" flex={1} />;
-    }
 
     return (
         <Column
