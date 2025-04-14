@@ -198,6 +198,7 @@ export function InboxControls({
                     justifyContent="start"
                     weight="default"
                     variant="tertiary"
+                    size="s"
                     label="Account Settings" 
                     prefixIcon="settings"
                     href="/settings"
@@ -207,6 +208,7 @@ export function InboxControls({
                     justifyContent="start"
                     weight="default"
                     variant="tertiary"
+                    size="s"
                     label="Help & Support" 
                     prefixIcon="helpCircle"
                     onClick={() => {
@@ -218,6 +220,7 @@ export function InboxControls({
                     justifyContent="start"
                     weight="default"
                     variant="tertiary"
+                    size="s"
                     label="Sign Out" 
                     prefixIcon="logout"
                     onClick={handleSignOut}

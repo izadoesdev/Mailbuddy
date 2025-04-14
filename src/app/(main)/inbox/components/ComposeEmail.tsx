@@ -401,18 +401,21 @@ export function ComposeEmail({
           <Row
             gap="8"
             horizontal="space-between"
+            vertical="center"
             borderTop="neutral-alpha-medium"
             paddingY="12"
             paddingX="20"
+            data-border="rounded"
             background="neutral-alpha-weak"
           >
             {/* Enhancement Options */}
             {!enhancedContent && (
-              <Row gap="8">
+              <Row gap="4" wrap>
                 {showEnhancementOptions ? (
                   <>
                     <Button 
                       variant="secondary" 
+                      weight="default"
                       size="s" 
                       label="Improve" 
                       type="button"
@@ -422,6 +425,7 @@ export function ComposeEmail({
                     />
                     <Button 
                       variant="secondary" 
+                      weight="default"
                       size="s" 
                       label="Shorten" 
                       type="button"
@@ -431,6 +435,7 @@ export function ComposeEmail({
                     />
                     <Button 
                       variant="secondary" 
+                      weight="default"
                       size="s" 
                       label="Formal" 
                       type="button"
@@ -440,6 +445,7 @@ export function ComposeEmail({
                     />
                     <Button 
                       variant="secondary" 
+                      weight="default"
                       size="s" 
                       label="Friendly" 
                       type="button"
@@ -449,6 +455,7 @@ export function ComposeEmail({
                     />
                     <Button 
                       variant="secondary" 
+                      weight="default"
                       size="s" 
                       label="Enhance" 
                       type="button"
@@ -457,6 +464,7 @@ export function ComposeEmail({
                     />
                     <Button 
                       variant="tertiary" 
+                      weight="default"
                       size="s" 
                       prefixIcon="close" 
                       type="button"
@@ -468,6 +476,7 @@ export function ComposeEmail({
                     variant="secondary" 
                     size="s" 
                     prefixIcon="sparkles" 
+                    weight="default"
                     label="Enhance with AI"
                     type="button"
                     onClick={() => setShowEnhancementOptions(true)} 
