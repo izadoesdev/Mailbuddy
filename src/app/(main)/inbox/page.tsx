@@ -176,19 +176,28 @@ function InboxPage() {
         progress,
         message,
         isInitialSyncInProgress,
-        performInitialSync
+        performInitialSync,
+        error: syncError,
+        errorType,
+        resetSyncError
     } = useInitialSync({ 
         enabled: isAuthenticated,
         redirectAfterSync: false,
     });
 
     useEffect(() => {
-        // Only trigger on first render, when authenticated, and not already synced
-        if (isAuthenticated && !hasSyncedRef.current && !isLoading && !isFetching && !isInitialSyncInProgress) {
+        // Prevent multiple syncs - only sync if not in error state and not already syncing
+        if (isAuthenticated && 
+            !hasSyncedRef.current && 
+            !isLoading && 
+            !isFetching && 
+            !isInitialSyncInProgress && 
+            syncStatus !== "error") {
+            
             hasSyncedRef.current = true; // Mark as synced to prevent future attempts
             triggerSync();
         }
-    }, [isAuthenticated, isLoading, isFetching, triggerSync, isInitialSyncInProgress]);
+    }, [isAuthenticated, isLoading, isFetching, triggerSync, isInitialSyncInProgress, syncStatus]);
 
     // Handle thread selection
     const handleThreadSelect = useCallback(
@@ -317,6 +326,23 @@ function InboxPage() {
         triggerSync();
     }, [triggerSync]);
 
+    // Handle sync cancellation - create this function to pass to the SyncOverlay
+    const handleCancelSync = useCallback(() => {
+        // There is no direct cancel function in the hook, but we can add a message
+        addToast({
+            variant: "success",
+            message: "Sync has been canceled"
+        });
+        // We can't actually cancel it, but we can hide the overlay
+        hasSyncedRef.current = true;
+        
+        // Reset any error state
+        if (syncStatus === "error") {
+            // Force a query invalidation to refresh the inbox state
+            queryClient.invalidateQueries({ queryKey: ["emails"] });
+        }
+    }, [addToast, syncStatus, queryClient]);
+
     // Handle category change
     const handleCategoryChange = useCallback(async (newCategory: string) => {
         // Close any open emails/threads when changing categories
@@ -424,17 +450,6 @@ function InboxPage() {
     const mainContentWidth = selectedEmail ? "50%" : "100%";
     const detailWidth = selectedEmail ? "50%" : "0";
 
-    // Handle sync cancellation - create this function to pass to the SyncOverlay
-    const handleCancelSync = useCallback(() => {
-        // There is no direct cancel function in the hook, but we can add a message
-        addToast({
-            variant: "success",
-            message: "Sync has been canceled"
-        });
-        // We can't actually cancel it, but we can hide the overlay
-        hasSyncedRef.current = true;
-    }, [addToast]);
-
     // Handle email/thread close
     const handleClose = useCallback(() => {
         setSelectedThread(null);
@@ -458,10 +473,13 @@ function InboxPage() {
     return (
         <>
             <SyncOverlay 
-                isVisible={true}
+                isVisible={isSyncing || isInitialSyncInProgress || syncStatus === "error"}
                 progress={progress}
-                message={message}
+                message={syncStatus === "error" ? syncError || "Error occurred during sync" : message}
                 onCancel={handleCancelSync}
+                onReset={resetSyncError}
+                error={syncStatus === "error"}
+                errorType={errorType}
             />
             
             <Row fill padding="8" gap="8">

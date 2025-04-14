@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import {
   Heading,
   Text,
@@ -15,22 +15,29 @@ import {
   Spinner,
 } from "@/once-ui/components";
 import { useUser } from "@/libs/auth/client";
+import { useQueryState } from "nuqs";
 import ProfileInfo from "./components/ProfileInfo";
 import EmailSettings from "./components/EmailSettings";
 import SecuritySettings from "./components/SecuritySettings";
 import AISettings from "./components/AISettings";
+import ConnectedAccounts from "./components/ConnectedAccounts";
 
 // Profile category options
 const PROFILE_CATEGORIES = [
   { value: "profile", label: "Profile", icon: "person" },
   { value: "email", label: "Email Notifications", icon: "mail" },
   { value: "ai", label: "AI Preferences", icon: "sparkles" },
+  { value: "accounts", label: "Connected Accounts", icon: "link" },
   { value: "security", label: "Security", icon: "shield" }
 ];
 
-export default function ProfilePage() {
+function ProfileContent() {
   const { user, isLoading, error } = useUser();
-  const [activeTab, setActiveTab] = useState("profile");
+  const [tab, setTab] = useQueryState("tab", { 
+    defaultValue: "profile",
+    history: "push",
+    parse: (value) => PROFILE_CATEGORIES.some(c => c.value === value) ? value : "profile"
+  });
   
   // If loading or error, show appropriate state
   if (isLoading) {
@@ -53,7 +60,7 @@ export default function ProfilePage() {
   }
 
   // Get the current category label
-  const currentCategory = PROFILE_CATEGORIES.find(c => c.value === activeTab);
+  const currentCategory = PROFILE_CATEGORIES.find(c => c.value === tab);
   
   return (
     <Row fillWidth fillHeight gap="0">
@@ -91,11 +98,11 @@ export default function ProfilePage() {
             <Button
               key={category.value}
               label={category.label}
-              variant={activeTab === category.value ? "primary" : "tertiary"}
+              variant={tab === category.value ? "primary" : "tertiary"}
               size="l"
               prefixIcon={category.icon}
               fillWidth
-              onClick={() => setActiveTab(category.value)}
+              onClick={() => setTab(category.value)}
               justifyContent="start"
             />
           ))}
@@ -109,7 +116,7 @@ export default function ProfilePage() {
             <Icon name={currentCategory?.icon || "person"} size="m" />
             <Heading variant="heading-strong-l">{currentCategory?.label || "Profile"}</Heading>
           </Row>
-          {activeTab === "profile" && (
+          {tab === "profile" && (
             <Text variant="body-default-xs" onBackground="neutral-weak">
               <Icon name="infoCircle" size="xs" /> Email address cannot be updated
             </Text>
@@ -117,23 +124,48 @@ export default function ProfilePage() {
         </Row>
         
         <Column gap="24" fillWidth>
-          {activeTab === "profile" && (
-            <ProfileInfo user={user} />
-          )}
-          
-          {activeTab === "email" && (
-            <EmailSettings user={user} />
-          )}
-          
-          {activeTab === "ai" && (
-            <AISettings user={user} />
-          )}
-          
-          {activeTab === "security" && (
-            <SecuritySettings user={user} />
-          )}
+          <Suspense fallback={<LoadingContent />}>
+            {tab === "profile" && (
+              <ProfileInfo user={user} />
+            )}
+            
+            {tab === "email" && (
+              <EmailSettings user={user} />
+            )}
+            
+            {tab === "ai" && (
+              <AISettings user={user} />
+            )}
+            
+            {tab === "security" && (
+              <SecuritySettings user={user} />
+            )}
+            
+            {tab === "accounts" && (
+              <ConnectedAccounts user={user} />
+            )}
+          </Suspense>
         </Column>
       </Column>
     </Row>
+  );
+}
+
+function LoadingContent() {
+  return (
+    <Card>
+      <Column padding="l" gap="m" horizontal="center">
+        <Spinner size="m" />
+        <Text>Loading content...</Text>
+      </Column>
+    </Card>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<LoadingContent />}>
+      <ProfileContent />
+    </Suspense>
   );
 } 
