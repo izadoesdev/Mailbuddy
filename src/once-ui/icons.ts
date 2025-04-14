@@ -45,6 +45,8 @@ import {
     HiCheck,
     HiEyeDropper,
     HiStar,
+    HiOutlineCog6Tooth,
+    HiOutlineQuestionMarkCircle,
 } from "react-icons/hi2";
 
 // Font Awesome 6
@@ -80,7 +82,7 @@ export const iconLibrary: Record<string, IconType> = {
     infoCircle: HiInformationCircle,
     warningTriangle: HiExclamationTriangle,
     errorCircle: HiExclamationCircle,
-    helpCircle: HiMiniQuestionMarkCircle,
+    helpCircle: HiOutlineQuestionMarkCircle,
     
     // UI Controls
     refresh: HiOutlineArrowPath,
@@ -92,7 +94,7 @@ export const iconLibrary: Record<string, IconType> = {
     search: HiOutlineMagnifyingGlass,
     eye: HiOutlineEye,
     eyeOff: HiOutlineEyeSlash,
-    settings: HiOutlineCog,
+    settings: HiOutlineCog6Tooth,
     logout: HiOutlineArrowRightOnRectangle,
     
     // Common Icons

@@ -292,7 +292,6 @@ export function EmailDetail({
                 {/* AI Metadata Card - With TiltFx effect */}
                 {email.aiMetadata && (
                     <Column fillWidth paddingX="24" gap="8">
-                        <TiltFx>
                             <Column 
                                 fillWidth 
                                 radius="l" 
@@ -396,7 +395,6 @@ export function EmailDetail({
                                     </Row>
                                 )}
                             </Column>
-                        </TiltFx>
                     </Column>
                 )}
 
@@ -438,8 +436,7 @@ export function EmailDetail({
                         <Button 
                             fillWidth
                             variant="secondary" 
-                            label="Forward" 
-                            prefixIcon="arrowRight" 
+                            label="Forward"
                             onClick={handleForwardClick}
                         />
                         <Button 

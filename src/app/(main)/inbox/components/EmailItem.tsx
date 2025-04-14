@@ -131,7 +131,7 @@ export function EmailItem({
                         </Row>
                     </Column>
 
-                    <Column fillWidth gap="8">
+                    <Column fillWidth gap="2">
                         <Row fillWidth horizontal="space-between" gap="24">
                             <Row vertical="center" gap="8" fillWidth>
                                 <Text
@@ -171,14 +171,6 @@ export function EmailItem({
                                 )}
                             </Row>
                             <Row gap="8" vertical="center">
-                                {/* AI enhanced indicator */}
-                                {aiMetadata && (
-                                    <Icon 
-                                        onBackground="brand-medium" 
-                                        name="sparkles" 
-                                        size="xs"
-                                    />
-                                )}
                                 <Text variant="label-default-s" onBackground="neutral-weak" wrap="nowrap">
                                     {formatDate(
                                         'createdAt' in email 
@@ -191,43 +183,43 @@ export function EmailItem({
                             </Row>
                         </Row>
 
-                        <Row fillWidth gap="8" horizontal="space-between">
+                        <Row fillWidth gap="24" horizontal="space-between" 
+                                textVariant="body-default-s">
                             {/* Email snippet */}
-                            <Text
-                                variant="body-default-s"
-                                onBackground="neutral-weak"
-                                style={{
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
-                                    maxWidth: "70%",
-                                }}
-                            >
-                                {aiMetadata?.summary ? (
-                                    <span style={{ color: "var(--brand-on-background-medium)" }}>
+                            {aiMetadata?.summary ? (
+                                <Row vertical="center" gap="8" fillWidth>
+                                    <Icon 
+                                        onBackground="brand-medium" 
+                                        name="sparkles" 
+                                        size="xs"
+                                    />
+                                    <Text onBackground="brand-medium"
+                                        style={{
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            whiteSpace: "nowrap",
+                                        }}>
                                         {aiMetadata.summary}
-                                    </span>
-                                ) : (
-                                    decodeHtmlEntities(email.snippet || "")
-                                )}
-                            </Text>
+                                    </Text>
+                                </Row>
+                            ) : (
+                                decodeHtmlEntities(email.snippet || "")
+                            )}
                             
                             {/* Labels section */}
                             {(importantLabel || (customLabels && customLabels.length > 0) || (aiCategoriesToShow && aiCategoriesToShow.length > 0)) && (
-                                <Row gap="4" wrap={false} style={{ flexShrink: 0 }}>
+                                <Row gap="4">
                                     {/* Display AI categories */}
                                     {aiCategoriesToShow?.slice(0, shownLabelsCount - (customLabels?.slice(0, shownLabelsCount - (aiCategoriesToShow?.length || 0)).length || 0)).map(category => (
                                         <Tag
                                             key={`ai-cat-${category}`}
                                             label={category}
-                                            size="s"
-                                            variant="brand"
                                         />
                                     ))}
                                     
                                     {/* Count chip for remaining labels */}
                                     {remainingLabelsCount > 0 && (
-                                        <Chip 
+                                        <Tag 
                                             label={`+${remainingLabelsCount}`} 
                                         />
                                     )}
