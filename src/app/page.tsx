@@ -173,7 +173,7 @@ export default function Home() {
                     fillWidth
                 >
                     <Row gap="8" vertical="center">
-                        <Logo size="xl" icon={false} wordmarkSrc="/images/logo.webp" href="/" />
+                        <Logo size="m" wordmarkSrc="/trademark/type-dark.svg" href="/" />
                         <Row paddingLeft="24" gap="8">
                             <Button
                                 weight="default"
@@ -360,8 +360,8 @@ export default function Home() {
                                         onBackground="neutral-medium"
                                     >
                                         {alreadySubscribed 
-                                            ? "This email is already on our wishlist. We'll keep you updated on our progress."
-                                            : "You've been added to our wishlist. We'll keep you updated on our progress and upcoming features."
+                                            ? "This email is already on our waitlist. We'll keep you updated on our progress."
+                                            : "You've been added to our waitlist. We'll keep you updated on our progress and upcoming features."
                                         }
                                     </Text>
                                 </Column>
@@ -370,7 +370,7 @@ export default function Home() {
                                     <Column gap="16">
                                         <Input
                                             id="wishlist-email"
-                                            label="Your email address"
+                                            label="Your email"
                                             type="email"
                                             value={wishlistEmail}
                                             onChange={(e) => setWishlistEmail(e.target.value)}
