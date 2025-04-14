@@ -11,12 +11,12 @@ import {
     Logo,
     Row,
     Column,
-    Card,
     Background,
     Line,
     IconButton,
     Fade,
     Input,
+    Badge,
 } from "@/once-ui/components";
 import { useUser } from "@/libs/auth/client";
 
@@ -157,7 +157,7 @@ export default function Home() {
                     fillWidth
                 >
                     <Row gap="8" vertical="center">
-                        <Logo size="xl" icon={false} wordmarkSrc="/images/logo.webp" href="/" />
+                        <Logo size="m" href="/" />
                         <Row paddingLeft="24" gap="8">
                             <Button
                                 weight="default"
@@ -256,7 +256,7 @@ export default function Home() {
                             align="center"
                             marginBottom="16"
                         >
-                            Your AI-powered email companion
+                            Your AI-Powered Email Companion
                         </Heading>
                         <Text
                             wrap="balance"
@@ -287,41 +287,12 @@ export default function Home() {
                     horizontal="center"
                     position="relative"
                 >
-                    <Background mask={{ x: 50, y: 0, radius: 50 }}>
-                        <Line maxWidth="l" background="neutral-alpha-medium" />
-                    </Background>
                     
                     <Column fillWidth gap="32" horizontal="center" maxWidth="l">
-                        <Heading as="h2" variant="display-strong-m" align="center">
-                            Join Our Wishlist
-                        </Heading>
-                        
-                        <Column horizontal="center" gap="16">
-                            <Text
-                                variant="heading-strong-s"
-                                align="center"
-                                marginBottom="8"
-                                wrap="balance"
-                            >
-                                <span style={{ color: "var(--brand-on-background-strong)" }}>
-                                    {userCount.toLocaleString()}
-                                </span> people are already waiting
-                            </Text>
-                            <Text
-                                variant="body-default-m"
-                                align="center"
-                                onBackground="neutral-medium"
-                                style={{ maxWidth: '32rem' }}
-                                wrap="balance"
-                            >
-                                Be the first to know when we launch new features and get early access to our premium tiers.
-                            </Text>
-                        </Column>
-                        
-                        <Card
-                            padding="l"
+                        <Row
+                            fillWidth
+                            padding="xl"
                             radius="l"
-                            maxWidth={32}
                             background="neutral-alpha-weak"
                             border="neutral-alpha-medium"
                         > 
@@ -344,35 +315,68 @@ export default function Home() {
                                         onBackground="neutral-medium"
                                     >
                                         {alreadySubscribed 
-                                            ? "This email is already on our wishlist. We'll keep you updated on our progress."
-                                            : "You've been added to our wishlist. We'll keep you updated on our progress and upcoming features."
+                                            ? "This email is already on our waitlist. We'll keep you updated on our progress."
+                                            : "You've been added to our waitlist. We'll keep you updated on our progress and upcoming features."
                                         }
                                     </Text>
                                 </Column>
                             ) : (
-                                <form onSubmit={handleWishlistSubmit}>
-                                    <Column gap="16">
-                                        <Input
-                                            id="wishlist-email"
-                                            label="Your email address"
-                                            type="email"
-                                            value={wishlistEmail}
-                                            onChange={(e) => setWishlistEmail(e.target.value)}
-                                            required
-                                            error={submitError ? true : undefined}
-                                            errorMessage={submitError}
-                                        />
-                                        <Button
-                                            type="submit"
-                                            variant="primary"
-                                            label={isSubmitting ? "Adding you..." : "Join Wishlist"}
-                                            loading={isSubmitting}
-                                            fillWidth
-                                        />
+                                <form onSubmit={handleWishlistSubmit} style={{ width: '100%' }}>
+                                    <Column gap="16" fillWidth horizontal="center">
+                                    
+                                    <Badge paddingX="12"
+                                        marginBottom="24"
+                                            background="surface"
+                                            border="neutral-alpha-medium"
+                                            paddingY="8"
+                                            textVariant="body-default-s"
+                                            arrow={false}
+                                            align="center"
+                                        >
+                                            {userCount.toLocaleString()} people are already waiting
+                                        </Badge>
+
+                                    <Heading as="h2" variant="display-strong-m" align="center">
+                                        Join Our Waitlist
+                                    </Heading>
+                                    
+                                    <Column horizontal="center" gap="16" maxWidth={24}>
+                                        <Text
+                                            variant="body-default-m"
+                                            align="center"
+                                            onBackground="neutral-medium"
+                                            wrap="balance"
+                                        >
+                                            Be the first to know when we launch new features and get early access to our premium tiers.
+                                        </Text>
+                                    </Column>
+                                        <Background mask={{ x: 50, y: 0, radius: 50 }} marginTop="40" marginBottom="40">
+                                            <Line maxWidth="l" background="neutral-alpha-medium" />
+                                        </Background>
+                                        <Column gap="16" maxWidth={32}>
+                                            <Input
+                                                id="wishlist-email"
+                                                labelAsPlaceholder
+                                                label="Your email"
+                                                type="email"
+                                                value={wishlistEmail}
+                                                onChange={(e) => setWishlistEmail(e.target.value)}
+                                                required
+                                                error={submitError ? true : undefined}
+                                                errorMessage={submitError}
+                                            />
+                                            <Button
+                                                type="submit"
+                                                variant="primary"
+                                                label={isSubmitting ? "Adding you..." : "Join Wishlist"}
+                                                loading={isSubmitting}
+                                                fillWidth
+                                            />
+                                        </Column>
                                     </Column>
                                 </form>
                             )}
-                        </Card>
+                        </Row>
                     </Column>
                 </Column>
 
@@ -423,7 +427,7 @@ export default function Home() {
                 marginTop="48"
             >
                 <Column gap="24" maxWidth={24}>
-                    <Logo wordmarkSrc="/images/logo.webp" size="xl" icon={false} />
+                    <Logo style={{marginLeft: "-0.5rem"}} size="l" icon={false} />
                     <Text variant="label-default-s" onBackground="neutral-medium" wrap="balance">
                         Your secure email companion that makes managing Gmail simple and efficient.
                     </Text>
