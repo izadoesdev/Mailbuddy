@@ -187,22 +187,28 @@ export function InboxControls({
     const userDropdownContent = (
         <Flex direction="column" padding="8" minWidth={12}>
             {user?.name && (
-                <Flex direction="column" padding="12" gap="4" borderBottom="neutral-alpha-medium">
-                    <Text variant="heading-strong-s">{user.name}</Text>
-                    <Text variant="body-default-s" onBackground="neutral-weak">{user.email}</Text>
+                <Flex direction="column" paddingBottom="12" paddingTop="4" paddingX="8" gap="2" borderBottom="neutral-alpha-medium">
+                    <Text variant="heading-strong-xs">{user.name}</Text>
+                    <Text variant="body-default-xs" onBackground="neutral-weak">{user.email}</Text>
                 </Flex>
             )}
-            <Flex direction="column" padding="8">
+            <Flex direction="column" fillWidth paddingTop="8" gap="2">
                 <Button 
+                    fillWidth
+                    justifyContent="start"
+                    weight="default"
                     variant="tertiary"
+                    size="s"
                     label="Account Settings" 
                     prefixIcon="settings"
-                    onClick={() => {
-                        window.location.href = '/profile';
-                    }}
+                    href="/profile"
                 />
-                <Button 
+                <Button
+                    fillWidth
+                    justifyContent="start"
+                    weight="default"
                     variant="tertiary"
+                    size="s"
                     label="Help & Support" 
                     prefixIcon="helpCircle"
                     onClick={() => {
@@ -210,7 +216,11 @@ export function InboxControls({
                     }}
                 />
                 <Button 
+                    fillWidth
+                    justifyContent="start"
+                    weight="default"
                     variant="tertiary"
+                    size="s"
                     label="Sign Out" 
                     prefixIcon="logout"
                     onClick={handleSignOut}

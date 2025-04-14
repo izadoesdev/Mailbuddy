@@ -3,17 +3,13 @@ import {
     Text,
     Row,
     Column,
-    Chip,
-    Line,
     IconButton,
     Avatar,
-    Card,
     Button,
     Heading,
     Tag,
     Icon,
 } from "@/once-ui/components";
-import { TiltFx } from "@/once-ui/components/TiltFx";
 import type { Email, Thread } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
 import DOMPurify from "dompurify";
@@ -292,7 +288,6 @@ export function EmailDetail({
                 {/* AI Metadata Card - With TiltFx effect */}
                 {email.aiMetadata && (
                     <Column fillWidth paddingX="24" gap="8">
-                        <TiltFx>
                             <Column 
                                 fillWidth 
                                 radius="l" 
@@ -315,12 +310,9 @@ export function EmailDetail({
                                 />
                                 
                                 {/* AI Insights Header */}
-                                <Row vertical="center" gap="8">
-                                    <Icon name="sparkles" size="s" onBackground="brand-strong" />
-                                    <Heading variant="heading-strong-s" color="brand">
-                                        AI Insights
-                                    </Heading>
-                                </Row>
+                                <Heading variant="heading-strong-s" color="brand">
+                                    AI Insights
+                                </Heading>
                                 
                                 {/* Category and Priority in a single row */}
                                 <Row gap="8" wrap>
@@ -341,16 +333,29 @@ export function EmailDetail({
 
                                 {/* Summary */}
                                 {email.aiMetadata.summary && (
-                                    <Column 
-                                        gap="4" 
-                                        padding="8" 
-                                        radius="s" 
-                                        background="page"
+                                    <Column fillWidth
+                                        gap="4"
                                     >
-                                        <Text variant="label-strong-s" onBackground="brand-medium">
+                                        <Text variant="label-default-s" onBackground="neutral-weak">
                                             Summary
                                         </Text>
-                                        <Text variant="body-default-m">
+                                        {/* Priority Explanation - only if exists */}
+                                        {email.aiMetadata.priorityExplanation && (
+                                            <Row 
+                                                gap="8" 
+                                                vertical="center" 
+                                                padding="8"
+                                                radius="xl"
+                                                background="brand-alpha-weak"
+                                                marginBottom="4"
+                                            >
+                                                <Icon onBackground="brand-medium" size="s" name="infoCircle"/>
+                                                <Text onBackground="brand-strong" variant="body-default-s">
+                                                    {email.aiMetadata.priorityExplanation}
+                                                </Text>
+                                            </Row>
+                                        )}
+                                        <Text variant="body-default-s">
                                             {email.aiMetadata.summary}
                                         </Text>
                                     </Column>
@@ -358,45 +363,28 @@ export function EmailDetail({
 
                                 {/* Key Points */}
                                 {email.aiMetadata.keywords && email.aiMetadata.keywords.length > 0 && (
-                                    <Column gap="4">
-                                        <Text variant="label-strong-s" onBackground="brand-medium">
+                                    <Column gap="4" fillWidth>
+                                        <Text variant="label-default-s" onBackground="neutral-weak">
                                             Key Points
                                         </Text>
-                                        <Column gap="4" paddingLeft="8">
+                                        <Column gap="4" fillWidth>
                                             {email.aiMetadata.keywords.map((keyword: string) => (
                                                 <Row 
                                                     key={`keyword-${keyword}`} 
                                                     gap="8" 
                                                     vertical="center"
-                                                    padding="4"
-                                                    radius="s"
+                                                    padding="8"
+                                                    radius="xl"
                                                     background="brand-alpha-weak"
                                                 >
-                                                    <Icon name="checkCircle" size="s" onBackground="brand-strong" />
+                                                    <Icon name="checkCircle" size="s" onBackground="brand-medium" />
                                                     <Text variant="body-default-s">{keyword}</Text>
                                                 </Row>
                                             ))}
                                         </Column>
                                     </Column>
                                 )}
-
-                                {/* Priority Explanation - only if exists */}
-                                {email.aiMetadata.priorityExplanation && (
-                                    <Row 
-                                        gap="8" 
-                                        vertical="center" 
-                                        padding="8"
-                                        radius="s"
-                                        background="brand-alpha-weak"
-                                    >
-                                        <Icon onBackground="brand-medium" size="s" name="infoCircle"/>
-                                        <Text onBackground="brand-strong" variant="body-default-s">
-                                            {email.aiMetadata.priorityExplanation}
-                                        </Text>
-                                    </Row>
-                                )}
                             </Column>
-                        </TiltFx>
                     </Column>
                 )}
 
@@ -438,8 +426,7 @@ export function EmailDetail({
                         <Button 
                             fillWidth
                             variant="secondary" 
-                            label="Forward" 
-                            prefixIcon="arrowRight" 
+                            label="Forward"
                             onClick={handleForwardClick}
                         />
                         <Button 

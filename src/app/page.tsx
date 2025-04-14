@@ -324,16 +324,16 @@ export default function Home() {
                                 <form onSubmit={handleWishlistSubmit} style={{ width: '100%' }}>
                                     <Column gap="16" fillWidth horizontal="center">
                                     
-                                    <Badge paddingX="12"
-                                        marginBottom="24"
+                                    <Badge paddingX="16"
+                                            marginBottom="24"
                                             background="surface"
                                             border="neutral-alpha-medium"
                                             paddingY="8"
-                                            textVariant="body-default-s"
+                                            textVariant="label-default-s"
                                             arrow={false}
                                             align="center"
                                         >
-                                            {userCount.toLocaleString()} people are already waiting
+                                            <Text weight="strong" marginRight="4">{userCount.toLocaleString()}</Text> people signed up
                                         </Badge>
 
                                     <Heading as="h2" variant="display-strong-m" align="center">

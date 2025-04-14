@@ -51,10 +51,6 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
             : style;
         const isEmpty = empty || (!src && !value);
 
-        if (value && src) {
-            throw new Error("Avatar cannot have both 'value' and 'src' props.");
-        }
-
         if (loading) {
             return (
                 <Skeleton

@@ -20,6 +20,7 @@ import { createParser, useQueryState } from "nuqs";
 import { ComposeEmail } from "./components/ComposeEmail";
 import { SyncOverlay } from "./components/SyncOverlay";
 import { EMAIL_CATEGORIES, PRIORITY_LEVELS } from "@/app/(dev)/ai/new/constants";
+import { useInitialSync } from "./hooks/useInitialSync";
 
 type CategoryOption = {
     value: string;
@@ -170,26 +171,24 @@ function InboxPage() {
     const { markAsRead, toggleStar, trashEmail } = useEmailMutations({ enabled: isAuthenticated });
     const { triggerSync, isSyncing } = useBackgroundSync({ enabled: isAuthenticated });
     
-    // Use the new initial sync hook to check if initial sync is needed
-    // const { 
-    //     syncStatus,
-    //     progress,
-    //     message,
-    //     isInitialSyncInProgress,
-    //     performInitialSync
-    // } = useInitialSync({ 
-    //     enabled: isAuthenticated,
-    //     redirectAfterSync: false,
-    // });
+    const { 
+        syncStatus,
+        progress,
+        message,
+        isInitialSyncInProgress,
+        performInitialSync
+    } = useInitialSync({ 
+        enabled: isAuthenticated,
+        redirectAfterSync: false,
+    });
 
-    // Keep the existing sync trigger for backward compatibility
-    // useEffect(() => {
-    //     // Only trigger on first render, when authenticated, and not already synced
-    //     if (isAuthenticated && !hasSyncedRef.current && !isLoading && !isFetching && !isInitialSyncInProgress) {
-    //         hasSyncedRef.current = true; // Mark as synced to prevent future attempts
-    //         triggerSync();
-    //     }
-    // }, [isAuthenticated, isLoading, isFetching, triggerSync, isInitialSyncInProgress]);
+    useEffect(() => {
+        // Only trigger on first render, when authenticated, and not already synced
+        if (isAuthenticated && !hasSyncedRef.current && !isLoading && !isFetching && !isInitialSyncInProgress) {
+            hasSyncedRef.current = true; // Mark as synced to prevent future attempts
+            triggerSync();
+        }
+    }, [isAuthenticated, isLoading, isFetching, triggerSync, isInitialSyncInProgress]);
 
     // Handle thread selection
     const handleThreadSelect = useCallback(
@@ -458,12 +457,12 @@ function InboxPage() {
 
     return (
         <>
-            {/* <SyncOverlay 
-                isVisible={showSyncOverlay}
+            <SyncOverlay 
+                isVisible={true}
                 progress={progress}
                 message={message}
                 onCancel={handleCancelSync}
-            /> */}
+            />
             
             <Row fill padding="8" gap="8">
                 <Column

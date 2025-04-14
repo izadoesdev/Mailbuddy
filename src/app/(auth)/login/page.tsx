@@ -550,7 +550,7 @@ function LoginPage() {
     };
 
     return (
-        <Column fillWidth paddingX="s" horizontal="center" paddingTop="80" flex={1}>
+        <Column fillWidth padding="l" center paddingTop="80" flex={1}>
             <Column
                 overflow="hidden"
                 as="main"
@@ -599,7 +599,7 @@ function LoginPage() {
                             position="relative"
                         >
                             <Column fillWidth gap="8" horizontal="center">
-                                <Logo size="xl" icon={false} wordmarkSrc="/images/logo.webp" href="/" />
+                                <Logo size="xl" wordmark={false} href="/" />
                                 
                                 {getHeaderContent()}
 
