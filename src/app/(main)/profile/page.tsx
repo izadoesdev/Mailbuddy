@@ -25,7 +25,7 @@ import ConnectedAccounts from "./components/ConnectedAccounts";
 // Profile category options
 const PROFILE_CATEGORIES = [
   { value: "profile", label: "Profile", icon: "person" },
-  { value: "email", label: "Email Notifications", icon: "mail" },
+  { value: "email", label: "Notifications", icon: "mail" },
   { value: "ai", label: "AI Preferences", icon: "sparkles" },
   { value: "accounts", label: "Connected Accounts", icon: "link" },
   { value: "security", label: "Security", icon: "shield" }
@@ -63,19 +63,14 @@ function ProfileContent() {
   const currentCategory = PROFILE_CATEGORIES.find(c => c.value === tab);
   
   return (
-    <Row fillWidth fillHeight gap="0">
+    <Row fill padding="8">
       {/* Left sidebar */}
       <Column 
         width={16} 
         minWidth={16} 
-        fillHeight 
+        fillHeight
+        radius="l"
         background="neutral-alpha-weak" 
-        border="neutral-alpha-medium" 
-        style={{
-          borderTop: 'none',
-          borderLeft: 'none',
-          borderBottom: 'none'
-        }}
         paddingTop="32"
         paddingX="16"
         gap="24"
@@ -83,7 +78,7 @@ function ProfileContent() {
         <Column gap="16" horizontal="center" paddingX="16">
           <Avatar 
             src={user?.image || ""}
-            size="xl"
+            size="l"
           />
           <Column gap="4" horizontal="center">
             <Heading variant="heading-strong-m">{user?.name || "Your Profile"}</Heading>
@@ -93,13 +88,13 @@ function ProfileContent() {
           </Column>
         </Column>
         
-        <Column gap="8" fillWidth>
+        <Column gap="4" fillWidth>
           {PROFILE_CATEGORIES.map((category) => (
             <Button
               key={category.value}
               label={category.label}
               variant={tab === category.value ? "primary" : "tertiary"}
-              size="l"
+              weight={tab === category.value ? "strong" : "default"}
               prefixIcon={category.icon}
               fillWidth
               onClick={() => setTab(category.value)}
@@ -110,20 +105,16 @@ function ProfileContent() {
       </Column>
       
       {/* Main content */}
-      <Column fill paddingY="32" paddingX="l" gap="32" overflowY="auto">
-        <Row vertical="center" horizontal="space-between" fillWidth style={{ borderBottom: '1px solid var(--border-neutral-alpha-medium)' }} paddingBottom="16">
+      <Column fillWidth horizontal="center">
+      <Column fill maxWidth="s" overflowY="auto" radius="xl" border="neutral-alpha-medium">
+        <Row vertical="center" paddingX="20" paddingY="16" horizontal="space-between" fillWidth borderBottom="neutral-alpha-medium">
           <Row vertical="center" gap="12">
             <Icon name={currentCategory?.icon || "person"} size="m" />
             <Heading variant="heading-strong-l">{currentCategory?.label || "Profile"}</Heading>
           </Row>
-          {tab === "profile" && (
-            <Text variant="body-default-xs" onBackground="neutral-weak">
-              <Icon name="infoCircle" size="xs" /> Email address cannot be updated
-            </Text>
-          )}
         </Row>
         
-        <Column gap="24" fillWidth>
+        <Column gap="24" fill>
           <Suspense fallback={<LoadingContent />}>
             {tab === "profile" && (
               <ProfileInfo user={user} />
@@ -147,18 +138,16 @@ function ProfileContent() {
           </Suspense>
         </Column>
       </Column>
+      </Column>
     </Row>
   );
 }
 
 function LoadingContent() {
   return (
-    <Card>
-      <Column padding="l" gap="m" horizontal="center">
-        <Spinner size="m" />
-        <Text>Loading content...</Text>
-      </Column>
-    </Card>
+    <Column padding="l" gap="m" horizontal="center">
+      <Spinner size="m" />
+    </Column>
   );
 }
 

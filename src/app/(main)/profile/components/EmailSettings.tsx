@@ -56,73 +56,46 @@ export default function EmailSettings({ user }: EmailSettingsProps) {
   };
 
   return (
-    <Card padding="l">
-      <Column gap="24" fillWidth>
-        <Heading variant="heading-strong-s">Email Notifications</Heading>
-        
-        <Column gap="16" fillWidth>
-          <Text variant="body-default-m">
-            Control which email notifications you receive from Mailer
-          </Text>
+      <Column gap="24" fill>
+        <Column gap="16" fill padding="24">
+          <Switch 
+            reverse
+            label="New email notifications"
+            description="Get notified when you receive new emails"
+            isChecked={settings.notifyNewEmails}
+            onToggle={() => handleToggle("notifyNewEmails")}
+            id="notify-new-emails"
+          />
+
+          <Switch 
+            reverse
+            label="Reply notifications"
+            description="Receive notifications when someone replies to your emails"
+            isChecked={settings.notifyReplies}
+            onToggle={() => handleToggle("notifyReplies")}
+            id="notify-replies"
+          />
           
-          <Row gap="8" vertical="center" horizontal="space-between">
-            <Column gap="4">
-              <Text variant="body-strong-m">New email notifications</Text>
-              <Text variant="body-default-s" onBackground="neutral-medium">
-                Get notified when you receive new emails
-              </Text>
-            </Column>
-            <Switch 
-              isChecked={settings.notifyNewEmails}
-              onToggle={() => handleToggle("notifyNewEmails")}
-              id="notify-new-emails"
-            />
-          </Row>
-          
-          <Row gap="8" vertical="center" horizontal="space-between">
-            <Column gap="4">
-              <Text variant="body-strong-m">Reply notifications</Text>
-              <Text variant="body-default-s" onBackground="neutral-medium">
-                Receive notifications when someone replies to your emails
-              </Text>
-            </Column>
-            <Switch 
-              isChecked={settings.notifyReplies}
-              onToggle={() => handleToggle("notifyReplies")}
-              id="notify-replies"
-            />
-          </Row>
-          
-          <Row gap="8" vertical="center" horizontal="space-between">
-            <Column gap="4">
-              <Text variant="body-strong-m">Important email alerts</Text>
-              <Text variant="body-default-s" onBackground="neutral-medium">
-                Get notified for emails marked as important
-              </Text>
-            </Column>
-            <Switch 
-              isChecked={settings.notifyImportant}
-              onToggle={() => handleToggle("notifyImportant")}
-              id="notify-important"
-            />
-          </Row>
-          
-          <Row gap="8" vertical="center" horizontal="space-between">
-            <Column gap="4">
-              <Text variant="body-strong-m">Weekly digest</Text>
-              <Text variant="body-default-s" onBackground="neutral-medium">
-                Receive a weekly summary of your email activity
-              </Text>
-            </Column>
-            <Switch 
-              isChecked={settings.weeklyDigest}
-              onToggle={() => handleToggle("weeklyDigest")}
-              id="weekly-digest"
-            />
-          </Row>
+          <Switch 
+            reverse
+            label="Important email alerts"
+            description="Get notified for emails marked as important"
+            isChecked={settings.notifyImportant}
+            onToggle={() => handleToggle("notifyImportant")}
+            id="notify-important"
+          />
+
+          <Switch
+            reverse
+            label="Weekly digest"
+            description="Receive a weekly summary of your email activity"
+            isChecked={settings.weeklyDigest}
+            onToggle={() => handleToggle("weeklyDigest")}
+            id="weekly-digest"
+          />
         </Column>
         
-        <Row horizontal="end">
+        <Row horizontal="end" gap="16" paddingX="16" paddingY="8" borderTop="neutral-alpha-medium">
           <Button
             label="Save Preferences"
             variant="primary"
@@ -132,6 +105,5 @@ export default function EmailSettings({ user }: EmailSettingsProps) {
           />
         </Row>
       </Column>
-    </Card>
   );
 } 

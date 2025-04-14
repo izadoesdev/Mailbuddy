@@ -181,12 +181,9 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
   // Loading state
   if (isLoading && accounts.length === 0) {
     return (
-      <Card>
-        <Column padding="l" gap="m" horizontal="center">
-          <Spinner size="m" />
-          <Text>Loading your connected accounts...</Text>
-        </Column>
-      </Card>
+      <Column padding="l" gap="m" center fill>
+        <Spinner size="m" />
+      </Column>
     );
   }
 
@@ -198,85 +195,78 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
 
   return (
     <>
-      <Card>
-        <Column padding="l" gap="l">
-          <Text variant="heading-default-s">Connected Accounts</Text>
-          <Text onBackground="neutral-weak">
-            Connect additional accounts to your profile for simplified sign-in. You can use any connected account to access your account.
-          </Text>
-          
-          {/* Show success message when account is linked */}
-          {linkStatus === "success" && (
-            <Column 
-              background="success-alpha-weak" 
-              padding="m" 
-              radius="m" 
-              border="success-alpha-medium"
-            >
-              <Text color="success">Account successfully linked!</Text>
-            </Column>
-          )}
-          
-          {error && (
-            <Column 
-              background="danger-alpha-weak" 
-              padding="m" 
-              radius="m" 
-              border="danger-alpha-medium"
-            >
-              <Text color="danger">{error}</Text>
-            </Column>
-          )}
-          
-          <Row fillWidth solid="neutral-medium" height="1" />
-          
-          {/* List of connected accounts */}
-          {accounts.length > 0 ? (
-            <Column gap="m">
-              {accounts.map(account => (
-                <Row 
-                  key={account.id} 
-                  horizontal="space-between" 
-                  vertical="center" 
-                  padding="m"
-                  border="neutral-alpha-medium"
-                  radius="m"
-                >
-                  <Row gap="m" vertical="center">
-                    <Icon name={getProviderIcon(account.providerId)} size="m" />
-                    <Column gap="xs">
-                      <Text variant="body-strong-m">{getProviderName(account.providerId)}</Text>
-                      <Text variant="body-default-s" onBackground="neutral-weak">
-                        {account.email || user.email || "No email associated"}
-                      </Text>
-                      <Text variant="body-default-xs" onBackground="neutral-weak">
-                        Connected on {formatDate(account.createdAt)}
-                      </Text>
-                    </Column>
-                  </Row>
-                  
-                  <Button
-                    variant="danger"
-                    size="s"
-                    prefixIcon="trash"
-                    disabled={accounts.length <= 1} // Prevent unlinking the only account
-                    onClick={() => handleUnlinkAccount(account.id, account.providerId)}
-                  />
+      <Column padding="l" gap="l" fillWidth>
+        <Text onBackground="neutral-weak">
+          Connect additional accounts to your profile for simplified sign-in. You can use any connected account to access your account.
+        </Text>
+        
+        {/* Show success message when account is linked */}
+        {linkStatus === "success" && (
+          <Column 
+            background="success-alpha-weak" 
+            padding="m" 
+            radius="l" 
+            border="success-alpha-medium"
+          >
+            <Text color="success">Account successfully linked!</Text>
+          </Column>
+        )}
+        
+        {error && (
+          <Column 
+            background="danger-alpha-weak" 
+            padding="m" 
+            radius="l" 
+            border="danger-alpha-medium"
+          >
+            <Text color="danger">{error}</Text>
+          </Column>
+        )}
+      
+        
+        {/* List of connected accounts */}
+        {accounts.length > 0 ? (
+          <Column gap="m">
+            {accounts.map(account => (
+              <Row 
+                key={account.id} 
+                horizontal="space-between" 
+                vertical="center" 
+                padding="m"
+                border="neutral-alpha-medium"
+                radius="m"
+              >
+                <Row gap="m" vertical="center">
+                  <Icon name={getProviderIcon(account.providerId)} size="m" />
+                  <Column gap="xs">
+                    <Text variant="body-strong-m">{getProviderName(account.providerId)}</Text>
+                    <Text variant="body-default-s" onBackground="neutral-weak">
+                      {account.email || user.email || "No email associated"}
+                    </Text>
+                    <Text variant="body-default-xs" onBackground="neutral-weak">
+                      Connected on {formatDate(account.createdAt)}
+                    </Text>
+                  </Column>
                 </Row>
-              ))}
-            </Column>
-          ) : (
-            <Text>No connected accounts found.</Text>
-          )}
-        </Column>
-      </Card>
+                
+                <Button
+                  variant="danger"
+                  size="s"
+                  prefixIcon="trash"
+                  disabled={accounts.length <= 1} // Prevent unlinking the only account
+                  onClick={() => handleUnlinkAccount(account.id, account.providerId)}
+                />
+              </Row>
+            ))}
+          </Column>
+        ) : (
+          <></>
+        )}
+      </Column>
       
       {/* Available accounts to connect */}
       {availableToConnect.length > 0 && (
-        <Card>
           <Column padding="l" gap="l">
-            <Text variant="heading-default-s">Connect More Accounts</Text>
-            
             <Column gap="m">
               {availableToConnect.map(provider => (
                 <Row 
@@ -285,7 +275,7 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
                   vertical="center" 
                   padding="m"
                   border="neutral-alpha-medium"
-                  radius="m"
+                  radius="l"
                 >
                   <Row gap="m" vertical="center">
                     <Icon name={provider.icon} size="m" />
@@ -311,14 +301,14 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
                   horizontal="space-between" 
                   vertical="center" 
                   padding="m"
+                  background="surface"
                   border="neutral-alpha-medium"
-                  radius="m"
+                  radius="l"
                 >
                   <Row gap="m" vertical="center">
                     <Icon name={provider.icon} size="m" />
                     <Column gap="2">
                       <Text variant="body-strong-m">{provider.name}</Text>
-                      <Text variant="body-default-xs" onBackground="neutral-weak">Coming soon</Text>
                     </Column>
                   </Row>
                   
@@ -333,19 +323,17 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
               ))}
             </Column>
           </Column>
-        </Card>
       )}
 
       {/* Show coming soon providers even if no available providers */}
       {availableToConnect.length === 0 && (
-        <Card>
           <Column padding="l" gap="l">
             <Text variant="heading-default-s">Coming Soon</Text>
             <Text onBackground="neutral-weak">
               We're working on adding more connection options for your account.
             </Text>
             
-            <Column gap="m">
+            <Column gap="m" fillWidth>
               {comingSoonProviders.map(provider => (
                 <Row 
                   key={provider.id} 
@@ -353,13 +341,12 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
                   vertical="center" 
                   padding="m"
                   border="neutral-alpha-medium"
-                  radius="m"
+                  radius="l"
                 >
                   <Row gap="m" vertical="center">
                     <Icon name={provider.icon} size="m" />
                     <Column gap="2">
                       <Text variant="body-strong-m">{provider.name}</Text>
-                      <Text variant="body-default-xs" onBackground="neutral-weak">Coming soon</Text>
                     </Column>
                   </Row>
                   
@@ -374,7 +361,6 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
               ))}
             </Column>
           </Column>
-        </Card>
       )}
     </>
   );

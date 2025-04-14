@@ -7,7 +7,6 @@ import {
   Heading,
   Text,
   Input,
-  Textarea,
   Button,
   Row,
   useToast,
@@ -66,44 +65,43 @@ export default function ProfileInfo({ user }: ProfileInfoProps) {
   };
 
   return (
-    <Card padding="l">
-      <Column gap="24" fillWidth>
-        <Heading variant="heading-strong-s">Personal Information</Heading>
+    <Column gap="24" fill>
+      <Column gap="16" padding="24" fill>
+        <Input
+          label="Full Name"
+          name="name"
+          id="name"
+          value={formData.name}
+          onChange={handleChange}
+          required
+        />
         
-        <Column gap="16" fillWidth>
-          <Input
-            label="Full Name"
-            name="name"
-            id="name"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="Your full name"
-            required
-          />
-          
-          <Row gap="12" vertical="center">
-            <Text variant="body-strong-m">Email Address</Text>
-            <Text variant="body-default-m">{user?.email || ""}</Text>
-          </Row>
-        </Column>
-        
-        <Row horizontal="end" gap="16">
-          <Button
-            label="Cancel"
-            variant="tertiary"
-            onClick={handleReset}
-            type="button"
-            disabled={isLoading}
-          />
-          <Button
-            label="Save Changes"
-            variant="primary"
-            onClick={handleSubmit}
-            loading={isLoading}
-            disabled={isLoading}
-          />
-        </Row>
+        <Input
+          label="Email Address"
+          name="email"
+          id="email"
+          disabled
+          value={user?.email || ""}
+          description="You can't update your email address"
+        />
       </Column>
-    </Card>
+      
+      <Row horizontal="end" gap="16" paddingX="16" paddingY="8" borderTop="neutral-alpha-medium">
+        <Button
+          label="Cancel"
+          variant="secondary"
+          onClick={handleReset}
+          type="button"
+          disabled={isLoading}
+        />
+        <Button
+          label="Save Changes"
+          variant="primary"
+          onClick={handleSubmit}
+          loading={isLoading}
+          disabled={isLoading}
+        />
+      </Row>
+    </Column>
   );
 } 

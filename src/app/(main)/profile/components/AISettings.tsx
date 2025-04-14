@@ -16,6 +16,8 @@ import {
   Badge,
   Spinner,
   Icon,
+  Chip,
+  Tag,
 } from "@/once-ui/components";
 import { useAISettings, useAIMetadataStats, type AISettings as AISettingsType, DEFAULT_AI_SETTINGS } from "../queries";
 import type { User } from "better-auth";
@@ -181,12 +183,10 @@ export default function AISettings({ user }: { user: User }) {
 
   if (isLoadingSettings) {
     return (
-      <Card padding="l">
-        <Column horizontal="center" vertical="center" gap="16" paddingY="32">
-          <Spinner size="m" />
-          <Text>Loading AI settings...</Text>
-        </Column>
-      </Card>
+      <Column horizontal="center" vertical="center" gap="16" paddingY="32">
+        <Spinner size="m" />
+        <Text>Loading AI settings...</Text>
+      </Column>
     );
   }
 
@@ -225,11 +225,11 @@ export default function AISettings({ user }: { user: User }) {
               <Row vertical="center" gap="8">
                 <Switch
                   id="preserve-metadata"
+                  label="Preserve email analysis metadata"
                   isChecked={localSettings.preserveMetadata}
                   onToggle={() => handleToggle("root", "preserveMetadata")}
                   disabled={!localSettings.enabled}
                 />
-                <Text>Preserve email analysis metadata</Text>
               </Row>
               <Text variant="body-default-xs" onBackground="neutral-weak">
                 When enabled, the AI will store analysis information for faster access
@@ -240,8 +240,8 @@ export default function AISettings({ user }: { user: User }) {
               <Heading variant="heading-strong-xs">Custom Analysis Prompt</Heading>
               <Textarea
                 id="custom-prompt"
-                label="Advanced Instructions"
-                placeholder="Add specific instructions for the AI when analyzing emails..."
+                label="AI instructions"
+                description="Add specific instructions for the AI when analyzing emails..."
                 value={localSettings.customPrompt}
                 onChange={(e) => handleChange("root", "customPrompt", e.target.value)}
                 rows={3}
@@ -255,7 +255,6 @@ export default function AISettings({ user }: { user: User }) {
                 <Input
                   id="priority-keyword"
                   label="Add priority keyword"
-                  placeholder="Add priority keyword..."
                   value={newKeyword}
                   onChange={(e) => setNewKeyword(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addKeyword()}
@@ -272,14 +271,13 @@ export default function AISettings({ user }: { user: User }) {
               {localSettings.priorityKeywords.length > 0 && (
                 <Row gap="8">
                   {localSettings.priorityKeywords.map((keyword) => (
-                    <Badge
+                    <Chip
                       key={keyword}
-                      icon="close"
-                      effect={false}
+                      label={keyword}
+                      prefixIcon="close"
                       onClick={() => removeKeyword(keyword)}
                     >
-                      <Text variant="body-default-xs">{keyword}</Text>
-                    </Badge>
+                    </Chip>
                   ))}
                 </Row>
               )}
@@ -292,7 +290,7 @@ export default function AISettings({ user }: { user: User }) {
       
       case 'alerts':
         return (
-          <Column gap="24" fillWidth>
+          <Column gap="24" fillWidth padding="24">
             <Heading variant="heading-strong-xs">Content Alerts</Heading>
             <Text variant="body-default-s">Get notified when emails contain specific types of content</Text>
 
@@ -406,7 +404,6 @@ export default function AISettings({ user }: { user: User }) {
               <Row horizontal="center" paddingY="32">
                 <Column horizontal="center" gap="16">
                   <Spinner size="m" />
-                  <Text>Loading metadata statistics...</Text>
                 </Column>
               </Row>
             ) : !metadataStats ? (
@@ -441,13 +438,13 @@ export default function AISettings({ user }: { user: User }) {
                       {metadataStats.topPriorities && metadataStats.topPriorities.length > 0 ? (
                         <Row gap="8">
                           {metadataStats.topPriorities.map((priority) => (
-                            <Badge 
+                            <Tag 
                               key={priority.label}
-                              icon="star"
-                              effect={false}
+                              prefixIcon="star"
+                              size="l"
                             >
                               <Text variant="body-default-xs">{`${priority.label} (${priority.count})`}</Text>
-                            </Badge>
+                            </Tag>
                           ))}
                         </Row>
                       ) : (
@@ -496,9 +493,7 @@ export default function AISettings({ user }: { user: User }) {
   };
 
   return (
-    <Column gap="24" fillWidth>
-      <Card padding="l">
-        <Column gap="24" fillWidth>
+        <Column gap="24" fill>
           <Row vertical="center" horizontal="space-between" fillWidth>
             <Heading variant="heading-strong-s">AI Email Assistant</Heading>
             <Switch
@@ -555,7 +550,5 @@ export default function AISettings({ user }: { user: User }) {
             />
           </Row>
         </Column>
-      </Card>
-    </Column>
   );
 }

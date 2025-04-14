@@ -112,8 +112,6 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
   };
 
   return (
-    <Column gap="24" fillWidth>
-      <Card padding="l">
         <Column gap="24" fillWidth>
           <Heading variant="heading-strong-s">Change Password</Heading>
           
@@ -160,10 +158,7 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
               </Row>
             </Column>
           </form>
-        </Column>
-      </Card>
       
-      <Card padding="l">
         <Column gap="24" fillWidth>
           <Heading variant="heading-strong-s">Two-Factor Authentication</Heading>
           
@@ -184,7 +179,6 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
             </Row>
           </Column>
         </Column>
-      </Card>
     </Column>
   );
 } 
