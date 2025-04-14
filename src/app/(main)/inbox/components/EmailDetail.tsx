@@ -3,17 +3,13 @@ import {
     Text,
     Row,
     Column,
-    Chip,
-    Line,
     IconButton,
     Avatar,
-    Card,
     Button,
     Heading,
     Tag,
     Icon,
 } from "@/once-ui/components";
-import { TiltFx } from "@/once-ui/components/TiltFx";
 import type { Email, Thread } from "../types";
 import { extractName, getInitials, formatDate } from "../utils";
 import DOMPurify from "dompurify";
@@ -343,7 +339,23 @@ export function EmailDetail({
                                         <Text variant="label-default-s" onBackground="neutral-weak">
                                             Summary
                                         </Text>
-                                        <Text variant="body-default-m">
+                                        {/* Priority Explanation - only if exists */}
+                                        {email.aiMetadata.priorityExplanation && (
+                                            <Row 
+                                                gap="8" 
+                                                vertical="center" 
+                                                padding="8"
+                                                radius="xl"
+                                                background="brand-alpha-weak"
+                                                marginBottom="4"
+                                            >
+                                                <Icon onBackground="brand-medium" size="s" name="infoCircle"/>
+                                                <Text onBackground="brand-strong" variant="body-default-s">
+                                                    {email.aiMetadata.priorityExplanation}
+                                                </Text>
+                                            </Row>
+                                        )}
+                                        <Text variant="body-default-s">
                                             {email.aiMetadata.summary}
                                         </Text>
                                     </Column>
@@ -371,22 +383,6 @@ export function EmailDetail({
                                             ))}
                                         </Column>
                                     </Column>
-                                )}
-
-                                {/* Priority Explanation - only if exists */}
-                                {email.aiMetadata.priorityExplanation && (
-                                    <Row 
-                                        gap="8" 
-                                        vertical="center" 
-                                        padding="8"
-                                        radius="xl"
-                                        background="brand-alpha-weak"
-                                    >
-                                        <Icon onBackground="brand-medium" size="s" name="infoCircle"/>
-                                        <Text onBackground="brand-strong" variant="body-default-s">
-                                            {email.aiMetadata.priorityExplanation}
-                                        </Text>
-                                    </Row>
                                 )}
                             </Column>
                     </Column>

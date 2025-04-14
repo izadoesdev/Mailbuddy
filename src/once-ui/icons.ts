@@ -47,6 +47,7 @@ import {
     HiStar,
     HiOutlineCog6Tooth,
     HiOutlineQuestionMarkCircle,
+    HiOutlineEnvelope,
 } from "react-icons/hi2";
 
 // Font Awesome 6
@@ -108,7 +109,7 @@ export const iconLibrary: Record<string, IconType> = {
     openLink: HiOutlineLink,
     
     // Email & Communication
-    mail: HiEnvelope,
+    mail: HiOutlineEnvelope,
     inbox: HiOutlineInboxStack,
     send: HiPaperAirplane,
     paperPlane: HiOutlinePaperAirplane,
