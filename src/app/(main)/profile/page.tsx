@@ -18,11 +18,13 @@ import { useUser } from "@/libs/auth/client";
 import ProfileInfo from "./components/ProfileInfo";
 import EmailSettings from "./components/EmailSettings";
 import SecuritySettings from "./components/SecuritySettings";
+import AISettings from "./components/AISettings";
 
 // Profile category options
 const PROFILE_CATEGORIES = [
   { value: "profile", label: "Profile", icon: "person" },
   { value: "email", label: "Email Notifications", icon: "mail" },
+  { value: "ai", label: "AI Preferences", icon: "sparkles" },
   { value: "security", label: "Security", icon: "shield" }
 ];
 
@@ -107,6 +109,11 @@ export default function ProfilePage() {
             <Icon name={currentCategory?.icon || "person"} size="m" />
             <Heading variant="heading-strong-l">{currentCategory?.label || "Profile"}</Heading>
           </Row>
+          {activeTab === "profile" && (
+            <Text variant="body-default-xs" onBackground="neutral-weak">
+              <Icon name="infoCircle" size="xs" /> Email address cannot be updated
+            </Text>
+          )}
         </Row>
         
         <Column gap="24" fillWidth>
@@ -116,6 +123,10 @@ export default function ProfilePage() {
           
           {activeTab === "email" && (
             <EmailSettings user={user} />
+          )}
+          
+          {activeTab === "ai" && (
+            <AISettings user={user} />
           )}
           
           {activeTab === "security" && (

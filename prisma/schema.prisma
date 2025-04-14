@@ -27,8 +27,26 @@ model User {
   emails        Email[]
   messages      Message[]
   syncState     SyncState?
+  aiSettings    AIUserSettings?
 
   @@map("users")
+}
+
+model AIUserSettings {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  enabled            Boolean  @default(true)
+  customPrompt       String?
+  preserveMetadata   Boolean  @default(true)
+  priorityKeywords   String[]
+  contentAlerts      Json     @default("{}")
+  analysisPreferences Json     @default("{}")
+  aiAssistLevel      String   @default("balanced")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ai_user_settings")
 }
 
 model Session {

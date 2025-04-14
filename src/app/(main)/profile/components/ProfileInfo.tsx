@@ -23,7 +23,6 @@ export default function ProfileInfo({ user }: ProfileInfoProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || "",
-    email: user?.email || "",
     bio: user?.bio || "",
   });
 
@@ -35,8 +34,7 @@ export default function ProfileInfo({ user }: ProfileInfoProps) {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setIsLoading(true);
 
     try {
@@ -60,66 +58,52 @@ export default function ProfileInfo({ user }: ProfileInfoProps) {
     }
   };
 
+  const handleReset = () => {
+    setFormData({
+      name: user?.name || "",
+      bio: user?.bio || "",
+    });
+  };
+
   return (
-    <form onSubmit={handleSubmit}>
-      <Card padding="l">
-        <Column gap="24" fillWidth>
-          <Heading variant="heading-strong-s">Personal Information</Heading>
+    <Card padding="l">
+      <Column gap="24" fillWidth>
+        <Heading variant="heading-strong-s">Personal Information</Heading>
+        
+        <Column gap="16" fillWidth>
+          <Input
+            label="Full Name"
+            name="name"
+            id="name"
+            value={formData.name}
+            onChange={handleChange}
+            placeholder="Your full name"
+            required
+          />
           
-          <Column gap="16" fillWidth>
-            <Input
-              label="Full Name"
-              name="name"
-              id="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Your full name"
-              required
-            />
-            
-            <Input
-              label="Email Address"
-              name="email"
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              disabled
-            />
-            
-            <Textarea
-              label="Bio"
-              name="bio"
-              id="bio"
-              value={formData.bio}
-              onChange={handleChange}
-              placeholder="Tell us a bit about yourself"
-              rows={4}
-            />
-          </Column>
-          
-          <Row horizontal="end" gap="16">
-            <Button
-              label="Cancel"
-              variant="tertiary"
-              onClick={() => setFormData({
-                name: user?.name || "",
-                email: user?.email || "",
-                bio: user?.bio || "",
-              })}
-              type="button"
-              disabled={isLoading}
-            />
-            <Button
-              label="Save Changes"
-              variant="primary"
-              type="submit"
-              loading={isLoading}
-              disabled={isLoading}
-            />
+          <Row gap="12" vertical="center">
+            <Text variant="body-strong-m">Email Address</Text>
+            <Text variant="body-default-m">{user?.email || ""}</Text>
           </Row>
         </Column>
-      </Card>
-    </form>
+        
+        <Row horizontal="end" gap="16">
+          <Button
+            label="Cancel"
+            variant="tertiary"
+            onClick={handleReset}
+            type="button"
+            disabled={isLoading}
+          />
+          <Button
+            label="Save Changes"
+            variant="primary"
+            onClick={handleSubmit}
+            loading={isLoading}
+            disabled={isLoading}
+          />
+        </Row>
+      </Column>
+    </Card>
   );
 } 

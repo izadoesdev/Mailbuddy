@@ -184,7 +184,7 @@ export function EmailItem({
                                         'createdAt' in email 
                                             ? email.createdAt 
                                             : email.internalDate
-                                                ? new Date(Number.parseInt(email.internalDate))
+                                                ? new Date(Number(email.internalDate))
                                                 : new Date()
                                     )}
                                 </Text>

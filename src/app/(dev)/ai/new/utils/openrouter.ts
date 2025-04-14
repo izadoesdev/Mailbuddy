@@ -308,20 +308,23 @@ export async function processEmail(email: Email) {
         }
 
         // Create a comprehensive prompt that extracts all information at once
-        const prompt = `Analyze this email that was sent to the user and provide the following information in JSON format.
+        const prompt = `Analyze this email that was sent directly to the user and provide insights with a personal touch.
     
 IMPORTANT: Your output MUST follow this exact JSON format with all fields properly quoted:
 {
   "category": "Choose from this list: ${AI_PROMPTS.CATEGORIZE}",
   "priority": "Choose one from this list: ${Object.values(PRIORITY_LEVELS).join(", ")}",
-  "priorityExplanation": "Briefly explain why you assigned this priority level from the user's perspective",
-  "summary": "Provide a concise summary directly addressing the reader as 'you'. Use second-person perspective, e.g., 'It encourages you to engage' not 'It encourages the user to engage'",
-  "actionItems": ["List specific actions the user needs to take. If none, use empty array"],
+  "priorityExplanation": "Briefly explain why this matters to the user, addressing them directly with 'you' and 'your'",
+  "summary": "Write a personalized 2-3 sentence summary in the format 'You have...' or 'You need to...' - always use second-person perspective. Make it feel like it's written directly to the user.",
+  "actionItems": ["List specific actions the user personally needs to take, starting with verbs like 'Prepare', 'Attend', 'Respond'. If none, use empty array"],
+  "importantDates": ["Extract any specific dates, times, or deadlines that matter to the user in format: 'Event: Date/Time'"],
   "contactInfo": {"name": "Sender's name", "email": "sender's email if found", "phone": "phone if found"}
 }
     
 EMAIL:
 ${emailText.substring(0, 3000)}
+
+Remember to make all insights feel personal and directly relevant to the user - use 'you' and 'your' consistently in all applicable fields. The summary should feel like a personal assistant giving a quick briefing directly to the user.
 
 You MUST ONLY return a valid JSON object without any other text before or after. This is critical - no explanatory text, just return the properly formatted JSON.`;
 
@@ -368,6 +371,7 @@ You MUST ONLY return a valid JSON object without any other text before or after.
                         priorityExplanation: parsedData.priorityExplanation || "",
                         summary: parsedData.summary || "No summary available",
                         actionItems: Array.isArray(parsedData.actionItems) ? parsedData.actionItems : [],
+                        importantDates: Array.isArray(parsedData.importantDates) ? parsedData.importantDates : [],
                         contactInfo: typeof parsedData.contactInfo === "object" ? parsedData.contactInfo : {},
                     };
                 }
@@ -404,6 +408,7 @@ You MUST ONLY return a valid JSON object without any other text before or after.
             priorityExplanation: "Error during processing",
             summary: "Error processing email",
             actionItems: [],
+            importantDates: [],
             contactInfo: {},
         };
     }
