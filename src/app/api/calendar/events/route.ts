@@ -1,17 +1,17 @@
 import { getUpcomingEvents } from "@/app/(main)/calendar/actions";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { auth } from "@/libs/auth";
+import { headers } from "next/headers";
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const userId = searchParams.get("userId");
+export async function GET() {
 
-  if (!userId) {
-    return NextResponse.json(
-      { error: "User ID is required" },
-      { status: 400 }
-    );
+  const session = await auth.api.getSession({headers: await headers()});
+
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const userId = session.user.id;
 
   try {
     const result = await getUpcomingEvents(userId);

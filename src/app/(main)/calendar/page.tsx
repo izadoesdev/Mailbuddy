@@ -62,6 +62,7 @@ export default function CalendarPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   
   // Form state
   const [eventTitle, setEventTitle] = useState("");
@@ -311,7 +312,45 @@ export default function CalendarPage() {
         return null;
     }
   };
-  
+
+  // Get chronological events for the list view
+  const chronologicalEvents = useMemo(() => {
+    // Create a copy of events to avoid modifying the original
+    return [...events]
+      .filter(event => {
+        // Only show future events
+        return new Date(event.date) >= new Date(new Date().setHours(0, 0, 0, 0));
+      })
+      .sort((a, b) => {
+        // Sort by date (chronological order)
+        return a.date.getTime() - b.date.getTime();
+      });
+  }, [events]);
+
+  // Group events by date for the list view
+  const groupedEvents = useMemo(() => {
+    const groups: Record<string, CalendarEvent[]> = {};
+    
+    for (const event of chronologicalEvents) {
+      const dateKey = event.date.toLocaleDateString();
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(event);
+    }
+    
+    for (const date of Object.keys(groups)) {
+      groups[date].sort((a, b) => {
+        const priorityOrder = { "urgent": 0, "high": 1, "medium": 2, "low": 3 };
+        const aPriority = a.priority ? priorityOrder[a.priority] : 4;
+        const bPriority = b.priority ? priorityOrder[b.priority] : 4;
+        return aPriority - bPriority;
+      });
+    }
+    
+    return groups;
+  }, [chronologicalEvents]);
+
   return (
     <Column fillWidth>
       {/* Header with month and controls */}
@@ -322,13 +361,45 @@ export default function CalendarPage() {
         gap="16"
         fillWidth
       >
-        <Heading variant="display-strong-l">
-          {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-        </Heading>
+        <Row vertical="center" gap="16">
+          <Heading variant="display-strong-l">
+            {viewMode === 'calendar' 
+              ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+              : 'Upcoming Events'
+            }
+          </Heading>
+          
+          <Row gap="8" vertical="center">
+            <Button 
+              variant={viewMode === 'calendar' ? 'primary' : 'secondary'} 
+              size="s" 
+              label="Calendar" 
+              onClick={() => setViewMode('calendar')}
+              prefixIcon="calendar"
+            />
+            <Button 
+              variant={viewMode === 'list' ? 'primary' : 'secondary'} 
+              size="s" 
+              label="List" 
+              onClick={() => setViewMode('list')}
+              prefixIcon="list"
+            />
+          </Row>
+        </Row>
         
         <Row gap="8">
-          <Button variant="secondary" size="s" label="Today" onClick={handleToday} />
-          <Button variant="secondary" size="s" label="Load Demo Events" onClick={loadDemoEvents} />
+          {viewMode === 'calendar' && (
+            <>
+              <Button variant="secondary" size="s" label="Today" onClick={handleToday} />
+              <Button variant="tertiary" size="s" onClick={handlePrevMonth} aria-label="Previous">
+                <Icon name="chevronLeft" size="s" />
+              </Button>
+              <Button variant="tertiary" size="s" onClick={handleNextMonth} aria-label="Next">
+                <Icon name="chevronRight" size="s" />
+              </Button>
+            </>
+          )}
+          <Button variant="secondary" size="s" label="Demo Data" onClick={loadDemoEvents} />
           <Button 
             variant="tertiary" 
             size="s" 
@@ -337,12 +408,6 @@ export default function CalendarPage() {
             disabled={isLoadingEvents}
             aria-label="Refresh" 
           />
-          <Button variant="tertiary" size="s" onClick={handlePrevMonth} aria-label="Previous">
-            <Icon name="chevronLeft" size="s" />
-          </Button>
-          <Button variant="tertiary" size="s" onClick={handleNextMonth} aria-label="Next">
-            <Icon name="chevronRight" size="s" />
-          </Button>
           <Button variant="primary" label="Add Event" onClick={() => setIsCreateOpen(true)}>
             <Icon name="plus" size="s" />
           </Button>
@@ -357,95 +422,214 @@ export default function CalendarPage() {
         </Row>
       )}
       
-      {/* Day labels */}
-      <Grid columns={7} gap="0" fillWidth paddingX="24">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <Flex key={day} horizontal="center" paddingY="12" border="neutral-alpha-weak" borderWidth={1}>
-            <Text variant="label-strong-m">{day}</Text>
-          </Flex>
-        ))}
-      </Grid>
-      
-      {/* Calendar grid */}
-      <Grid columns={7} gap="0" fillWidth paddingX="24" paddingBottom="24">
-        {calendarDays.map(dayInfo => {
-          const dayKey = `${dayInfo.date.getFullYear()}-${dayInfo.date.getMonth()}-${dayInfo.date.getDate()}`;
-          const dayEvents = getEventsForDay(dayInfo.date);
-          const currentDay = isToday(dayInfo.date);
-          
-          // Sort events by priority
-          const sortedEvents = [...dayEvents].sort((a, b) => {
-            const priorityOrder = { "urgent": 0, "high": 1, "medium": 2, "low": 3 };
-            const aPriority = a.priority ? priorityOrder[a.priority] : 4;
-            const bPriority = b.priority ? priorityOrder[b.priority] : 4;
-            return aPriority - bPriority;
-          });
-          
-          return (
-            <Flex 
-              key={dayKey}
-              direction="column"
-              padding="8"
-              border="neutral-alpha-weak"
-              borderWidth={1}
-              style={{ minHeight: "100px" }}
-              background={dayInfo.isCurrentMonth ? "surface" : "neutral-alpha-weak"}
-            >
-              {/* Day number */}
-              <Flex horizontal="space-between" vertical="center" paddingBottom="8">
-                <Chip
-                  label={dayInfo.day.toString()}
-                  selected={currentDay}
-                  className={
-                    currentDay 
-                      ? "radius-full background-brand-solid-medium color-static-white"
-                      : !dayInfo.isCurrentMonth ? "color-neutral-medium" : ""
-                  }
-                />
-                <Button
-                  variant="tertiary"
-                  size="s"
-                  aria-label="Add event"
-                  onClick={() => {
-                    setEventDate(dayInfo.date);
-                    setIsCreateOpen(true);
-                  }}
-                >
-                  <Icon name="plus" size="s" />
-                </Button>
+      {/* Calendar View */}
+      {viewMode === 'calendar' && (
+        <>
+          {/* Day labels */}
+          <Grid columns={7} gap="0" fillWidth paddingX="24">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <Flex key={day} horizontal="center" paddingY="12" border="neutral-alpha-weak" borderWidth={1}>
+                <Text variant="label-strong-m">{day}</Text>
               </Flex>
+            ))}
+          </Grid>
+          
+          {/* Calendar grid */}
+          <Grid columns={7} gap="0" fillWidth paddingX="24" paddingBottom="24">
+            {calendarDays.map(dayInfo => {
+              const dayKey = `${dayInfo.date.getFullYear()}-${dayInfo.date.getMonth()}-${dayInfo.date.getDate()}`;
+              const dayEvents = getEventsForDay(dayInfo.date);
+              const currentDay = isToday(dayInfo.date);
               
-              {/* Events */}
-              <Column gap="4">
-                {sortedEvents.map(event => (
-                  <Flex 
-                    key={event.id} 
-                    horizontal="space-between"
-                    vertical="center"
-                    gap="4"
-                  >
+              // Sort events by priority
+              const sortedEvents = [...dayEvents].sort((a, b) => {
+                const priorityOrder = { "urgent": 0, "high": 1, "medium": 2, "low": 3 };
+                const aPriority = a.priority ? priorityOrder[a.priority] : 4;
+                const bPriority = b.priority ? priorityOrder[b.priority] : 4;
+                return aPriority - bPriority;
+              });
+              
+              return (
+                <Flex 
+                  key={dayKey}
+                  direction="column"
+                  padding="8"
+                  border="neutral-alpha-weak"
+                  borderWidth={1}
+                  style={{ minHeight: "100px" }}
+                  background={dayInfo.isCurrentMonth ? "surface" : "neutral-alpha-weak"}
+                >
+                  {/* Day number */}
+                  <Flex horizontal="space-between" vertical="center" paddingBottom="8">
                     <Chip
-                      label={event.title}
-                      selected={true}
-                      className={`background-${event.color}-solid-weak color-${event.color}-on-background-strong ${event.isDeadline ? 'border-danger-solid-strong border-width-2' : ''}`}
-                      onClick={() => {
-                        setSelectedEvent(event);
-                        setIsDetailsOpen(true);
-                      }}
+                      label={dayInfo.day.toString()}
+                      selected={currentDay}
+                      className={
+                        currentDay 
+                          ? "radius-full background-brand-solid-medium color-static-white"
+                          : !dayInfo.isCurrentMonth ? "color-neutral-medium" : ""
+                      }
                     />
-                    {event.sourceType === "ai" && (
-                      <Icon name="sparkles" size="xs" color={event.color} />
-                    )}
-                    {event.isDeadline && (
-                      <Icon name="alert" size="xs" color="danger" />
-                    )}
+                    <Button
+                      variant="tertiary"
+                      size="s"
+                      aria-label="Add event"
+                      onClick={() => {
+                        setEventDate(dayInfo.date);
+                        setIsCreateOpen(true);
+                      }}
+                    >
+                      <Icon name="plus" size="s" />
+                    </Button>
                   </Flex>
-                ))}
+                  
+                  {/* Events */}
+                  <Column gap="4">
+                    {sortedEvents.map(event => (
+                      <Flex 
+                        key={event.id} 
+                        horizontal="space-between"
+                        vertical="center"
+                        gap="4"
+                      >
+                        <Chip
+                          label={event.title}
+                          selected={true}
+                          className={`background-${event.color}-solid-weak color-${event.color}-on-background-strong ${event.isDeadline ? 'border-danger-solid-strong border-width-2' : ''}`}
+                          onClick={() => {
+                            setSelectedEvent(event);
+                            setIsDetailsOpen(true);
+                          }}
+                        />
+                        {event.sourceType === "ai" && (
+                          <Icon name="sparkles" size="xs" color={event.color} />
+                        )}
+                        {event.isDeadline && (
+                          <Icon name="alert" size="xs" color="danger" />
+                        )}
+                      </Flex>
+                    ))}
+                  </Column>
+                </Flex>
+              );
+            })}
+          </Grid>
+        </>
+      )}
+      
+      {/* List View */}
+      {viewMode === 'list' && (
+        <Column fillWidth padding="24" gap="24">
+          {Object.keys(groupedEvents).length > 0 ? (
+            Object.keys(groupedEvents).map(dateKey => (
+              <Column key={dateKey} fillWidth gap="12" border="neutral-alpha-weak" borderWidth={1} padding="16" radius="m">
+                <Row horizontal="space-between" vertical="center" paddingBottom="8" borderBottom="neutral-alpha-weak">
+                  <Row gap="8" vertical="center">
+                    <Icon name="calendar" size="s" />
+                    <Text variant="heading-strong-m">
+                      {new Date(dateKey).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        month: 'long', 
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </Text>
+                    {isToday(new Date(dateKey)) && (
+                      <Tag label="Today" variant="brand" />
+                    )}
+                  </Row>
+                  <Tag label={`${groupedEvents[dateKey].length} events`} variant="neutral" />
+                </Row>
+                
+                <Column gap="8" fillWidth>
+                  {groupedEvents[dateKey].map(event => {
+                    // Determine background and border colors based on event color
+                    const bgColor = 
+                      event.color === "brand" ? "brand-weak" :
+                      event.color === "success" ? "success-weak" :
+                      event.color === "danger" ? "danger-weak" :
+                      event.color === "warning" ? "warning-weak" : 
+                      "neutral-alpha-weak";
+                      
+                    const borderColor = 
+                      event.color === "brand" ? "brand-medium" :
+                      event.color === "success" ? "success-medium" :
+                      event.color === "danger" ? "danger-medium" :
+                      event.color === "warning" ? "warning-medium" : 
+                      "neutral-alpha-medium";
+                      
+                    return (
+                      <Row 
+                        key={event.id} 
+                        fillWidth 
+                        padding="12" 
+                        radius="m" 
+                        gap="16" 
+                        vertical="center"
+                        horizontal="space-between"
+                        background={bgColor}
+                        borderLeft={borderColor}
+                        borderWidth={4}
+                        onClick={() => {
+                          setSelectedEvent(event);
+                          setIsDetailsOpen(true);
+                        }}
+                        cursor="pointer"
+                      >
+                        <Column gap="4">
+                          <Row gap="8" vertical="center">
+                            <Text variant="body-strong-m">{event.title}</Text>
+                            {event.isDeadline && (
+                              <Icon name="alert" size="s" color="danger" />
+                            )}
+                            {event.sourceType === "ai" && (
+                              <Icon name="sparkles" size="xs" color={event.color} />
+                            )}
+                          </Row>
+                          
+                          {event.description && (
+                            <Text 
+                              variant="body-default-s" 
+                              style={{ 
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical'
+                              }}
+                            >
+                              {event.description}
+                            </Text>
+                          )}
+                        </Column>
+                        
+                        <Row gap="8">
+                          {event.priority && getPriorityBadge(event.priority)}
+                          <Tag 
+                            label={event.date.toLocaleTimeString('en-US', { 
+                              hour: 'numeric', 
+                              minute: '2-digit'
+                            })} 
+                            variant="neutral" 
+                          />
+                        </Row>
+                      </Row>
+                    );
+                  })}
+                </Column>
               </Column>
-            </Flex>
-          );
-        })}
-      </Grid>
+            ))
+          ) : (
+            <Column fillWidth horizontal="center" vertical="center" padding="64" gap="16">
+              <Icon name="calendar" size="xl" onBackground="neutral-weak" />
+              <Text variant="body-default-m" onBackground="neutral-weak">No upcoming events</Text>
+              <Button variant="primary" label="Add Event" onClick={() => setIsCreateOpen(true)}>
+                <Icon name="plus" size="s" />
+              </Button>
+            </Column>
+          )}
+        </Column>
+      )}
       
       {/* Create Event Dialog */}
       <Dialog

@@ -4,16 +4,16 @@ import { useQuery } from "@tanstack/react-query";
 
 // Query keys for TanStack Query cache management
 export const queryKeys = {
-  events: (userId: string) => ["calendar-events", userId],
-  upcomingEvents: (userId: string) => ["upcoming-events", userId],
+  events: () => ["calendar-events"],
+  upcomingEvents: () => ["upcoming-events"],
 };
 
 // Hook to fetch upcoming events
-export function useUpcomingEvents(userId: string) {
+export function useUpcomingEvents() {
   return useQuery({
-    queryKey: queryKeys.upcomingEvents(userId),
+    queryKey: queryKeys.upcomingEvents(),
     queryFn: async () => {
-      const result = await fetch(`/api/calendar/events?userId=${userId}`);
+      const result = await fetch("/api/calendar/events");
       const data = await result.json();
       
       // Transform the date strings into Date objects
