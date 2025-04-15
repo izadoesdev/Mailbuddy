@@ -8,10 +8,7 @@ import {
   Avatar,
   Row,
   Column,
-  IconButton,
   Icon,
-  Card,
-  SegmentedControl,
   Spinner,
 } from "@/once-ui/components";
 import { useUser } from "@/libs/auth/client";
@@ -27,7 +24,7 @@ const PROFILE_CATEGORIES = [
   { value: "profile", label: "Profile", icon: "person" },
   { value: "email", label: "Notifications", icon: "mail" },
   { value: "ai", label: "AI Preferences", icon: "sparkles" },
-  { value: "accounts", label: "Connected Accounts", icon: "link" },
+  { value: "accounts", label: "Accounts", icon: "link" },
   { value: "security", label: "Security", icon: "shield" }
 ];
 
@@ -44,7 +41,6 @@ function ProfileContent() {
     return (
       <Column fillWidth fillHeight horizontal="center" vertical="center" gap="20">
         <Spinner size="l" />
-        <Text>Loading your profile...</Text>
       </Column>
     );
   }
@@ -72,6 +68,7 @@ function ProfileContent() {
         radius="l"
         background="neutral-alpha-weak" 
         paddingTop="32"
+        paddingBottom="16"
         paddingX="16"
         gap="24"
       >
@@ -88,7 +85,7 @@ function ProfileContent() {
           </Column>
         </Column>
         
-        <Column gap="4" fillWidth>
+        <Column gap="4" fill>
           {PROFILE_CATEGORIES.map((category) => (
             <Button
               key={category.value}
@@ -102,6 +99,8 @@ function ProfileContent() {
             />
           ))}
         </Column>
+        
+        <Button label="Inbox" prefixIcon="mail" href="/inbox" variant="secondary" fillWidth />
       </Column>
       
       {/* Main content */}

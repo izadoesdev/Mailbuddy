@@ -152,7 +152,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
                 })}
             >
                 <Flex
-                    minHeight="56"
+                    minHeight={labelAsPlaceholder ? "48" : "56"}
                     transition="micro-medium"
                     border="neutral-medium"
                     background="neutral-alpha-weak"

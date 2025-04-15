@@ -48,6 +48,7 @@ import {
     HiOutlineCog6Tooth,
     HiOutlineQuestionMarkCircle,
     HiOutlineEnvelope,
+    HiOutlineUser,
 } from "react-icons/hi2";
 
 // Font Awesome 6
@@ -99,7 +100,7 @@ export const iconLibrary: Record<string, IconType> = {
     logout: HiOutlineArrowRightOnRectangle,
     
     // Common Icons
-    person: HiMiniUser,
+    person: HiOutlineUser,
     calendar: HiCalendar,
     clock: HiOutlineClock,
     eyeDropper: HiEyeDropper,

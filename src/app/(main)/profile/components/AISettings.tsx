@@ -2,36 +2,22 @@
 
 import { useState, useEffect } from "react";
 import {
-  Card,
   Column,
   Heading,
   Text,
-  Input,
   Textarea,
   Button,
   Row,
   Switch,
   Checkbox,
   Select,
-  Badge,
   Spinner,
-  Icon,
-  Chip,
   Tag,
+  TagInput,
+  Kbd,
 } from "@/once-ui/components";
 import { useAISettings, useAIMetadataStats, type AISettings as AISettingsType, DEFAULT_AI_SETTINGS } from "../queries";
 import type { User } from "better-auth";
-
-
-// Simple divider component with proper styling
-const Divider = () => (
-  <hr style={{ 
-    width: '100%', 
-    border: 'none', 
-    borderTop: '1px solid var(--border-neutral-alpha-medium)',
-    margin: '8px 0'
-  }} />
-);
 
 // Format date as relative time
 const formatDistanceToNow = (date: Date): string => {
@@ -76,7 +62,6 @@ export default function AISettings({ user }: { user: User }) {
   } = useAIMetadataStats(userId);
 
   const [localSettings, setLocalSettings] = useState<AISettingsType | null>(null);
-  const [newKeyword, setNewKeyword] = useState("");
   const [activeTab, setActiveTab] = useState("preferences");
   
   // Initialize local settings when the data is loaded
@@ -138,37 +123,6 @@ export default function AISettings({ user }: { user: User }) {
     });
   };
 
-  // Add a keyword to priority keywords
-  const addKeyword = () => {
-    if (!newKeyword.trim() || !localSettings) return;
-    
-    setLocalSettings(prev => {
-      if (!prev) return prev;
-      
-      const keywords = [...prev.priorityKeywords];
-      if (!keywords.includes(newKeyword.trim())) {
-        keywords.push(newKeyword.trim());
-      }
-      return { ...prev, priorityKeywords: keywords };
-    });
-    
-    setNewKeyword("");
-  };
-
-  // Remove a keyword from priority keywords
-  const removeKeyword = (keyword: string) => {
-    if (!localSettings) return;
-    
-    setLocalSettings(prev => {
-      if (!prev) return prev;
-      
-      return {
-        ...prev,
-        priorityKeywords: prev.priorityKeywords.filter(k => k !== keyword),
-      };
-    });
-  };
-
   // Submit settings update
   const submitSettings = () => {
     if (localSettings) {
@@ -183,20 +137,17 @@ export default function AISettings({ user }: { user: User }) {
 
   if (isLoadingSettings) {
     return (
-      <Column horizontal="center" vertical="center" gap="16" paddingY="32">
+      <Column fill center padding="24">
         <Spinner size="m" />
-        <Text>Loading AI settings...</Text>
       </Column>
     );
   }
 
   if (!localSettings) {
     return (
-      <Card padding="l">
-        <Column horizontal="center" vertical="center" gap="16" paddingY="32">
-          <Text>Failed to load settings. Please refresh.</Text>
-        </Column>
-      </Card>
+      <Column fill center padding="24">
+        <Text>Failed to load settings. Please refresh.</Text>
+      </Column>
     );
   }
 
@@ -204,12 +155,23 @@ export default function AISettings({ user }: { user: User }) {
     switch (activeTab) {
       case 'preferences':
         return (
-          <Column gap="24" fillWidth>
-            <Column gap="16">
-              <Heading variant="heading-strong-xs">AI Assistance Level</Heading>
+          <Column gap="24" paddingX="24" fill>
+            <Row fillWidth border="neutral-alpha-medium" paddingX="16" paddingY="12" radius="l">
+              <Switch
+                reverse
+                id="preserve-metadata"
+                label="Preserve email analysis metadata"
+                isChecked={localSettings.preserveMetadata}
+                onToggle={() => handleToggle("root", "preserveMetadata")}
+                disabled={!localSettings.enabled}
+                description="Let the AI assistant store analysis information for faster access"
+              />
+            </Row>
+
+            <Column fillWidth gap="8">
               <Select
                 id="ai-assist-level"
-                label="Choose how proactive the AI assistant should be"
+                label="AI assistance level"
                 value={localSettings.aiAssistLevel}
                 onChange={(e) => handleChange("root", "aiAssistLevel", e.target.value)}
                 disabled={!localSettings.enabled}
@@ -219,80 +181,39 @@ export default function AISettings({ user }: { user: User }) {
                   { value: "proactive", label: "Proactive - Actively offer assistance" },
                 ]}
               />
-            </Column>
+              <Text marginLeft="12" variant="body-default-s" onBackground="neutral-weak">Choose how proactive the AI assistant should be</Text>
+              </Column>
 
-            <Column gap="16">
-              <Row vertical="center" gap="8">
-                <Switch
-                  id="preserve-metadata"
-                  label="Preserve email analysis metadata"
-                  isChecked={localSettings.preserveMetadata}
-                  onToggle={() => handleToggle("root", "preserveMetadata")}
-                  disabled={!localSettings.enabled}
-                />
-              </Row>
-              <Text variant="body-default-xs" onBackground="neutral-weak">
-                When enabled, the AI will store analysis information for faster access
-              </Text>
-            </Column>
-
-            <Column gap="16">
-              <Heading variant="heading-strong-xs">Custom Analysis Prompt</Heading>
               <Textarea
+                labelAsPlaceholder
                 id="custom-prompt"
                 label="AI instructions"
-                description="Add specific instructions for the AI when analyzing emails..."
+                description="Add specific instructions for the AI when analyzing emails"
                 value={localSettings.customPrompt}
                 onChange={(e) => handleChange("root", "customPrompt", e.target.value)}
-                rows={3}
+                lines="auto"
+                disabled={!localSettings.enabled}
+              />
+
+              <TagInput
+                id="priority-keyword"
+                label="Add priority keywords"
+                description="Add specific keywords that the AI should prioritize when analyzing emails"
+                hasSuffix={<Kbd>Enter</Kbd>}
+                value={localSettings.priorityKeywords}
+                onChange={(keywords) => setLocalSettings(prev => {
+                  if (!prev) return prev;
+                  return { ...prev, priorityKeywords: keywords };
+                })}
                 disabled={!localSettings.enabled}
               />
             </Column>
-
-            <Column gap="16">
-              <Heading variant="heading-strong-xs">Priority Keywords</Heading>
-              <Row gap="12" fillWidth>
-                <Input
-                  id="priority-keyword"
-                  label="Add priority keyword"
-                  value={newKeyword}
-                  onChange={(e) => setNewKeyword(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addKeyword()}
-                  disabled={!localSettings.enabled}
-                />
-                <Button
-                  variant="secondary"
-                  label="Add"
-                  onClick={addKeyword}
-                  disabled={!localSettings.enabled || !newKeyword.trim()}
-                />
-              </Row>
-
-              {localSettings.priorityKeywords.length > 0 && (
-                <Row gap="8">
-                  {localSettings.priorityKeywords.map((keyword) => (
-                    <Chip
-                      key={keyword}
-                      label={keyword}
-                      prefixIcon="close"
-                      onClick={() => removeKeyword(keyword)}
-                    >
-                    </Chip>
-                  ))}
-                </Row>
-              )}
-              {localSettings.priorityKeywords.length === 0 && (
-                <Text variant="body-default-s" onBackground="neutral-weak">No priority keywords set</Text>
-              )}
-            </Column>
-          </Column>
         );
       
       case 'alerts':
         return (
-          <Column gap="24" fillWidth padding="24">
-            <Heading variant="heading-strong-xs">Content Alerts</Heading>
-            <Text variant="body-default-s">Get notified when emails contain specific types of content</Text>
+          <Column gap="24" fillWidth paddingX="24" paddingTop="8">
+            <Text variant="body-default-m">Get notified when emails contain specific types of content</Text>
 
             <Row gap="16">
               <Column gap="12" width={24}>
@@ -430,8 +351,6 @@ export default function AISettings({ user }: { user: User }) {
                     </Column>
                   </Row>
                   
-                  <Divider />
-                  
                   <Row horizontal="space-between" vertical="center" fillWidth>
                     <Column gap="8" width={32}>
                       <Text variant="body-strong-s">Top Priorities</Text>
@@ -473,7 +392,6 @@ export default function AISettings({ user }: { user: User }) {
                     />
                     
                     <Button
-                      variant="primary"
                       label="Analyze All Emails"
                       prefixIcon="sparkles"
                       loading={isAnalyzing}
@@ -493,56 +411,66 @@ export default function AISettings({ user }: { user: User }) {
   };
 
   return (
-        <Column gap="24" fill>
-          <Row vertical="center" horizontal="space-between" fillWidth>
-            <Heading variant="heading-strong-s">AI Email Assistant</Heading>
+        <Column fill>
+          <Row fillWidth padding="24" borderBottom="neutral-medium">
             <Switch
+              reverse
               id="ai-enabled"
               isChecked={localSettings.enabled}
               onToggle={() => handleToggle("root", "enabled")}
-              label={localSettings.enabled ? "Enabled" : "Disabled"}
+              label="AI Email Assistant"
+              description="The AI assistant analyzes your emails and provides insights and recommendations."
             />
           </Row>
-
-          <Text>Configure how AI analyzes and assists with your emails. These settings affect AI features throughout the application.</Text>
           
-          <Divider />
-          
-          <Row gap="8" fillWidth>
+          {localSettings?.enabled ? (
+            <Column fill>
+          <Row gap="4" fillWidth data-border="rounded" paddingX="24" paddingTop="24" paddingBottom="16">
             <Button
+              size="s"
+              weight={activeTab === 'preferences' ? 'strong' : 'default'}
               variant={activeTab === 'preferences' ? 'primary' : 'secondary'}
               label="Preferences"
               onClick={() => setActiveTab('preferences')}
             />
             <Button
+              size="s"
+              weight={activeTab === 'alerts' ? 'strong' : 'default'}
               variant={activeTab === 'alerts' ? 'primary' : 'secondary'}
               label="Content Alerts"
               onClick={() => setActiveTab('alerts')}
             />
             <Button
+              size="s"
+              weight={activeTab === 'analysis' ? 'strong' : 'default'}
               variant={activeTab === 'analysis' ? 'primary' : 'secondary'}
               label="Analysis"
               onClick={() => setActiveTab('analysis')}
             />
             <Button
+              size="s"
+              weight={activeTab === 'stats' ? 'strong' : 'default'}
               variant={activeTab === 'stats' ? 'primary' : 'secondary'}
               label="Statistics"
               onClick={() => setActiveTab('stats')}
             />
           </Row>
-          
           {renderTabContent()}
+          </Column>
+          ) : (
+            <Row fill />
+          )}
           
-          <Row horizontal="space-between" gap="16">
+          <Row horizontal="end" gap="8" paddingX="20" paddingY="12" borderTop="neutral-alpha-medium" data-border="rounded">
             <Button
-              label="Reset to Defaults"
+              label="Cancel"
               variant="tertiary"
               onClick={resetToDefaults}
               disabled={isUpdating}
             />
             
             <Button
-              label="Save Preferences"
+              label="Save Changes"
               variant="primary"
               onClick={submitSettings}
               loading={isUpdating}

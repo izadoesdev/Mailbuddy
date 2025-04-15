@@ -86,7 +86,7 @@ export default function ProfileInfo({ user }: ProfileInfoProps) {
         />
       </Column>
       
-      <Row horizontal="end" gap="16" paddingX="16" paddingY="8" borderTop="neutral-alpha-medium">
+      <Row horizontal="end" gap="8" paddingX="20" paddingY="12" borderTop="neutral-alpha-medium" data-border="rounded">
         <Button
           label="Cancel"
           variant="secondary"

@@ -13,15 +13,19 @@ import { Flex, Chip, Input, InputProps } from ".";
 interface TagInputProps extends Omit<InputProps, "onChange" | "value"> {
     value: string[];
     onChange: (value: string[]) => void;
+    onInputChange?: (value: string) => void;
 }
 
 const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
-    ({ value, onChange, label, placeholder, ...inputProps }, ref) => {
+    ({ value, onChange, label, placeholder, onInputChange, ...inputProps }, ref) => {
         const [inputValue, setInputValue] = useState("");
         const [isFocused, setIsFocused] = useState(false);
 
         const handleInputChange: ChangeEventHandler<HTMLInputElement> = (e) => {
             setInputValue(e.target.value);
+            if (onInputChange) {
+                onInputChange(e.target.value);
+            }
         };
 
         const handleKeyDown: KeyboardEventHandler<HTMLInputElement> = (e) => {

@@ -230,7 +230,7 @@ export function InboxControls({
     );
 
     return (
-        <Column fillWidth gap="16">
+        <Column fillWidth>
             <Row
                 fillWidth
                 horizontal="space-between"
