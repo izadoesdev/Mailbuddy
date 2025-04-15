@@ -54,8 +54,9 @@ function decryptEmail(email: any) {
 /**
  * GET handler for retrieving a specific email by ID
  */
-export async function GET({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
+export async function GET(req: NextRequest) {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
 
     if (!id) {
         return NextResponse.json({ error: "Email ID is required" }, { status: 400 });
