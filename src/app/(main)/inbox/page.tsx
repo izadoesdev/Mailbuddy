@@ -14,7 +14,7 @@ import { useBackgroundSync } from "./hooks/useBackgroundSync";
 // import { useInitialSync } from "./hooks/useInitialSync";
 import { useAISearch } from "./hooks/useAISearch";
 import { useState, useCallback, useEffect, useRef, Suspense, useMemo } from "react";
-import { authClient, useUser } from "@/libs/auth/client";
+import { authClient, signOut, useUser } from "@/libs/auth/client";
 import { redirect, useRouter } from "next/navigation";
 import { createParser, useQueryState } from "nuqs";
 import { ComposeEmail } from "./components/ComposeEmail";
@@ -106,7 +106,6 @@ function InboxPage() {
     // Authentication check
     const router = useRouter();
     const { user, isLoading: isAuthLoading } = useUser();
-    const { logout } = useUserStore();
 
     if (!isAuthLoading && !user) {
         redirect("/login");
@@ -419,8 +418,8 @@ function InboxPage() {
 
     // Handle signout
     const handleSignOut = useCallback(() => {
-        logout();
-    }, [logout]);
+        signOut();
+    }, [signOut]);
 
     // Get compose email props
     const getComposeEmailProps = useCallback(() => {
