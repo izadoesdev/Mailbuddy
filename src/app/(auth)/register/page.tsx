@@ -48,13 +48,13 @@ export default function RegisterPage() {
         setIsLoading(true);
         signIn.social({
             provider: "google",
+            callbackURL: "/inbox",
             fetchOptions: {
                 onSuccess: () => {
                     addToast({
                         variant: "success",
                         message: "Account created successfully!",
                     });
-                    router.push("/inbox");
                 },
                 onError: () => {
                     setIsLoading(false);
@@ -436,7 +436,6 @@ export default function RegisterPage() {
                             variant: "success",
                             message: "Email verified! Your account is now active.",
                         });
-                        router.push("/inbox");
                     },
                     onError: (error: ApiError) => {
                         setIsLoading(false);

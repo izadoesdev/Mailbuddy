@@ -79,13 +79,13 @@ function LoginPage() {
         setIsLoading(true);
         signIn.social({
             provider: "google",
+            callbackURL: "/inbox",
             fetchOptions: {
                 onSuccess: () => {
                     addToast({
                         variant: "success",
                         message: "Login successful!",
                     });
-                    router.push("/inbox");
                 },
                 onError: () => {
                     setIsLoading(false);
@@ -112,13 +112,13 @@ function LoginPage() {
         signIn.email({
             email,
             password,
+            callbackURL: "/inbox",
             fetchOptions: {
                 onSuccess: () => {
                     addToast({
                         variant: "success",
                         message: "Login successful!",
                     });
-                    router.push("/inbox");
                 },
                 onError: (error: any) => {
                     setIsLoading(false);
@@ -151,6 +151,7 @@ function LoginPage() {
             // First check if the API has a dedicated email verification sending method
                 await authClient.sendVerificationEmail({
                     email,
+                    callbackURL: "/inbox",
                     fetchOptions: {
                         onSuccess: () => {
                             addToast({
@@ -186,6 +187,7 @@ function LoginPage() {
         setIsLoading(true);
         signIn.magicLink({
             email,
+            callbackURL: "/inbox",
             fetchOptions: {
                 onSuccess: () => {
                     setIsLoading(false);
