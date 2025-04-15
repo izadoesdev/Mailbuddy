@@ -8,7 +8,7 @@ interface MetadataStats {
   emailsWithMetadata: number;
   topPriorities: { label: string; count: number }[];
   categoryCounts: { [key: string]: number };
-  metadataSize: string; // in KB or MB
+  metadataSize: string;
   lastAnalyzedDate: string | null;
 }
 
@@ -38,15 +38,66 @@ interface AISettings {
 /**
  * Calculate the approximate size of metadata in KB or MB
  */
-function calculateMetadataSize(metadataCount: number): string {
-  // Rough estimation based on average metadata size
-  const estimatedBytes = metadataCount * 1024; // Assuming ~1KB per metadata entry
-  
-  if (estimatedBytes > 1024 * 1024) {
-    return `${(estimatedBytes / (1024 * 1024)).toFixed(1)} MB`;
+async function calculateMetadataSize(userId: string): Promise<string> {
+  try {
+    // Get the actual metadata entries for this user to calculate real size
+    const metadataEntries = await prisma.emailAIMetadata.findMany({
+      where: {
+        email: {
+          userId: userId
+        }
+      },
+      select: {
+        category: true,
+        categories: true,
+        categoryConfidences: true,
+        priority: true,
+        priorityExplanation: true,
+        summary: true,
+        sentiment: true,
+        importance: true,
+        requiresResponse: true,
+        responseTimeframe: true,
+        keywords: true,
+        deadlines: true,
+        importantDates: true,
+        hasDeadline: true,
+        nextDeadline: true
+      }
+    });
+    
+    // Calculate actual size by converting to JSON and measuring
+    let totalBytes = 0;
+    
+    // Process in chunks of 100 to avoid blocking the event loop
+    const chunkSize = 100;
+    for (let i = 0; i < metadataEntries.length; i += chunkSize) {
+      const chunk = metadataEntries.slice(i, i + chunkSize);
+      
+      // Process each entry in the chunk concurrently
+      const chunkSizes = await Promise.all(chunk.map(entry => {
+        const jsonString = JSON.stringify(entry);
+        return new TextEncoder().encode(jsonString).length;
+      }));
+      
+      // Sum the sizes
+      totalBytes += chunkSizes.reduce((sum, size) => sum + size, 0);
+    }
+    
+    // Format the size appropriately
+    if (totalBytes >= 1024 * 1024) {
+      return `${(totalBytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+    
+    if (totalBytes >= 1024) {
+      return `${(totalBytes / 1024).toFixed(1)} KB`;
+    }
+    
+    return `${totalBytes} bytes`;
+  } catch (error) {
+    console.error("Error calculating metadata size:", error);
+    return "Size unknown"; // Fallback if calculation fails
   }
-  
-  return `${(estimatedBytes / 1024).toFixed(1)} KB`;
 }
 
 /**
@@ -54,57 +105,85 @@ function calculateMetadataSize(metadataCount: number): string {
  */
 export async function getAIMetadataStats(userId: string): Promise<MetadataStats> {
   try {
-    // Get total email count
-    const totalEmails = await prisma.email.count({
-      where: { userId }
-    });
-    
-    // Get count of emails with AI metadata
-    const emailsWithMetadata = await prisma.emailAIMetadata.count({
-      where: {
-        email: {
-          userId
+    // Run all independent database queries concurrently
+    const [
+      totalEmailsCount,
+      emailsWithMetadataCount,
+      priorityData,
+      categoryData,
+      lastMetadata,
+      metadataSize
+    ] = await Promise.all([
+      // Get total email count
+      prisma.email.count({
+        where: { userId }
+      }),
+      
+      // Get count of emails with AI metadata
+      prisma.emailAIMetadata.count({
+        where: {
+          email: {
+            userId
+          }
         }
-      }
-    });
-    
-    // Get priority distribution
-    const priorityData = await prisma.emailAIMetadata.groupBy({
-      by: ['priority'],
-      where: {
-        email: {
-          userId
+      }),
+      
+      // Get priority distribution
+      prisma.emailAIMetadata.groupBy({
+        by: ['priority'],
+        where: {
+          email: {
+            userId
+          },
+          priority: {
+            not: null
+          }
         },
-        priority: {
-          not: null
-        }
-      },
-      _count: {
-        priority: true
-      },
-      orderBy: {
         _count: {
-          priority: 'desc'
-        }
-      },
-      take: 5
-    });
-    
-    // Get category distribution
-    const categoryData = await prisma.emailAIMetadata.groupBy({
-      by: ['category'],
-      where: {
-        email: {
-          userId
+          priority: true
         },
-        category: {
-          not: null
+        orderBy: {
+          _count: {
+            priority: 'desc'
+          }
+        },
+        take: 5
+      }),
+      
+      // Get category distribution
+      prisma.emailAIMetadata.groupBy({
+        by: ['category'],
+        where: {
+          email: {
+            userId
+          },
+          category: {
+            not: null
+          }
+        },
+        _count: {
+          category: true
         }
-      },
-      _count: {
-        category: true
-      }
-    });
+      }),
+      
+      // Get last analyzed date (most recent metadata update)
+      prisma.emailAIMetadata.findFirst({
+        where: {
+          email: {
+            userId
+          }
+        },
+        orderBy: {
+          updatedAt: 'desc'
+        },
+        select: {
+          updatedAt: true
+        }
+      }),
+      
+      // Calculate metadata size
+      calculateMetadataSize(userId)
+    ]);
     
     // Format priority data
     const topPriorities = priorityData.map(p => ({
@@ -120,27 +199,12 @@ export async function getAIMetadataStats(userId: string): Promise<MetadataStats>
       }
     }
     
-    // Get last analyzed date (most recent metadata update)
-    const lastMetadata = await prisma.emailAIMetadata.findFirst({
-      where: {
-        email: {
-          userId
-        }
-      },
-      orderBy: {
-        updatedAt: 'desc'
-      },
-      select: {
-        updatedAt: true
-      }
-    });
-    
     return {
-      totalEmails,
-      emailsWithMetadata,
+      totalEmails: totalEmailsCount,
+      emailsWithMetadata: emailsWithMetadataCount,
       topPriorities,
       categoryCounts,
-      metadataSize: calculateMetadataSize(emailsWithMetadata),
+      metadataSize,
       lastAnalyzedDate: lastMetadata ? lastMetadata.updatedAt.toISOString() : null
     };
   } catch (error) {
@@ -151,7 +215,7 @@ export async function getAIMetadataStats(userId: string): Promise<MetadataStats>
       emailsWithMetadata: 0,
       topPriorities: [],
       categoryCounts: {},
-      metadataSize: "0 KB",
+      metadataSize: "Size unknown",
       lastAnalyzedDate: null
     };
   }
@@ -244,21 +308,26 @@ export async function getAISettings(userId: string): Promise<AISettings | null> 
  */
 export async function clearAIMetadata(userId: string): Promise<{ success: boolean; message: string }> {
   try {
-    // Get all email IDs for the user
-    const userEmails = await prisma.email.findMany({
-      where: { userId },
-      select: { id: true }
-    });
-    
-    const emailIds = userEmails.map(email => email.id);
-    
-    // Delete all AI metadata for those emails
-    const { count } = await prisma.emailAIMetadata.deleteMany({
-      where: {
-        emailId: {
-          in: emailIds
+    // Get all email IDs for the user and delete metadata in one transaction
+    const count = await prisma.$transaction(async (tx) => {
+      // Get all email IDs for the user
+      const userEmails = await tx.email.findMany({
+        where: { userId },
+        select: { id: true }
+      });
+      
+      const emailIds = userEmails.map(email => email.id);
+      
+      // Delete all AI metadata for those emails
+      const result = await tx.emailAIMetadata.deleteMany({
+        where: {
+          emailId: {
+            in: emailIds
+          }
         }
-      }
+      });
+      
+      return result.count;
     });
     
     // Revalidate the profile page to refresh the data

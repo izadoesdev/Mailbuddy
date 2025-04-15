@@ -39,8 +39,8 @@ model AIUserSettings {
   customPrompt       String?
   preserveMetadata   Boolean  @default(true)
   priorityKeywords   String[]
-  contentAlerts      Json     @default("{}")
-  analysisPreferences Json     @default("{}")
+  contentAlerts      Json     @default("{\"urgentRequests\":true,\"financialContent\":false,\"deadlines\":true,\"meetings\":false,\"legalDocuments\":false,\"personalInfo\":false}")
+  analysisPreferences Json     @default("{\"summarize\":true,\"categorize\":true,\"extractActions\":true,\"detectSentiment\":false,\"highlightImportant\":true}")
   aiAssistLevel      String   @default("balanced")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt

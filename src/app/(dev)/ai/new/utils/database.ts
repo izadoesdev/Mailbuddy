@@ -43,126 +43,70 @@ export async function saveEmailAIMetadata({
     tokensUsed?: number;
 }) {
     try {
-        // Ensure keywords is always an array of strings
-        const processedKeywords = Array.isArray(keywords)
-            ? keywords.map((k) => {
-                  // If keyword is an object with task property, convert to string
-                  if (typeof k === "object" && k !== null && "task" in k) {
-                      const deadline = k.deadline ? ` (Due: ${k.deadline})` : "";
-                      return `${k.task}${deadline}`;
-                  }
-                  // Otherwise convert to string directly
-                  return String(k);
-              })
-              // Filter out generic category labels that aren't actionable
-              .filter(keyword => {
-                  // Skip common generic labels that aren't actual action items
-                  const genericLabels = ["URGENT", "DEADLINE", "MEETING", "FINANCIAL", "PERSONAL", "LEGAL"];
-                  // Only keep keywords that:
-                  // 1. Aren't just a generic label
-                  // 2. Start with a verb (typical for action items)
-                  // 3. Or contain detailed information
-                  return !genericLabels.includes(keyword) && 
-                         (keyword.length > 10 || /^[A-Z][a-z]+\s/.test(keyword));
-              })
-            : [];
-
-        // Process deadlines and importantDates
-        const processedDeadlines = deadlines || {};
-        const processedImportantDates = Array.isArray(importantDates) ? importantDates : [];
-        
-        // Determine if the email has deadlines
-        const hasDeadline = (
-            processedImportantDates.length > 0 || 
-            Object.keys(processedDeadlines).length > 0 ||
-            processedKeywords.some(k => 
-                k.toLowerCase().includes("deadline") || 
-                k.toLowerCase().includes("due") ||
-                k.toLowerCase().includes("by ")
-            )
-        );
-        
-        // Try to extract the next deadline date if possible
-        let nextDeadline: Date | null = null;
-        
-        // First try from structured deadlines
-        if (Object.keys(processedDeadlines).length > 0) {
-            // Find the earliest deadline date in the structured data
-            const deadlineDates = Object.values(processedDeadlines)
-                .filter((d): d is { date: string } => {
-                    return Boolean(d && typeof d === 'object' && 'date' in d);
-                })
-                .map(d => new Date(d.date))
-                .filter(d => !Number.isNaN(d.getTime()));
+        // Process keywords, deadlines, and important dates concurrently
+        const [
+            processedKeywords,
+            hasDeadline,
+            nextDeadline
+        ] = await Promise.all([
+            // Process keywords
+            processKeywords(keywords),
             
-            if (deadlineDates.length > 0) {
-                nextDeadline = new Date(Math.min(...deadlineDates.map(d => d.getTime())));
-            }
-        }
-        
-        // If no structured deadline, try to parse from importantDates
-        if (!nextDeadline && processedImportantDates.length > 0) {
-            const dateRegex = /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}|[A-Z][a-z]{2,8} \d{1,2}(?:st|nd|rd|th)?, \d{4}|[A-Z][a-z]{2,8} \d{1,2}(?:st|nd|rd|th)?|\d{1,2}(?:st|nd|rd|th)? [A-Z][a-z]{2,8})/;
+            // Determine if the email has deadlines (needs both deadlines and keywords)
+            determineHasDeadline(keywords, deadlines, importantDates),
             
-            for (const dateStr of processedImportantDates) {
-                const match = dateStr.match(dateRegex);
-                if (match) {
-                    const extractedDate = new Date(match[0]);
-                    if (!Number.isNaN(extractedDate.getTime())) {
-                        if (!nextDeadline || extractedDate < nextDeadline) {
-                            nextDeadline = extractedDate;
-                        }
-                    }
-                }
-            }
-        }
+            // Extract the next deadline date
+            extractNextDeadline(deadlines, importantDates)
+        ]);
 
-        // Use upsert to handle both insert and update cases
-        const result = await prisma.emailAIMetadata.upsert({
-            where: {
-                emailId: emailId,
-            },
-            update: {
-                category,
-                categories,
-                categoryConfidences,
-                priority,
-                priorityExplanation,
-                summary,
-                sentiment,
-                importance,
-                requiresResponse,
-                responseTimeframe,
-                keywords: processedKeywords,
-                deadlines: processedDeadlines,
-                importantDates: processedImportantDates,
-                hasDeadline,
-                nextDeadline,
-                processingTime,
-                modelUsed,
-                tokensUsed,
-            },
-            create: {
-                emailId,
-                category,
-                categories,
-                categoryConfidences,
-                priority,
-                priorityExplanation,
-                summary,
-                sentiment,
-                importance,
-                requiresResponse,
-                responseTimeframe,
-                keywords: processedKeywords,
-                deadlines: processedDeadlines,
-                importantDates: processedImportantDates,
-                hasDeadline,
-                nextDeadline,
-                processingTime,
-                modelUsed,
-                tokensUsed,
-            },
+        // Use prisma transaction to ensure data consistency
+        const result = await prisma.$transaction(async (tx) => {
+            return await tx.emailAIMetadata.upsert({
+                where: {
+                    emailId: emailId,
+                },
+                update: {
+                    category,
+                    categories,
+                    categoryConfidences,
+                    priority,
+                    priorityExplanation,
+                    summary,
+                    sentiment,
+                    importance,
+                    requiresResponse,
+                    responseTimeframe,
+                    keywords: processedKeywords,
+                    deadlines: deadlines || {},
+                    importantDates: Array.isArray(importantDates) ? importantDates : [],
+                    hasDeadline,
+                    nextDeadline,
+                    processingTime,
+                    modelUsed,
+                    tokensUsed,
+                },
+                create: {
+                    emailId,
+                    category,
+                    categories,
+                    categoryConfidences,
+                    priority,
+                    priorityExplanation,
+                    summary,
+                    sentiment,
+                    importance,
+                    requiresResponse,
+                    responseTimeframe,
+                    keywords: processedKeywords,
+                    deadlines: deadlines || {},
+                    importantDates: Array.isArray(importantDates) ? importantDates : [],
+                    hasDeadline,
+                    nextDeadline,
+                    processingTime,
+                    modelUsed,
+                    tokensUsed,
+                },
+            });
         });
 
         return { success: true, data: result };
@@ -170,6 +114,125 @@ export async function saveEmailAIMetadata({
         console.error("Error saving email AI metadata:", error);
         return { success: false, error: String(error) };
     }
+}
+
+/**
+ * Process keywords into standardized format
+ */
+async function processKeywords(keywords?: string[] | any[]): Promise<string[]> {
+    if (!Array.isArray(keywords)) return [];
+    
+    // Generic labels to filter out
+    const genericLabels = ["URGENT", "DEADLINE", "MEETING", "FINANCIAL", "PERSONAL", "LEGAL"];
+    
+    // Process in parallel with Promise.all
+    const processedItems = await Promise.all(
+        keywords.map(async (k) => {
+            // If keyword is an object with task property, convert to string
+            if (typeof k === "object" && k !== null && "task" in k) {
+                const deadline = k.deadline ? ` (Due: ${k.deadline})` : "";
+                return `${k.task}${deadline}`;
+            }
+            // Otherwise convert to string directly
+            return String(k);
+        })
+    );
+    
+    // Filter out generic keywords
+    return processedItems.filter(keyword => {
+        // Only keep keywords that:
+        // 1. Aren't just a generic label
+        // 2. Start with a verb (typical for action items)
+        // 3. Or contain detailed information
+        return !genericLabels.includes(keyword) && 
+               (keyword.length > 10 || /^[A-Z][a-z]+\s/.test(keyword));
+    });
+}
+
+/**
+ * Determine if email has deadlines
+ */
+async function determineHasDeadline(
+    keywords?: string[] | any[],
+    deadlines?: any,
+    importantDates?: string[]
+): Promise<boolean> {
+    const processedImportantDates = Array.isArray(importantDates) ? importantDates : [];
+    const processedDeadlines = deadlines || {};
+    
+    // Check if there are deadlines in the structured data
+    if (processedImportantDates.length > 0 || Object.keys(processedDeadlines).length > 0) {
+        return true;
+    }
+    
+    // Check keywords for deadline-related terms
+    if (Array.isArray(keywords)) {
+        const keywordStrings = keywords.map(k => {
+            if (typeof k === 'object' && k !== null && 'task' in k) {
+                return k.task;
+            }
+            return String(k);
+        });
+        
+        return keywordStrings.some(k => 
+            k.toLowerCase().includes("deadline") || 
+            k.toLowerCase().includes("due") ||
+            k.toLowerCase().includes("by ")
+        );
+    }
+    
+    return false;
+}
+
+/**
+ * Extract the next deadline date from metadata
+ */
+async function extractNextDeadline(deadlines?: any, importantDates?: string[]): Promise<Date | null> {
+    let nextDeadline: Date | null = null;
+    const processedDeadlines = deadlines || {};
+    const processedImportantDates = Array.isArray(importantDates) ? importantDates : [];
+    
+    // First try from structured deadlines
+    if (Object.keys(processedDeadlines).length > 0) {
+        // Find the earliest deadline date in the structured data
+        const deadlineDates = Object.values(processedDeadlines)
+            .filter((d): d is { date: string } => {
+                return Boolean(d && typeof d === 'object' && 'date' in d);
+            })
+            .map(d => new Date(d.date))
+            .filter(d => !Number.isNaN(d.getTime()));
+        
+        if (deadlineDates.length > 0) {
+            nextDeadline = new Date(Math.min(...deadlineDates.map(d => d.getTime())));
+        }
+    }
+    
+    // If no structured deadline, try to parse from importantDates
+    if (!nextDeadline && processedImportantDates.length > 0) {
+        const dateRegex = /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}|[A-Z][a-z]{2,8} \d{1,2}(?:st|nd|rd|th)?, \d{4}|[A-Z][a-z]{2,8} \d{1,2}(?:st|nd|rd|th)?|\d{1,2}(?:st|nd|rd|th)? [A-Z][a-z]{2,8})/;
+        
+        // Process all dates in parallel
+        const extractedDates = await Promise.all(
+            processedImportantDates.map(async (dateStr) => {
+                const match = dateStr.match(dateRegex);
+                if (match) {
+                    const extractedDate = new Date(match[0]);
+                    if (!Number.isNaN(extractedDate.getTime())) {
+                        return extractedDate;
+                    }
+                }
+                return null;
+            })
+        );
+        
+        // Filter out nulls and find the earliest date
+        const validDates = extractedDates.filter((d): d is Date => d !== null);
+        if (validDates.length > 0) {
+            nextDeadline = new Date(Math.min(...validDates.map(d => d.getTime())));
+        }
+    }
+    
+    return nextDeadline;
 }
 
 /**
@@ -195,13 +258,29 @@ export async function getEmailAIMetadata(emailId: string) {
  */
 export async function getMultipleEmailAIMetadata(emailIds: string[]) {
     try {
-        const metadata = await prisma.emailAIMetadata.findMany({
-            where: {
-                emailId: {
-                    in: emailIds,
-                },
-            },
-        });
+        // Split into chunks to avoid query limits
+        const chunkSize = 100;
+        const chunks = [];
+        
+        for (let i = 0; i < emailIds.length; i += chunkSize) {
+            chunks.push(emailIds.slice(i, i + chunkSize));
+        }
+        
+        // Query all chunks in parallel
+        const chunkResults = await Promise.all(
+            chunks.map(chunk => 
+                prisma.emailAIMetadata.findMany({
+                    where: {
+                        emailId: {
+                            in: chunk
+                        }
+                    }
+                })
+            )
+        );
+        
+        // Combine results
+        const metadata = chunkResults.flat();
 
         return { success: true, metadata };
     } catch (error) {
