@@ -164,25 +164,9 @@ export default function AISettings({ user }: { user: User }) {
                 isChecked={localSettings.preserveMetadata}
                 onToggle={() => handleToggle("root", "preserveMetadata")}
                 disabled={!localSettings.enabled}
-                description="Let the AI assistant store analysis information for faster access"
+                description="Store email content as vectors for AI search (all email content is encrypted at rest)"
               />
             </Row>
-
-            <Column fillWidth gap="8">
-              <Select
-                id="ai-assist-level"
-                label="AI assistance level"
-                value={localSettings.aiAssistLevel}
-                onChange={(e) => handleChange("root", "aiAssistLevel", e.target.value)}
-                disabled={!localSettings.enabled}
-                options={[
-                  { value: "minimal", label: "Minimal - Only when I explicitly ask" },
-                  { value: "balanced", label: "Balanced - Helpful suggestions when relevant" },
-                  { value: "proactive", label: "Proactive - Actively offer assistance" },
-                ]}
-              />
-              <Text marginLeft="12" variant="body-default-s" onBackground="neutral-weak">Choose how proactive the AI assistant should be</Text>
-              </Column>
 
               <Textarea
                 labelAsPlaceholder

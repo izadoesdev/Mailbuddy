@@ -54,10 +54,12 @@ import {
 
 // Font Awesome 6
 import { 
+    FaApple,
     FaDiscord, 
     FaGithub, 
     FaGoogle, 
     FaLinkedin, 
+    FaMicrosoft, 
     FaTrash, 
     FaTwitter 
 } from "react-icons/fa6";
@@ -121,6 +123,8 @@ export const iconLibrary: Record<string, IconType> = {
     
     // Services & Brands
     discord: FaDiscord,
+    apple: FaApple,
+    microsoft: FaMicrosoft,
     google: FaGoogle,
     github: FaGithub,
     twitter: FaTwitter,
