@@ -551,7 +551,7 @@ export default function RegisterPage() {
                 >
                     <Column fillWidth>
                         <Row horizontal="center" paddingTop="32" paddingBottom="8">
-                            <Logo size="l" />
+                            <Logo size="l" href="/" />
                         </Row>
                         {getHeaderContent()}
                         <Column padding="32" gap="32" fillWidth>
