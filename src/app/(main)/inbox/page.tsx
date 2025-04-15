@@ -96,11 +96,6 @@ const pageSizeParser = createParser({
     serialize: String,
 }).withDefault(20);
 
-// Use string parser for pageToken with undefined default
-const stringParser = createParser({
-    parse: String,
-    serialize: String,
-});
 
 function InboxPage() {
     // Authentication check

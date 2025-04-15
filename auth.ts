@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma, redis } from "./src/libs/db";
-import { customSession, emailOTP, multiSession, magicLink, twoFactor } from "better-auth/plugins";
+import { customSession, emailOTP, multiSession, magicLink, twoFactor, oneTap } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 import index from "@/app/(dev)/ai/new/index";
 import { Resend } from "resend";
@@ -101,6 +101,7 @@ export const auth = betterAuth({
                 session,
             };
         }),
+        oneTap(),
         multiSession(),
         nextCookies(),
         twoFactor(),
