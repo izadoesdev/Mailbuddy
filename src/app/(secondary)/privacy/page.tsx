@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import {
   Heading,
@@ -8,14 +6,9 @@ import {
   Row,
   Background,
   Button,
-  Line,
-  Logo,
   Icon,
-  SmartLink,
-  ThemeSwitcher,
   IconButton,
 } from "@/once-ui/components";
-import { ScrollToTop } from "@/once-ui/components/ScrollToTop";
 import { effects } from "@/app/resources/config";
 
 export default function PrivacyPolicy() {
@@ -76,7 +69,6 @@ export default function PrivacyPolicy() {
         horizontal="center"
         maxWidth="l"
       >
-        <ScrollToTop><IconButton variant="secondary" icon="chevronUp"/></ScrollToTop>
 
         {/* Main content */}
         <Column
@@ -87,7 +79,7 @@ export default function PrivacyPolicy() {
           horizontal="center"
           border="neutral-alpha-weak"
           fillWidth
-          background="surface"
+          background="overlay"
         >
           <Column paddingX="32" gap="24" paddingY="64">
             <Heading variant="display-strong-xl" align="center">Privacy Policy</Heading>
@@ -150,25 +142,6 @@ export default function PrivacyPolicy() {
               </Column>
 
               <Column gap="16" position="relative">
-                <Background
-                  position="absolute"
-                  mask={{
-                    x: 0,
-                    y: 100,
-                    radius: 75,
-                  }}
-                  gradient={{
-                    display: true,
-                    opacity: 20,
-                    tilt: -20,
-                    height: 30,
-                    width: 30,
-                    x: 25,
-                    y: 25,
-                    colorStart: "accent-solid-medium",
-                    colorEnd: "static-transparent",
-                  }}
-                />
                 <Heading as="h2" variant="heading-strong-l">3. How We Use Your Information</Heading>
                 <Text variant="body-default-m">
                   We use the information we collect for various purposes, including:
@@ -198,20 +171,6 @@ export default function PrivacyPolicy() {
               </Column>
 
               <Column gap="16" position="relative">
-                <Background
-                  position="absolute"
-                  mask={{
-                    x: 100,
-                    y: 50,
-                  }}
-                  grid={{
-                    display: true,
-                    color: "brand-alpha-weak",
-                    width: "0.8rem",
-                    height: "0.8rem",
-                    opacity: 40,
-                  }}
-                />
                 <Heading as="h2" variant="heading-strong-l">4. Information Sharing and Disclosure</Heading>
                 <Text variant="body-default-m">
                   We may share your information in the following situations:
@@ -259,24 +218,6 @@ export default function PrivacyPolicy() {
               </Column>
 
               <Column gap="16" position="relative">
-                <Background
-                  position="absolute"
-                  mask={{
-                    x: 10,
-                    y: 50,
-                  }}
-                  gradient={{
-                    display: true,
-                    opacity: 30,
-                    tilt: 60,
-                    height: 35,
-                    width: 35,
-                    x: 25,
-                    y: 50,
-                    colorStart: "info-solid-medium",
-                    colorEnd: "static-transparent",
-                  }}
-                />
                 <Heading as="h2" variant="heading-strong-l">6. Data Security</Heading>
                 <Text variant="body-default-m">
                   We implement appropriate security measures to protect the security of your personal information. However, please keep in mind that no method of transmission over the Internet or electronic storage is 100% secure.
@@ -298,20 +239,6 @@ export default function PrivacyPolicy() {
               </Column>
 
               <Column gap="16" position="relative">
-                <Background
-                  position="absolute"
-                  mask={{
-                    x: 50,
-                    y: 50,
-                    radius: 50,
-                  }}
-                  dots={{
-                    display: true,
-                    opacity: 30,
-                    color: "brand-alpha-strong",
-                    size: "16",
-                  }}
-                />
                 <Heading as="h2" variant="heading-strong-l">9. Contact Us</Heading>
                 <Text variant="body-default-m">
                   If you have any questions about this Privacy Policy, please contact us at:

@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import {
   Heading,
@@ -8,14 +6,9 @@ import {
   Row,
   Background,
   Button,
-  Line,
-  Logo,
   Icon,
-  SmartLink,
-  ThemeSwitcher,
   IconButton,
 } from "@/once-ui/components";
-import { ScrollToTop } from "@/once-ui/components/ScrollToTop";
 import { effects } from "@/app/resources/config";
 
 export default function TermsOfService() {
@@ -76,7 +69,6 @@ export default function TermsOfService() {
         horizontal="center"
         maxWidth="l"
       >
-        <ScrollToTop><IconButton variant="secondary" icon="chevronUp"/></ScrollToTop>
 
         {/* Main content */}
         <Column
@@ -87,7 +79,7 @@ export default function TermsOfService() {
           horizontal="center"
           border="neutral-alpha-weak"
           fillWidth
-          background="surface"
+          background="overlay"
         >
           <Column paddingX="32" gap="24" paddingY="64">
             <Heading variant="display-strong-xl" align="center">Terms of Service</Heading>
@@ -133,21 +125,6 @@ export default function TermsOfService() {
               </Column>
 
               <Column gap="16" position="relative">
-                <Background
-                  position="absolute"
-                  mask={{
-                    x: 0,
-                    y: 100,
-                    radius: 100,
-                  }}
-                  grid={{
-                    display: true,
-                    color: "brand-alpha-weak",
-                    width: "12",
-                    height: "12",
-                    opacity: 30,
-                  }}
-                />
                 <Heading as="h2" variant="heading-strong-l">3. Disclaimer</Heading>
                 <Text variant="body-default-m">
                   The materials on our website are provided on an 'as is' basis. We make no warranties, expressed or implied, and hereby disclaim and negate all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.
@@ -176,24 +153,6 @@ export default function TermsOfService() {
               </Column>
 
               <Column gap="16" position="relative">
-                <Background
-                  position="absolute"
-                  mask={{
-                    x: 100,
-                    y: 50,
-                  }}
-                  gradient={{
-                    display: true,
-                    opacity: 30,
-                    tilt: 45,
-                    height: 40,
-                    width: 40,
-                    x: 75,
-                    y: 50,
-                    colorStart: "accent-solid-medium",
-                    colorEnd: "static-transparent",
-                  }}
-                />
                 <Heading as="h2" variant="heading-strong-l">7. Modifications</Heading>
                 <Text variant="body-default-m">
                   We may revise these terms of service for our website at any time without notice. By using this website you are agreeing to be bound by the then current version of these terms of service.
@@ -214,6 +173,7 @@ export default function TermsOfService() {
                 href="/"
                 variant="secondary"
                 prefixIcon="arrowLeft"
+                color="neutral-alpha-strong"
               />
             </Row>
           </Column>

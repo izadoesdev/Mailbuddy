@@ -8,18 +8,17 @@ import {
   Row,
   Background,
   Button,
-  Logo,
   Icon,
-  SmartLink,
-  ThemeSwitcher,
   IconButton,
   Card,
   Line,
   Switch,
+  Grid,
+  RevealFx,
+  Badge,
 } from "@/once-ui/components";
 import { ScrollToTop } from "@/once-ui/components/ScrollToTop";
 import { effects } from "@/app/resources/config";
-import Footer from "@/components/Boxes/Footer";
 
 export default function Pricing() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
@@ -27,6 +26,95 @@ export default function Pricing() {
 
   // Calculate discount for yearly billing
   const yearlyDiscount = 20; // 20% discount for yearly billing
+  
+  // Feature Categories
+  const featureCategories = [
+    { name: "Email Management", id: "email" },
+    { name: "AI Features", id: "ai" },
+    { name: "Security", id: "security" },
+    { name: "Support", id: "support" }
+  ];
+  
+  // Comprehensive Features List for comparison
+  const featuresList = [
+    { 
+      name: "Email organization", 
+      category: "email",
+      free: "Basic", 
+      essential: "Advanced", 
+      pro: "Advanced", 
+    },
+    { 
+      name: "Emails processed monthly", 
+      category: "email",
+      free: "100", 
+      essential: "1,000", 
+      pro: "5,000", 
+    },
+    { 
+      name: "AI email analysis", 
+      category: "ai",
+      free: "Basic", 
+      essential: "Advanced", 
+      pro: "Premium", 
+    },
+    { 
+      name: "AI email categorization", 
+      category: "ai",
+      free: "✓", 
+      essential: "✓", 
+      pro: "✓", 
+    },
+    { 
+      name: "Custom AI workflows", 
+      category: "ai",
+      free: "—", 
+      essential: "—", 
+      pro: "✓", 
+    },
+    { 
+      name: "Client-side encryption", 
+      category: "security",
+      free: "✓", 
+      essential: "✓", 
+      pro: "✓", 
+    },
+    { 
+      name: "Enhanced security", 
+      category: "security",
+      free: "—", 
+      essential: "✓", 
+      pro: "✓", 
+    },
+    { 
+      name: "Advanced encryption", 
+      category: "security",
+      free: "—", 
+      essential: "—", 
+      pro: "✓", 
+    },
+    { 
+      name: "HIPAA compliance", 
+      category: "security",
+      free: "—", 
+      essential: "—", 
+      pro: "—", 
+    },
+    { 
+      name: "Support", 
+      category: "support",
+      free: "Community", 
+      essential: "Email priority", 
+      pro: "Phone & email", 
+    },
+    { 
+      name: "Dedicated account manager", 
+      category: "support",
+      free: "—", 
+      essential: "—", 
+      pro: "—", 
+    },
+  ];
   
   // Pricing plans with features
   const pricingPlans = [
@@ -36,87 +124,76 @@ export default function Pricing() {
       description: "Perfect for trying out Mailbuddy",
       monthlyPrice: 0,
       yearlyPrice: 0,
-      features: [
-        "Gmail integration",
-        "Basic email organization",
-        "100 emails per month with AI processing",
-        "Community support",
+      highlight: "Basic features to get started",
+      keyFeatures: [
+        "1 Gmail account",
+        "100 emails per month with AI",
+        "Basic organization",
         "Client-side encryption",
+        "Community support",
       ],
       cta: "Get Started",
       popular: false,
-      variant: "secondary" as const,
+      variant: "tertiary" as const,
     },
     {
       id: "essential-plan",
       name: "Essential",
-      description: "For personal and small team use",
+      description: "For personal and small teams",
       monthlyPrice: 19,
       yearlyPrice: Math.round(19 * 12 * (1 - yearlyDiscount / 100)),
-      features: [
+      highlight: "Most popular for individuals",
+      keyFeatures: [
         "Unlimited Gmail accounts",
-        "AI-powered email categorization",
-        "1,000 emails per month with AI processing",
-        "Priority email support",
+        "1,000 AI-processed emails/month",
+        "Advanced categorization",
         "Enhanced security features",
-        "Real-time syncing",
-        "Advanced search capabilities",
+        "Priority email support",
       ],
-      cta: "Choose Essential",
+      cta: "Start Free Trial",
       popular: true,
       variant: "primary" as const,
     },
     {
-      id: "premium-plan",
-      name: "Premium",
-      description: "For businesses requiring maximum security",
-      monthlyPrice: 49,
-      yearlyPrice: Math.round(49 * 12 * (1 - yearlyDiscount / 100)),
-      features: [
-        "Unlimited email accounts",
-        "Full AI feature suite",
-        "10,000 emails per month with AI processing",
-        "24/7 priority support",
-        "HIPAA-compliant configuration",
-        "Team collaboration tools",
-        "Custom integration options",
-        "Data retention policies",
-        "Dedicated account manager",
+      id: "pro-plan",
+      name: "Pro",
+      description: "For growing teams and businesses",
+      monthlyPrice: 99,
+      yearlyPrice: Math.round(99 * 12 * (1 - yearlyDiscount / 100)),
+      highlight: "For productivity pros",
+      keyFeatures: [
+        "Multiple email providers",
+        "5,000 AI-processed emails/month",
+        "Custom AI workflows",
+        "Advanced encryption options",
+        "Phone & email support",
       ],
-      cta: "Choose Premium",
+      cta: "Start Free Trial",
       popular: false,
       variant: "secondary" as const,
-    }
+    },
   ];
 
-  // Conditionally add Pro plan if toggle is on
-  const proPlan = {
-    id: "pro-plan",
-    name: "Pro",
-    description: "For professional teams and businesses",
-    monthlyPrice: 99,
-    yearlyPrice: Math.round(99 * 12 * (1 - yearlyDiscount / 100)),
-    features: [
-      "Multiple email accounts",
-      "Full AI feature suite",
-      "5,000 emails per month with AI processing",
-      "Priority phone & email support",
-      "Advanced encryption options",
-      "Team management features",
-      "Custom email templates",
-      "Advanced analytics",
-    ],
-    cta: "Choose Pro",
-    popular: false,
-    variant: "secondary" as const,
+  const displayPlans = includePro 
+    ? pricingPlans 
+    : pricingPlans.filter(plan => plan.id !== "pro-plan");
+  
+  const renderPlanFeatureValue = (planId: string, feature: typeof featuresList[0]) => {
+    const planKey = planId.split('-')[0];
+    const value = feature[planKey as keyof typeof feature];
+    
+    if (value === "✓") {
+      return <Icon name="checkCircle" size="s" onBackground="success-strong" />;
+    }
+    if (value === "—") {
+      return <Icon name="minus" size="s" onBackground="neutral-weak" />;
+    }
+    
+    return <Text variant="body-default-s">{value}</Text>;
   };
 
-  const displayPlans = includePro 
-    ? [...pricingPlans.slice(0, 2), proPlan, pricingPlans[2]] 
-    : pricingPlans;
-
   return (
-    <Row fill padding="8" gap="8" horizontal="center">
+    <Column fillWidth horizontal="center">
       <Background
         pointerEvents="none"
         position="fixed"
@@ -154,115 +231,90 @@ export default function Pricing() {
           size: effects.dots.size as any,
           opacity: effects.dots.opacity as any,
         }}
-        grid={{
-          display: effects.grid.display,
-          color: effects.grid.color,
-          width: effects.grid.width as any,
-          height: effects.grid.height as any,
-          opacity: effects.grid.opacity as any,
-        }}
-        lines={{
-          display: effects.lines.display,
-          opacity: effects.lines.opacity as any,
-        }}
       />
+      
       <Column
-        gap="-1"
         fillWidth
         horizontal="center"
         maxWidth="l"
+        padding="8"
       >
         <ScrollToTop><IconButton variant="secondary" icon="chevronUp"/></ScrollToTop>
 
-        {/* Main content */}
+        {/* Main content wrapper */}
         <Column
           as="main"
-          maxWidth="l"
-          position="relative"
           radius="xl"
           horizontal="center"
           border="neutral-alpha-weak"
           fillWidth
-          background="surface"
+          background="overlay"
+          overflow="hidden"
         >
           {/* Hero section */}
-          <Column paddingX="32" gap="32" paddingY="64" horizontal="center" position="relative">
-            
-            <Heading variant="display-strong-xl" align="center">Simple, transparent pricing</Heading>
-            <Column maxWidth={40} horizontal="center">
-              <Text 
-                variant="body-default-l" 
-                align="center" 
-                onBackground="neutral-medium" 
-                marginBottom="16"
-              >
-                Choose the right plan for your secure, private, and AI-enhanced email experience. No compromises on security or privacy.
-              </Text>
-            </Column>
-
-            {/* Billing Toggle */}
-            <Row horizontal="center" gap="16" paddingTop="24" paddingBottom="40">
-              <Text variant="body-default-m">Monthly</Text>
-              <Switch
-                isChecked={billingCycle === "yearly"}
-                onToggle={() => setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")}
-              />
-              <Row gap="8" vertical="center">
-                <Text variant="body-default-m">Yearly</Text>
-                <Row 
-                  background="success-alpha-weak" 
-                  paddingX="8" 
-                  paddingY="4" 
-                  radius="s"
+          <RevealFx speed="medium" translateY={12}>
+            <Column paddingX="32" paddingTop="64" paddingBottom="32" horizontal="center" position="relative">
+              <Badge icon="sparkles" marginBottom="16">Pricing</Badge>
+              <Heading variant="display-strong-xl" align="center" marginBottom="16">Choose your perfect plan</Heading>
+              <Column maxWidth={40} horizontal="center">
+                <Text 
+                  variant="body-default-l" 
+                  align="center" 
+                  onBackground="neutral-medium" 
                 >
-                  <Text variant="label-strong-xs" onBackground="success-strong">
-                    Save {yearlyDiscount}%
+                  Simple, transparent pricing for everyone. All plans include our core security features.
+                </Text>
+              </Column>
+            </Column>
+          </RevealFx>
+
+          {/* Billing Toggle */}
+          <Column horizontal="center" paddingTop="16" paddingBottom="40">
+            <Row 
+              background="neutral-alpha-weak" 
+              padding="4" 
+              radius="full" 
+              horizontal="center"
+              shadow="s"
+            >
+              <Row horizontal="center" gap="16" paddingX="24" paddingY="8">
+                <Row gap="8" vertical="center">
+                  <Text variant="label-strong-m">
+                    Monthly
+                  </Text>
+                </Row>
+                <Switch
+                  isChecked={billingCycle === "yearly"}
+                  onToggle={() => setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")}
+                />
+                <Row gap="8" vertical="center">
+                  <Text variant="label-strong-m">
+                    Yearly
                   </Text>
                 </Row>
               </Row>
             </Row>
+          </Column>
 
-            {/* Demo Feature: Toggle for Pro plan inclusion */}
-            <Row horizontal="center" gap="12" paddingBottom="24">
-              <Text variant="body-default-s" onBackground="neutral-medium">Include Pro plan?</Text>
-              <Switch
-                isChecked={includePro}
-                onToggle={() => setIncludePro(!includePro)}
-              />
-            </Row>
-
-            {/* Pricing cards */}
-            <Row
-              fillWidth
-              gap="24"
-              mobileDirection="column"
-              tabletDirection="column"
+          {/* Pricing cards grid */}
+          <RevealFx speed="medium" translateY={12} delay={0.2}>
+            <Grid 
+              columns={3}
+              gap="24" 
+              padding="32"
               position="relative"
             >
-              <Background
-                position="absolute"
-                mask={{
-                  x: 50,
-                  y: 50,
-                }}
-                dots={{
-                  display: true,
-                  opacity: 20,
-                  color: "neutral-alpha-medium",
-                  size: "32",
-                }}
-              />
-              {displayPlans.map((plan) => (
+              {displayPlans.map((plan, index) => (
                 <Card
                   key={plan.id}
                   fillWidth
                   padding="32"
-                  gap="32"
+                  gap="24"
                   direction="column"
                   radius="xl"
                   shadow={plan.popular ? "l" : "s"}
                   border={plan.popular ? "brand-medium" : "neutral-alpha-weak"}
-                  background={plan.popular ? "brand-weak" : "surface"}
+                  background={plan.popular ? "brand-weak" : "overlay"}
                   position="relative"
                 >
                   {plan.popular && (
@@ -272,22 +324,17 @@ export default function Pricing() {
                       horizontal="center"
                       fillWidth
                     >
-                      <Row
-                        background="brand-strong"
-                        paddingX="16"
-                        paddingY="4"
-                        radius="full"
+                      <Badge 
+                        icon="sparkles"
                       >
-                        <Text variant="label-strong-xs" onSolid="neutral-strong">
-                          Most Popular
-                        </Text>
-                      </Row>
+                        Most Popular
+                      </Badge>
                     </Row>
                   )}
 
-                  <Column gap="16">
+                  <Column gap="8">
                     <Heading variant="heading-strong-l">{plan.name}</Heading>
-                    <Text variant="body-default-m" onBackground="neutral-medium">
+                    <Text variant="body-default-s" onBackground="neutral-medium">
                       {plan.description}
                     </Text>
                   </Column>
@@ -301,12 +348,16 @@ export default function Pricing() {
                         / month
                       </Text>
                     </Row>
-                    {billingCycle === "yearly" && (
+                    {billingCycle === "yearly" && plan.monthlyPrice > 0 && (
                       <Text variant="body-default-s" onBackground="neutral-medium">
                         Billed annually (${plan.yearlyPrice}/year)
                       </Text>
                     )}
                   </Column>
+                  
+                  <Text variant="label-strong-xs" onBackground="brand-strong">
+                    {plan.highlight}
+                  </Text>
 
                   <Button
                     label={plan.cta}
@@ -316,151 +367,224 @@ export default function Pricing() {
 
                   <Column gap="16">
                     <Line background="neutral-alpha-medium" />
-                    <Text variant="label-strong-s">What's included:</Text>
                     <Column gap="12">
-                      {plan.features.map((feature, featureIndex) => (
-                        <Row key={`${plan.id}-feature-${featureIndex}`} gap="12" vertical="start">
-                          <Icon name="checkCircle" size="s" />
-                          <Text variant="body-default-m">{feature}</Text>
+                      {plan.keyFeatures.map((feature, featureIndex) => (
+                        <Row key={`${plan.id}-feature-${featureIndex}`} gap="12" vertical="center">
+                          <Icon name="checkCircle" size="s" onBackground={plan.popular ? "brand-strong" : "success-strong"} />
+                          <Text variant="body-default-s">{feature}</Text>
                         </Row>
                       ))}
                     </Column>
                   </Column>
                 </Card>
               ))}
-            </Row>
-          </Column>
+            </Grid>
+          </RevealFx>
+
+          {/* Feature comparison section */}
+          <RevealFx speed="medium" translateY={12} delay={0.4}>
+            <Column paddingX="32" paddingTop="32" paddingBottom="64" horizontal="center" position="relative">
+              <Background
+                position="absolute"
+                mask={{
+                  x: 50,
+                  y: 0,
+                  radius: 100,
+                }}
+                grid={{
+                  display: true,
+                  opacity: 10,
+                  color: "brand-alpha-weak",
+                  width: "16",
+                  height: "16",
+                }}
+              />
+              
+              <Heading variant="heading-strong-l" align="center" marginBottom="40">
+                Compare All Features
+              </Heading>
+              
+              <Card 
+                border="neutral-alpha-medium" 
+                radius="xl" 
+                padding="0" 
+                overflow="hidden"
+                background="overlay"
+              >
+                {/* Plan headers */}
+                <Row fillWidth borderBottom="neutral-alpha-medium">
+                  <Column padding="16" fillWidth maxWidth={30}>
+                    <Text variant="label-strong-m">Features</Text>
+                  </Column>
+                  {displayPlans.map(plan => (
+                    <Column 
+                      key={`header-${plan.id}`} 
+                      fillWidth 
+                      padding="16" 
+                      background={plan.popular ? "brand-weak" : undefined}
+                      borderLeft="neutral-alpha-weak"
+                    >
+                      <Heading as="h3" variant="heading-strong-s">{plan.name}</Heading>
+                      <Text variant="body-default-s" onBackground="neutral-medium">
+                        ${billingCycle === "monthly" ? plan.monthlyPrice : Math.round(plan.yearlyPrice / 12)}/mo
+                      </Text>
+                    </Column>
+                  ))}
+                </Row>
+                
+                {/* Feature categories and details */}
+                {featureCategories.map(category => (
+                  <Column key={category.id} fillWidth>
+                    {/* Category header */}
+                    <Row fillWidth background="neutral-alpha-weak" paddingY="12" paddingX="16">
+                      <Text variant="label-strong-s">{category.name}</Text>
+                    </Row>
+                    
+                    {/* Features in this category */}
+                    {featuresList
+                      .filter(feature => feature.category === category.id)
+                      .map((feature, featureIndex) => (
+                        <Row 
+                          key={`${category.id}-${featureIndex}`} 
+                          fillWidth 
+                          borderTop="neutral-alpha-weak"
+                        >
+                          <Column padding="16" fillWidth maxWidth={30}>
+                            <Text variant="body-default-s">{feature.name}</Text>
+                          </Column>
+                          {displayPlans.map(plan => (
+                            <Column 
+                              key={`${plan.id}-${feature.name}`} 
+                              fillWidth 
+                              padding="16" 
+                              horizontal="center"
+                              vertical="center"
+                              background={plan.popular ? "brand-alpha-weak" : undefined}
+                              borderLeft="neutral-alpha-weak"
+                            >
+                              {renderPlanFeatureValue(plan.id, feature)}
+                            </Column>
+                          ))}
+                        </Row>
+                      ))
+                    }
+                  </Column>
+                ))}
+              </Card>
+            </Column>
+          </RevealFx>
 
           {/* FAQ Section */}
-          <Column paddingX="32" paddingTop="104" paddingBottom="64" position="relative">
-            <Background
-              position="absolute"
-              mask={{
-                x: 0,
-                y: 0,
-              }}
-              grid={{
-                display: true,
-                width: "1rem",
-                color: "neutral-alpha-weak",
-                height: "1rem",
-                opacity: 30,
-              }}
-            />
-            <Heading variant="heading-strong-l" align="center" marginBottom="32">
-              Frequently Asked Questions
-            </Heading>
-            <Column gap="24" horizontal="center" style={{ maxWidth: "var(--spacing-40)" }}>
-              <Column gap="8">
-                <Heading as="h3" variant="heading-strong-s">
-                  How does billing work?
-                </Heading>
-                <Text variant="body-default-m" onBackground="neutral-medium">
-                  Plans are billed either monthly or yearly, with a 20% discount for yearly subscriptions. You can change your billing cycle at any time.
-                </Text>
-              </Column>
+          <RevealFx speed="medium" translateY={12} delay={0.6}>
+            <Column paddingX="32" paddingTop="32" paddingBottom="64" position="relative">
+              <Background
+                position="absolute"
+                mask={{
+                  x: 0,
+                  y: 0,
+                }}
+                grid={{
+                  display: true,
+                  width: "1rem",
+                  color: "neutral-alpha-weak",
+                  height: "1rem",
+                  opacity: 20,
+                }}
+              />
+              <Heading variant="heading-strong-l" align="center" marginBottom="32">
+                Questions? We have answers
+              </Heading>
               
-              <Column gap="8">
-                <Heading as="h3" variant="heading-strong-s">
-                  Can I change my plan later?
-                </Heading>
-                <Text variant="body-default-m" onBackground="neutral-medium">
-                  Yes! You can upgrade or downgrade your plan at any time. If you upgrade, the change will take effect immediately. If you downgrade, the change will take effect at the end of your current billing cycle.
-                </Text>
-              </Column>
-              
-              <Column gap="8">
-                <Heading as="h3" variant="heading-strong-s">
-                  Do you offer a free trial?
-                </Heading>
-                <Text variant="body-default-m" onBackground="neutral-medium">
-                  Yes, all paid plans come with a 14-day free trial. No credit card is required to start your trial.
-                </Text>
-              </Column>
-              
-              <Column gap="8">
-                <Heading as="h3" variant="heading-strong-s">
-                  What payment methods do you accept?
-                </Heading>
-                <Text variant="body-default-m" onBackground="neutral-medium">
-                  We accept all major credit cards, PayPal, and bank transfers for yearly plans.
-                </Text>
-              </Column>
-              
-              <Column gap="8">
-                <Heading as="h3" variant="heading-strong-s">
-                  Do you offer refunds?
-                </Heading>
-                <Text variant="body-default-m" onBackground="neutral-medium">
-                  We offer a 30-day money-back guarantee for all paid plans. If you're not satisfied with our service, contact us within 30 days of your purchase for a full refund.
-                </Text>
-              </Column>
+              <Grid columns={2} gap="24" maxWidth="l">
+                <Card padding="24" radius="l" border="neutral-alpha-weak" background="overlay">
+                  <Column gap="8">
+                    <Heading as="h3" variant="heading-strong-s">
+                      How does billing work?
+                    </Heading>
+                    <Text variant="body-default-s" onBackground="neutral-medium">
+                      Plans are billed either monthly or yearly, with a 20% discount for yearly subscriptions. You can change your billing cycle at any time.
+                    </Text>
+                  </Column>
+                </Card>
+                
+                <Card padding="24" radius="l" border="neutral-alpha-weak" background="overlay">
+                  <Column gap="8">
+                    <Heading as="h3" variant="heading-strong-s">
+                      Can I change my plan later?
+                    </Heading>
+                    <Text variant="body-default-s" onBackground="neutral-medium">
+                      Yes! You can upgrade or downgrade your plan at any time. If you upgrade, the change will take effect immediately. If you downgrade, the change will take effect at the end of your current billing cycle.
+                    </Text>
+                  </Column>
+                </Card>
+                
+                <Card padding="24" radius="l" border="neutral-alpha-weak" background="overlay">
+                  <Column gap="8">
+                    <Heading as="h3" variant="heading-strong-s">
+                      Do you offer a free trial?
+                    </Heading>
+                    <Text variant="body-default-s" onBackground="neutral-medium">
+                      Yes, all paid plans come with a 14-day free trial. No credit card is required to start your trial.
+                    </Text>
+                  </Column>
+                </Card>
+                
+                <Card padding="24" radius="l" border="neutral-alpha-weak" background="overlay">
+                  <Column gap="8">
+                    <Heading as="h3" variant="heading-strong-s">
+                      What payment methods do you accept?
+                    </Heading>
+                    <Text variant="body-default-s" onBackground="neutral-medium">
+                      We accept all major credit cards, PayPal, and bank transfers for yearly plans.
+                    </Text>
+                  </Column>
+                </Card>
+              </Grid>
+            </Column>
+          </RevealFx>
 
-              <Row horizontal="center" paddingTop="32">
+          {/* CTA Section */}
+          <RevealFx speed="medium" translateY={12} delay={0.8}>
+            <Column
+              background="overlay"
+              paddingX="40"
+              paddingY="64"
+              horizontal="center"
+              gap="32"
+              position="relative"
+              topRadius="xl"
+            >
+
+              <Heading variant="heading-strong-xl" align="center">
+                Ready to transform your email experience?
+              </Heading>
+              <Column horizontal="center" maxWidth={40}>
+                <Text 
+                  variant="body-default-l" 
+                  align="center" 
+                  onBackground="neutral-medium"
+                >
+                  Start your free trial today. No credit card required.
+                </Text>
+              </Column>
+              <Row horizontal="center" gap="16">
                 <Button
-                  label="Contact Sales"
-                  href="/contact"
+                  label="Get started for free"
+                  size="l"
+                  variant="primary"
+                  href="/signup"
+                />
+                <Button
+                  label="Contact sales"
+                  size="l"
                   variant="secondary"
-                  prefixIcon="mail"
+                  href="/contact"
                 />
               </Row>
             </Column>
-          </Column>
-
-          {/* CTA Section */}
-          <Column
-            background="overlay"
-            paddingX="32"
-            paddingY="64"
-            horizontal="center"
-            gap="32"
-            radius="xl"
-            margin="32"
-            border="neutral-alpha-weak"
-            position="relative"
-          >
-            <Background
-              position="absolute"
-              mask={{
-                cursor: true,
-                radius: 50,
-              }}
-              dots={{
-                display: true,
-                opacity: 10,
-                color: "brand-alpha-strong",
-                size: "24",
-              }}
-            />
-            <Heading variant="heading-strong-l" align="center">
-              Ready to secure your email experience?
-            </Heading>
-            <Column horizontal="center" style={{ maxWidth: "var(--spacing-30)" }}>
-              <Text 
-                variant="body-default-m" 
-                align="center" 
-                onBackground="neutral-medium"
-              >
-                Join Mailbuddy - Your AI Email Assistant with privacy-first architecture and zero-knowledge encryption.
-              </Text>
-            </Column>
-            <Row horizontal="center" gap="16">
-              <Button
-                label="Get started for free"
-                variant="primary"
-                prefixIcon="sparkle"
-                href="/signup"
-              />
-              <Button
-                label="Learn more"
-                variant="secondary"
-              />
-            </Row>
-          </Column>
+          </RevealFx>
         </Column>
-
-        {/* Footer */}
       </Column>
-    </Row>
+    </Column>
   );
 } 

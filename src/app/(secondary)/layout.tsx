@@ -55,35 +55,13 @@ export default function SecondaryLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <Flex
-      suppressHydrationWarning
-      as="body"
-      lang="en"
-      fillHeight
-      background="page"
-      data-neutral={style.neutral}
-      data-brand={style.brand}
-      data-accent={style.accent}
-      data-border={style.border}
-      data-solid={style.solid}
-      data-solid-style={style.solidStyle}
-      data-surface={style.surface}
-      data-transition={style.transition}
-      data-scaling={style.scaling}
-      className={classNames(
-        primary.variable,
-        code.variable,
-        secondary ? secondary.variable : "",
-        tertiary ? tertiary.variable : "",
-      )}
-    >
-          <Column as="body" fillWidth margin="0" padding="0">
+
+          <Column fillWidth margin="0" padding="0" background="overlay">
             <TopNav />
                 <Column fillWidth paddingTop="128" center vertical="center">
                 {children}
                 </Column>
             <Footer />
           </Column>
-    </Flex>
   );
 }
