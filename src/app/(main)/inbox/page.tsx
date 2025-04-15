@@ -422,11 +422,48 @@ function InboxPage() {
 
     // Get compose email props
     const getComposeEmailProps = useCallback(() => {
-        return {
-            replyTo,
-            forwardFrom,
+        const props: any = {
             onSuccess: handleEmailSent,
         };
+
+        // Function to extract email address from "Name <email@example.com>" format
+        const extractEmailAddress = (fullAddress: string) => {
+            const emailRegex = /<([^>]+)>/;
+            const match = fullAddress.match(emailRegex);
+            return match ? match[1] : fullAddress.trim();
+        };
+
+        if (replyTo) {
+            // For reply, set recipient to the sender, add Re: to subject, quote the original message
+            props.initialTo = replyTo.from ? extractEmailAddress(replyTo.from) : "";
+            props.initialSubject = replyTo.subject && !replyTo.subject.startsWith("Re:") 
+                ? `Re: ${replyTo.subject}` 
+                : replyTo.subject || "";
+            props.initialBody = replyTo.body 
+                ? `<br/><br/>On ${new Date(replyTo.createdAt).toLocaleString()}, ${replyTo.from} wrote:<br/>${replyTo.body}`
+                : "";
+            props.threadId = replyTo.threadId;
+        } else if (forwardFrom) {
+            // For forward, keep recipient empty, add Fwd: to subject, quote the original message
+            props.initialTo = "";
+            props.initialSubject = forwardFrom.subject && !forwardFrom.subject.startsWith("Fwd:") 
+                ? `Fwd: ${forwardFrom.subject}` 
+                : forwardFrom.subject || "";
+                
+            const forwardHeader = `
+                <br/><br/>---------- Forwarded message ---------<br/>
+                From: ${forwardFrom.from}<br/>
+                Date: ${new Date(forwardFrom.createdAt).toLocaleString()}<br/>
+                Subject: ${forwardFrom.subject}<br/>
+                To: ${forwardFrom.to ? extractEmailAddress(forwardFrom.to) : ""}<br/><br/>
+            `;
+            
+            props.initialBody = forwardFrom.body 
+                ? `${forwardHeader}${forwardFrom.body}`
+                : forwardHeader;
+        }
+
+        return props;
     }, [replyTo, forwardFrom, handleEmailSent]);
 
     // Format user data for the user menu
