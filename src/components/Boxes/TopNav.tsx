@@ -1,26 +1,26 @@
-import { Background, Row, Logo, Button, IconButton } from "@/once-ui/components";
+import { Row, Logo, Button, IconButton } from "@/once-ui/components";
 
 export default function TopNav() {
   return (
     <Row position="fixed" top="0" fillWidth horizontal="center" zIndex={10} paddingY="16">
       <Row
-        data-border="rounded"
         horizontal="space-between"
-        maxWidth="l"
-        paddingRight="64"
+        maxWidth="xl"
+        paddingX="24"
         background="overlay"
-        paddingLeft="32"
-        paddingY="20"
+        paddingY="16"
         fillWidth
         shadow="s"
         border="neutral-alpha-weak"
-        radius="m"
+        radius="xl"
         style={{ backdropFilter: "blur(8px)" }}
       >
-        <Logo size="s" icon={true} href="/" />
+        <Row vertical="center" gap="12">
+          <Logo size="s" href="/" />
+        </Row>
         
         {/* Desktop Navigation */}
-        <Row gap="16" hide="s">
+        <Row gap="8" hide="s" vertical="center">
           <Button
             href="/pricing"
             size="s"
@@ -28,42 +28,36 @@ export default function TopNav() {
             variant="tertiary"
           />
           <Button
-            href="/terms"
+            href="/features"
             size="s"
-            label="Terms"
+            label="Features"
             variant="tertiary"
           />
           <Button
-            href="/privacy"
+            href="/about"
             size="s"
-            label="Privacy"
-            variant="tertiary"
-          />
-          <Button
-            href="/security"
-            size="s"
-            label="Security"
+            label="About"
             variant="tertiary"
           />
           <Button
             href="/login"
             size="s"
-            label="Login"
+            label="Sign in"
             variant="secondary"
           />
           <Button
-            href="/signup"
-            prefixIcon="sparkle"
+            href="/register"
+            prefixIcon="sparkles"
             size="s"
-            label="Sign up"
+            label="Sign up free"
             variant="primary"
           />
         </Row>
         
         {/* Mobile Navigation */}
-        <Row gap="16" show="s">
+        <Row show="s">
           <IconButton
-            icon="layout"
+            icon="menu"
             variant="tertiary"
             aria-label="Open menu"
           />

@@ -151,6 +151,16 @@ function InboxPage() {
         enabled: isAuthenticated,
     });
     
+    // Track if a request has been initiated to avoid "empty inbox" flash
+    const [hasInitiatedRequest, setHasInitiatedRequest] = useState(false);
+    
+    // Set hasInitiatedRequest when any request starts
+    useEffect(() => {
+        if (isLoading || isFetching) {
+            setHasInitiatedRequest(true);
+        }
+    }, [isLoading, isFetching]);
+    
     // Calculate total pages based on totalCount and pageSize
     const totalPages = totalCount ? Math.ceil(totalCount / pageSize) : 1;
 
@@ -538,7 +548,9 @@ function InboxPage() {
                     <Column fill overflow="hidden">
                         <EmailList
                             threads={displayedThreads}
-                            isLoading={isAISearchActive ? isAISearchLoading : isLoading}
+                            isLoading={isAISearchActive 
+                                ? isAISearchLoading 
+                                : (isLoading || isFetching || !hasInitiatedRequest)}
                             selectedThreadId={selectedThread?.threadId || null}
                             selectedEmailId={selectedEmail?.id || null}
                             searchQuery={debouncedSearchQuery}

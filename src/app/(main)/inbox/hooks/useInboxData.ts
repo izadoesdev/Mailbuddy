@@ -210,6 +210,14 @@ export function useInboxData({
         staleTime: 60 * 1000, // 1 minute
         retry: false, // Disable retries to prevent multiple error messages
         enabled, // Only run the query when enabled is true
+        // Always start with loading state to prevent "empty inbox" flash
+        placeholderData: () => ({ 
+            threads: [],
+            totalCount: 0,
+            page,
+            pageSize,
+            hasMore: false
+        }),
     };
 
     const queryResult = useQuery<InboxResponseWithError, Error>(queryOptions);

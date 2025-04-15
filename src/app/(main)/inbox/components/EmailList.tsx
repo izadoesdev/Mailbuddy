@@ -1,7 +1,8 @@
 import type React from "react";
-import { Column, Text, Skeleton, Icon, Button } from "@/once-ui/components";
-import type { Email, Thread } from "../types";
+import { Column, Text, Icon, Button } from "@/once-ui/components";
+import type { Thread } from "../types";
 import { EmailItem } from "./EmailItem";
+import { LoadingAtom } from "./LoadingAtom";
 
 interface EmailListProps {
     threads: Thread[];
@@ -28,13 +29,11 @@ export function EmailList({
     errorType,
     onErrorAction,
 }: EmailListProps) {
-    // If loading, show skeletons
+    // If loading, show the atom loading animation with cycling messages
     if (isLoading) {
         return (
-            <Column fill gap="1" border="neutral-alpha-medium" overflow="hidden" bottomRadius="m">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
-                    <Skeleton key={i} shape="block" style={{ height: "5rem" }} />
-                ))}
+            <Column fill border="neutral-alpha-medium" overflow="hidden" bottomRadius="m">
+                <LoadingAtom color="#32cd32" size="medium" />
             </Column>
         );
     }

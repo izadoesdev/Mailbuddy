@@ -44,7 +44,6 @@
         "react": "19.0.0",
         "react-dom": "19.0.0",
         "react-icons": "^5.2.1",
-        "react-loading-indicators": "^1.0.0",
         "resend": "^4.2.0",
         "sass": "^1.77.6",
         "sharp": "^0.34.1",
