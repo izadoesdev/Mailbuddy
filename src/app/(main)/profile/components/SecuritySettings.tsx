@@ -13,12 +13,10 @@ import {
   useToast,
   OTPInput,
   Kbd,
-  SmartImage,
   Dialog,
   Input
 } from "@/once-ui/components";
 import { authClient } from "@/libs/auth/client";
-
 interface SecuritySettingsProps {
   user: any;
 }
@@ -470,7 +468,7 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
               codes to sign in. Each code can only be used once.
             </Text>
             
-            <Card>
+            <Card fillWidth>
               <Column padding="16" gap="8">
                 <pre ref={backupCodesRef} style={{ overflowX: 'auto' }}>
                   {twoFactorData.backupCodes?.join('\n')}

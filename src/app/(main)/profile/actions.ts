@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/libs/db";
+import crypto from "node:crypto";
 
 interface MetadataStats {
   totalEmails: number;
@@ -375,4 +376,4 @@ export async function runAIAnalysisOnAllEmails(userId: string): Promise<{ succes
       message: "Failed to schedule AI analysis. Please try again."
     };
   }
-} 
+}
