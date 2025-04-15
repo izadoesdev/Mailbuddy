@@ -27,7 +27,7 @@ const PROFILE_CATEGORIES = [
   { value: "ai", label: "AI Preferences", icon: "sparkles" },
   { value: "accounts", label: "Accounts", icon: "link" },
   { value: "security", label: "Security", icon: "shield" },
-  { value: "preferences", label: "Preferences", icon: "gear" }
+  { value: "preferences", label: "Preferences", icon: "preferences" }
 ];
 
 function ProfileContent() {

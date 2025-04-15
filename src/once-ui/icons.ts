@@ -50,11 +50,13 @@ import {
     HiOutlineEnvelope,
     HiOutlineUser,
     HiOutlineTrash,
+    HiPaintBrush,
 } from "react-icons/hi2";
 
 // Font Awesome 6
 import { 
     FaApple,
+    FaBrush,
     FaDiscord, 
     FaGithub, 
     FaGoogle, 
@@ -143,6 +145,8 @@ export const iconLibrary: Record<string, IconType> = {
     cloud: HiOutlineCloud,
     forward: HiOutlineArrowRight,
     reply: RiReplyAllFill,
+
+    preferences: HiPaintBrush,
 };
 
 export type IconLibrary = typeof iconLibrary;
