@@ -2,7 +2,6 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 import {
     Heading,
@@ -16,8 +15,11 @@ import {
     PasswordInput,
     OTPInput,
     useToast,
+    Badge,
+    Icon,
 } from "@/once-ui/components";
 import { authClient, signIn, signUp } from "@/libs/auth/client";
+import { effects } from "@/app/resources/config";
 
 // Types for error handling
 interface ApiError {
@@ -36,8 +38,8 @@ export default function RegisterPage() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [otp, setOtp] = useState("");
     
-    // View state - consolidated to a single state
-    const [view, setView] = useState<"options" | "password" | "magic" | "otp" | "magic-sent" | "verification-sent">("options");
+    // View state - default to password registration
+    const [view, setView] = useState<"password" | "magic" | "otp" | "magic-sent" | "verification-sent">("password");
 
     /**
      * Handle Google sign up
@@ -168,6 +170,246 @@ export default function RegisterPage() {
         }
     };
 
+    // Get header content based on current view
+    const getHeaderContent = () => {
+        switch (view) {
+            case "magic-sent":
+                return (
+                    <Column gap="8" padding="16">
+                        <Heading as="h1" variant="heading-strong-xl">
+                            Check your email
+                        </Heading>
+                        <Text variant="body-default-m" onBackground="neutral-medium">
+                            We've sent a magic link to <strong>{email}</strong>. Click the link to sign in.
+                        </Text>
+                    </Column>
+                );
+            case "verification-sent":
+                return (
+                    <Column gap="8" padding="16">
+                        <Heading as="h1" variant="heading-strong-xl">
+                            Verify your email
+                        </Heading>
+                        <Text variant="body-default-m" onBackground="neutral-medium">
+                            We've sent a verification email to <strong>{email}</strong>. Click the link to activate your account.
+                        </Text>
+                    </Column>
+                );
+            case "otp":
+                return (
+                    <Column gap="8" padding="16">
+                        <Heading as="h1" variant="heading-strong-xl">
+                            Enter verification code
+                        </Heading>
+                        <Text variant="body-default-m" onBackground="neutral-medium">
+                            We've sent a code to <strong>{email}</strong>. Please enter it below.
+                        </Text>
+                    </Column>
+                );
+            case "magic":
+                return (
+                    <Column gap="8" padding="16">
+                        <Heading as="h1" variant="heading-strong-xl">
+                            Sign up with magic link
+                        </Heading>
+                        <Text variant="body-default-m" onBackground="neutral-medium">
+                            Enter your email and we'll send you a link to sign up instantly.
+                        </Text>
+                    </Column>
+                );
+            default:
+                return (
+                    <Column gap="8" padding="16" horizontal="center">
+                        <Heading as="h1" variant="heading-strong-xl">
+                            Create your account
+                        </Heading>
+                        <Text variant="body-default-m" onBackground="neutral-medium">
+                            Start organizing your emails with AI assistance
+                        </Text>
+                    </Column>
+                );
+        }
+    };
+
+    // Render form based on current view
+    const renderForm = () => {
+        switch (view) {
+            case "magic-sent":
+                return (
+                    <Column gap="24" fillWidth>
+                        <Button
+                            variant="secondary"
+                            label="Resend magic link"
+                            fillWidth
+                            disabled={isLoading}
+                            onClick={(e: React.MouseEvent) => handleMagicLinkSignup(e as any)}
+                        />
+                        <Button
+                            variant="tertiary"
+                            label="Back to sign up"
+                            fillWidth
+                            onClick={() => setView("password")}
+                        />
+                    </Column>
+                );
+            case "verification-sent":
+                return (
+                    <Column gap="24" fillWidth>
+                        <Text variant="body-default-m" align="center">
+                            Please check your inbox and verify your email to continue.
+                        </Text>
+                        <Button
+                            variant="tertiary"
+                            label="Back to sign up"
+                            fillWidth
+                            onClick={() => setView("password")}
+                        />
+                    </Column>
+                );
+            case "otp":
+                return (
+                    <form onSubmit={handleVerifyOTP}>
+                        <Column gap="24" fillWidth>
+                            <OTPInput
+                                id="signup-otp"
+                                onComplete={(value) => setOtp(value)}
+                                length={6}
+                                autoFocus
+                            />
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                label={isLoading ? "Verifying..." : "Verify"}
+                                fillWidth
+                                disabled={isLoading}
+                            />
+                            <Button
+                                variant="tertiary"
+                                label="Back to sign up"
+                                fillWidth
+                                onClick={() => setView("password")}
+                            />
+                        </Column>
+                    </form>
+                );
+            case "magic":
+                return (
+                    <form onSubmit={handleMagicLinkSignup}>
+                        <Column gap="24" fillWidth>
+                            <Input
+                                id="magic-email"
+                                label="Email address"
+                                type="email"
+                                name="email"
+                                autoComplete="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                label={isLoading ? "Sending magic link..." : "Send magic link"}
+                                fillWidth
+                                disabled={isLoading}
+                            />
+                            <Button
+                                variant="tertiary"
+                                label="Back to sign up"
+                                fillWidth
+                                onClick={() => setView("password")}
+                            />
+                        </Column>
+                    </form>
+                );
+            default:
+                return (
+                    <form onSubmit={handleEmailPasswordSignup}>
+                        <Column gap="24" fillWidth>
+                            <Input
+                                id="signup-email"
+                                label="Email address"
+                                type="email"
+                                name="email"
+                                autoComplete="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                            <PasswordInput
+                                id="signup-password"
+                                label="Create password"
+                                name="password"
+                                autoComplete="new-password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                            <PasswordInput
+                                id="signup-confirm-password"
+                                label="Confirm password"
+                                name="confirmPassword"
+                                autoComplete="new-password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                required
+                            />
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                label={isLoading ? "Creating account..." : "Create account"}
+                                fillWidth
+                                disabled={isLoading}
+                            />
+                            
+                            <Column gap="16" fillWidth>
+                                <Row horizontal="center" gap="16" vertical="center">
+                                    <div style={{ height: 1, background: "var(--neutral-alpha-medium)", flex: 1 }} />
+                                    <Text variant="label-default-s" onBackground="neutral-medium">OR</Text>
+                                    <div style={{ height: 1, background: "var(--neutral-alpha-medium)", flex: 1 }} />
+                                </Row>
+                                
+                                <Row gap="12" fillWidth>
+                                    <Button
+                                        variant="secondary"
+                                        fillWidth
+                                        onClick={handleGoogleSignup}
+                                        disabled={isLoading}
+                                    >
+                                        <Row gap="8" vertical="center" horizontal="center">
+                                            <Icon name="google" size="s" />
+                                            <Text>Google</Text>
+                                        </Row>
+                                    </Button>
+                                    <Button
+                                        variant="secondary"
+                                        fillWidth
+                                        onClick={() => setView("magic")}
+                                    >
+                                        <Row gap="8" vertical="center" horizontal="center">
+                                            <Icon name="sparkles" size="s" />
+                                            <Text>Magic Link</Text>
+                                        </Row>
+                                    </Button>
+                                </Row>
+                            </Column>
+                            
+                            <Row horizontal="center" gap="8" center>
+                                <Text variant="body-default-s" onBackground="neutral-medium">
+                                    Already have an account?
+                                </Text>
+                                <Button
+                                    variant="tertiary"
+                                    label="Sign in"
+                                    href="/login"
+                                />
+                            </Row>
+                        </Column>
+                    </form>
+                );
+        }
+    };
+
     /**
      * Handle OTP verification
      */
@@ -200,7 +442,7 @@ export default function RegisterPage() {
                         setIsLoading(false);
                         addToast({
                             variant: "danger",
-                            message: error?.message || "Verification failed. Please try again.",
+                            message: error?.message || "Invalid verification code. Please try again.",
                         });
                     },
                 },
@@ -209,15 +451,19 @@ export default function RegisterPage() {
             setIsLoading(false);
             addToast({
                 variant: "danger",
-                message: "Verification failed. Please try again.",
+                message: "Failed to verify your email. Please try again.",
             });
         }
     };
 
     /**
-     * Resend OTP code
+     * Resend OTP verification code
      */
     const resendOTP = async () => {
+        if (!email) {
+            return;
+        }
+
         setIsLoading(true);
         
         try {
@@ -229,14 +475,14 @@ export default function RegisterPage() {
                         setIsLoading(false);
                         addToast({
                             variant: "success",
-                            message: "New verification code sent to your email.",
+                            message: "Verification code resent!",
                         });
                     },
                     onError: (error: ApiError) => {
                         setIsLoading(false);
                         addToast({
                             variant: "danger",
-                            message: error?.message || "Failed to resend code. Please try again.",
+                            message: error?.message || "Failed to resend verification code.",
                         });
                     },
                 },
@@ -245,377 +491,89 @@ export default function RegisterPage() {
             setIsLoading(false);
             addToast({
                 variant: "danger",
-                message: "Failed to resend code. Please try again.",
+                message: "Failed to resend verification code.",
             });
         }
     };
 
-    // Render different forms based on the current view
-    const renderForm = () => {
-        switch(view) {
-            case "password":
-                return (
-                    <form onSubmit={handleEmailPasswordSignup} style={{ width: "100%" }}>
-                        <Column gap="16" fillWidth>
-                            <Input
-                                id="email"
-                                label="Email address"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                            <PasswordInput
-                                id="password"
-                                label="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                            <PasswordInput
-                                id="confirmPassword"
-                                label="Confirm password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                required
-                            />
-                            <Button
-                                label="Create account"
-                                fillWidth
-                                variant="primary"
-                                size="l"
-                                type="submit"
-                                loading={isLoading}
-                                disabled={isLoading}
-                            />
-                            <Button
-                                label="Back"
-                                variant="tertiary"
-                                onClick={() => setView("options")}
-                                type="button"
-                            />
-                        </Column>
-                    </form>
-                );
-                
-            case "magic":
-                return (
-                    <form onSubmit={handleMagicLinkSignup} style={{ width: "100%" }}>
-                        <Column gap="16" fillWidth>
-                            <Input
-                                id="email"
-                                label="Email address"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                            <Text variant="body-default-s" align="center">
-                                We'll send a magic link to your email that will let you sign up instantly.
-                            </Text>
-                            <Button
-                                label="Send magic link"
-                                fillWidth
-                                variant="primary"
-                                size="l"
-                                type="submit"
-                                loading={isLoading}
-                                disabled={isLoading}
-                            />
-                            <Button
-                                label="Back"
-                                variant="tertiary"
-                                onClick={() => setView("options")}
-                                type="button"
-                            />
-                        </Column>
-                    </form>
-                );
-                
-            case "otp":
-                return (
-                    <form onSubmit={handleVerifyOTP} style={{ width: "100%" }}>
-                        <Column gap="16" fillWidth>
-                            <Text variant="body-default-m" align="center">
-                                We've sent a verification code to <strong>{email}</strong>
-                            </Text>
-                            <OTPInput
-                                length={6}
-                                onComplete={(newOtp) => setOtp(newOtp)}
-                                autoFocus
-                            />
-                            <Button
-                                label="Verify email"
-                                fillWidth
-                                variant="primary"
-                                size="l"
-                                type="submit"
-                                loading={isLoading}
-                                disabled={isLoading}
-                            />
-                            <Button
-                                label="Resend code"
-                                variant="tertiary"
-                                onClick={resendOTP}
-                                type="button"
-                                disabled={isLoading}
-                            />
-                        </Column>
-                    </form>
-                );
-                
-            case "magic-sent":
-                return (
-                    <Column gap="24" fillWidth horizontal="center">
-                        <div className="magic-link-icon" style={{ fontSize: "48px", color: "var(--brand-solid-medium)" }}>
-                            ✉️
-                        </div>
-                        <Text variant="body-strong-m" align="center">
-                            Check your email
-                        </Text>
-                        <Text variant="body-default-m" align="center">
-                            We've sent a magic link to <strong>{email}</strong>
-                        </Text>
-                        <Text variant="body-default-s" align="center" onBackground="neutral-medium">
-                            Click the link in your email to complete your registration
-                        </Text>
-                        <Column paddingTop="16">
-                            <Button
-                                label="Back to sign-up options"
-                                variant="secondary"
-                                onClick={() => setView("options")}
-                                type="button"
-                            />
-                        </Column>
-                    </Column>
-                );
-                
-            case "verification-sent":
-                return (
-                    <Column gap="24" fillWidth horizontal="center">
-                        <div style={{ fontSize: "48px" }}>
-                            ✉️
-                        </div>
-                        <Text variant="heading-strong-s" align="center">
-                            Check your email
-                        </Text>
-                        <Text variant="body-default-m" align="center">
-                            We've sent a verification link to <strong>{email}</strong>
-                        </Text>
-                        <Text variant="body-default-s" align="center" onBackground="neutral-medium">
-                            Please verify your email to activate your account
-                        </Text>
-                        <Button
-                            label="Go to sign in"
-                            variant="primary"
-                            onClick={() => router.push("/login")}
-                            type="button"
-                            style={{ marginTop: "24px" }}
-                        />
-                    </Column>
-                );
-                
-            default: // options
-                return (
-                    <Column gap="16" fillWidth>
-                        <Button
-                            label="Sign up with email"
-                            fillWidth
-                            variant="primary"
-                            size="l"
-                            onClick={() => setView("password")}
-                            prefixIcon="mail"
-                        />
-                        <Button
-                            label="Sign up with magic link"
-                            fillWidth
-                            variant="secondary"
-                            size="l"
-                            onClick={() => setView("magic")}
-                            prefixIcon="link"
-                        />
-                        
-                        <Row paddingY="16" fillWidth>
-                            <Column fillWidth>
-                                <Row horizontal="center" gap="16" vertical="center">
-                                    <div style={{ height: 1, background: "var(--neutral-alpha-medium)", flex: 1 }} />
-                                    <Text variant="label-default-s" onBackground="neutral-medium">OR</Text>
-                                    <div style={{ height: 1, background: "var(--neutral-alpha-medium)", flex: 1 }} />
-                                </Row>
-                            </Column>
-                        </Row>
-                        
-                        <Button
-                            label="Continue with Google"
-                            fillWidth
-                            variant="secondary"
-                            prefixIcon="google"
-                            size="l"
-                            onClick={handleGoogleSignup}
-                            disabled={isLoading}
-                        />
-                    </Column>
-                );
-        }
-    };
-
-    // Page title and header content based on current view
-    const getHeaderContent = () => {
-        switch(view) {
-            case "otp":
-                return (
-                    <>
-                        <Heading
-                            as="h1"
-                            variant="display-strong-xs"
-                            align="center"
-                            marginTop="24"
-                        >
-                            Verify your email
-                        </Heading>
-                        <Text
-                            onBackground="neutral-medium"
-                            marginBottom="24"
-                            align="center"
-                        >
-                            Enter the verification code
-                        </Text>
-                    </>
-                );
-            case "magic-sent":
-                return (
-                    <>
-                        <Heading
-                            as="h1"
-                            variant="display-strong-xs"
-                            align="center"
-                            marginTop="24"
-                        >
-                            Magic link sent
-                        </Heading>
-                        <Text
-                            onBackground="neutral-medium"
-                            marginBottom="24"
-                            align="center"
-                        >
-                            Follow the instructions in your email
-                        </Text>
-                    </>
-                );
-            case "verification-sent":
-                return (
-                    <>
-                        <Heading
-                            as="h1"
-                            variant="display-strong-xs"
-                            align="center"
-                            marginTop="24"
-                        >
-                            Verify your email
-                        </Heading>
-                        <Text
-                            onBackground="neutral-medium"
-                            marginBottom="24"
-                            align="center"
-                        >
-                            Your account has been created
-                        </Text>
-                    </>
-                );
-            default:
-                return (
-                    <>
-                        <Heading
-                            as="h1"
-                            variant="display-strong-xs"
-                            align="center"
-                            marginTop="24"
-                        >
-                            Create an account
-                        </Heading>
-                        <Text
-                            onBackground="neutral-medium"
-                            marginBottom="24"
-                            align="center"
-                        >
-                            Join Mailer and start managing emails
-                        </Text>
-                    </>
-                );
-        }
-    };
-
     return (
-        <Column fillWidth paddingY="80" paddingX="s" horizontal="center" flex={1}>
-            <Column
-                overflow="hidden"
-                as="main"
-                maxWidth="l"
-                position="relative"
-                radius="xl"
-                horizontal="center"
-                border="neutral-alpha-weak"
-                fillWidth
-            >
+        <Column fillWidth horizontal="center" vertical="center" style={{ minHeight: "100vh" }}>
+            <Background
+                pointerEvents="none"
+                position="fixed"
+                mask={{
+                    cursor: effects.mask.cursor,
+                    x: effects.mask.x,
+                    y: effects.mask.y,
+                    radius: effects.mask.radius,
+                }}
+                gradient={{
+                    display: effects.gradient.display,
+                    x: effects.gradient.x,
+                    y: effects.gradient.y,
+                    width: effects.gradient.width,
+                    height: effects.gradient.height,
+                    tilt: effects.gradient.tilt,
+                    colorStart: effects.gradient.colorStart,
+                    colorEnd: effects.gradient.colorEnd,
+                    opacity: effects.gradient.opacity as
+                        | 0
+                        | 10
+                        | 20
+                        | 30
+                        | 40
+                        | 50
+                        | 60
+                        | 70
+                        | 80
+                        | 90
+                        | 100,
+                }}
+                dots={{
+                    display: effects.dots.display,
+                    color: effects.dots.color,
+                    size: effects.dots.size as any,
+                    opacity: effects.dots.opacity as any,
+                }}
+            />
+
+            <Row horizontal="center" maxWidth="xl" paddingX="16">
                 <Column
-                    fillWidth
-                    horizontal="center"
-                    gap="48"
+                    shadow="m"
                     radius="xl"
-                    position="relative"
+                    border="neutral-alpha-weak"
+                    direction="column"
+                    horizontal="center"
+                    maxWidth={40}
+                    padding="0"
+                    background="overlay"
+                    overflow="hidden"
                 >
-                    <Row
-                        background="overlay"
-                        fillWidth
-                        radius="xl"
-                        border="neutral-alpha-weak"
-                        overflow="hidden"
-                    >
-                        <Row fill hide="m">
-                            <Background
-                                fill
-                                position="absolute"
-                                gradient={{
-                                    display: true,
-                                    tilt: -45,
-                                    height: 150,
-                                    width: 100,
-                                    x: 75,
-                                    y: -50,
-                                    colorStart: "brand-solid-strong",
-                                    colorEnd: "accent-solid-weak",
-                                }}
+                    <Column fillWidth>
+                        <Row horizontal="center" paddingTop="32" paddingBottom="8">
+                            <Logo size="l" />
+                        </Row>
+                        {getHeaderContent()}
+                        <Column padding="32" gap="32" fillWidth>
+                            {renderForm()}
+                        </Column>
+                        <Row horizontal="center" padding="16" gap="8">
+                            <Button 
+                                variant="tertiary" 
+                                size="s"
+                                label="Terms" 
+                                href="/terms"
+                            />
+                            <Button 
+                                variant="tertiary" 
+                                size="s"
+                                label="Privacy" 
+                                href="/privacy"
                             />
                         </Row>
-                        <Column
-                            fillWidth
-                            horizontal="center"
-                            gap="20"
-                            padding="xl"
-                            position="relative"
-                        >
-                            <Column fillWidth gap="8" horizontal="center">
-                                <Logo size="xl" icon={false} wordmarkSrc="/images/logo.webp" href="/" />
-                                
-                                {getHeaderContent()}
-                                
-                                {renderForm()}
-
-                                {view !== "otp" && view !== "magic-sent" && view !== "verification-sent" && (
-                                    <Row paddingTop="32" horizontal="center">
-                                        <Text variant="body-default-s" onBackground="neutral-medium">
-                                            Already have an account?&nbsp;
-                                        </Text>
-                                        <Link href="/login" style={{ textDecoration: 'none' }}>
-                                            <Text variant="body-strong-s" onBackground="brand-strong">Sign in</Text>
-                                        </Link>
-                                    </Row>
-                                )}
-                            </Column>
-                        </Column>
-                    </Row>
+                    </Column>
                 </Column>
-            </Column>
+            </Row>
         </Column>
     );
 } 

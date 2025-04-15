@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -16,8 +16,11 @@ import {
     PasswordInput,
     useToast,
     Spinner,
+    Badge,
+    Icon,
 } from "@/once-ui/components";
 import { authClient, signIn } from "@/libs/auth/client";
+import { effects } from "@/app/resources/config";
 
 
 function LoginPage() {
@@ -27,7 +30,7 @@ function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [view, setView] = useState<"options" | "password" | "magic" | "forgot" | "magic-sent" | "verification-needed">("options");
+    const [view, setView] = useState<"password" | "magic" | "forgot" | "magic-sent" | "verification-needed">("password");
     const [verifyingToken, setVerifyingToken] = useState(false);
 
     // Check for magic link token in URL
@@ -170,7 +173,7 @@ function LoginPage() {
         }
     };
 
-    const handleMagicLinkLogin = async (e: React.FormEvent) => {
+    const handleMagicLinkLogin = async (e: FormEvent) => {
         e.preventDefault();
         if (!email) {
             addToast({
@@ -246,7 +249,7 @@ function LoginPage() {
     // Show loading spinner while verifying token
     if (verifyingToken) {
         return (
-            <Column fillWidth fillHeight horizontal="center" vertical="center" gap="20">
+            <Column fillWidth horizontal="center" vertical="center" gap="20">
                 <Spinner size="l" />
                 <Text>Verifying your login...</Text>
             </Column>
@@ -255,371 +258,341 @@ function LoginPage() {
 
     // Render different forms based on the current view
     const renderForm = () => {
-        switch(view) {
-            case "password":
+        switch (view) {
+            case "magic-sent":
                 return (
-                    <form onSubmit={handleEmailPasswordLogin} style={{ width: "100%" }}>
-                        <Column gap="16" fillWidth>
+                    <Column gap="24" fillWidth>
+                        <Button
+                            variant="secondary"
+                            label="Resend magic link"
+                            fillWidth
+                            disabled={isLoading}
+                            onClick={(e: React.MouseEvent) => handleMagicLinkLogin(e as any)}
+                        />
+                        <Button
+                            variant="tertiary"
+                            label="Back to login"
+                            fillWidth
+                            onClick={() => {
+                                setView("password");
+                                setIsLoading(false);
+                            }}
+                        />
+                    </Column>
+                );
+            case "verification-needed":
+                return (
+                    <Column gap="24" fillWidth>
+                        <Button
+                            variant="secondary"
+                            label="Resend verification email"
+                            fillWidth
+                            disabled={isLoading}
+                            onClick={() => sendVerificationEmail()}
+                        />
+                        <Button
+                            variant="tertiary"
+                            label="Back to login"
+                            fillWidth
+                            onClick={() => {
+                                setView("password");
+                                setIsLoading(false);
+                            }}
+                        />
+                    </Column>
+                );
+            case "forgot":
+                return (
+                    <form onSubmit={handleForgotPassword}>
+                        <Column gap="24" fillWidth>
                             <Input
-                                id="email"
+                                id="forgot-email"
                                 label="Email address"
                                 type="email"
+                                name="email"
+                                autoComplete="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                label={isLoading ? "Sending reset link..." : "Send reset link"}
+                                fillWidth
+                                disabled={isLoading}
+                            />
+                            <Button
+                                variant="tertiary"
+                                label="Back to login"
+                                fillWidth
+                                onClick={() => setView("password")}
+                            />
+                        </Column>
+                    </form>
+                );
+            case "magic":
+                return (
+                    <form onSubmit={handleMagicLinkLogin}>
+                        <Column gap="24" fillWidth>
+                            <Input
+                                id="magic-email"
+                                label="Email address"
+                                type="email"
+                                name="email"
+                                autoComplete="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                label={isLoading ? "Sending magic link..." : "Send magic link"}
+                                fillWidth
+                                disabled={isLoading}
+                            />
+                            <Button
+                                variant="tertiary"
+                                label="Back to login"
+                                fillWidth
+                                onClick={() => setView("password")}
+                            />
+                        </Column>
+                    </form>
+                );
+            default:
+                return (
+                    <form onSubmit={handleEmailPasswordLogin}>
+                        <Column gap="24" fillWidth>
+                            <Input
+                                id="login-email"
+                                label="Email address"
+                                type="email"
+                                name="email"
+                                autoComplete="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                             />
                             <PasswordInput
-                                id="password"
+                                id="login-password"
                                 label="Password"
+                                name="password"
+                                autoComplete="current-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                             />
+
                             <Button
-                                label="Sign in"
-                                fillWidth
-                                variant="primary"
-                                size="l"
                                 type="submit"
-                                loading={isLoading}
+                                variant="primary"
+                                label={isLoading ? "Signing in..." : "Sign in"}
+                                fillWidth
                                 disabled={isLoading}
                             />
-                            <Row horizontal="space-between">
-                                <Button
-                                    label="Back"
-                                    variant="tertiary"
-                                    onClick={() => setView("options")}
-                                    type="button"
-                                />
-                                <Button
-                                    label="Forgot password?"
-                                    variant="tertiary"
-                                    onClick={() => setView("forgot")}
-                                    type="button"
-                                />
-                            </Row>
-                        </Column>
-                    </form>
-                );
-                
-            case "magic":
-                return (
-                    <form onSubmit={handleMagicLinkLogin} style={{ width: "100%" }}>
-                        <Column gap="16" fillWidth>
-                            <Input
-                                id="email"
-                                label="Email address"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                            <Text variant="body-default-s" align="center">
-                                We'll send a magic link to your email that will sign you in instantly.
-                            </Text>
-                            <Button
-                                label="Send magic link"
-                                fillWidth
-                                variant="primary"
-                                size="l"
-                                type="submit"
-                                loading={isLoading}
-                                disabled={isLoading}
-                            />
-                            <Button
-                                label="Back"
-                                variant="tertiary"
-                                onClick={() => setView("options")}
-                                type="button"
-                            />
-                        </Column>
-                    </form>
-                );
-                
-            case "forgot":
-                return (
-                    <form onSubmit={handleForgotPassword} style={{ width: "100%" }}>
-                        <Column gap="16" fillWidth>
-                            <Input
-                                id="email"
-                                label="Email address"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                            <Text variant="body-default-s" align="center">
-                                We'll send password reset instructions to your email.
-                            </Text>
-                            <Button
-                                label="Reset password"
-                                fillWidth
-                                variant="primary"
-                                size="l"
-                                type="submit"
-                                loading={isLoading}
-                                disabled={isLoading}
-                            />
-                            <Button
-                                label="Back"
-                                variant="tertiary"
-                                onClick={() => setView("options")}
-                                type="button"
-                            />
-                        </Column>
-                    </form>
-                );
-                
-            case "magic-sent":
-                return (
-                    <Column gap="24" fillWidth horizontal="center">
-                        <div className="magic-link-icon" style={{ fontSize: "48px", color: "var(--brand-solid-medium)" }}>
-                            ✉️
-                        </div>
-                        <Text variant="body-strong-m" align="center">
-                            Check your email
-                        </Text>
-                        <Text variant="body-default-m" align="center">
-                            We've sent a magic link to <strong>{email}</strong>
-                        </Text>
-                        <Text variant="body-default-s" align="center" onBackground="neutral-medium">
-                            Click the link in your email to sign in instantly
-                        </Text>
-                        <Column paddingTop="16">
-                            <Button
-                                label="Back to sign-in options"
-                                variant="secondary"
-                                onClick={() => setView("options")}
-                                type="button"
-                            />
-                        </Column>
-                    </Column>
-                );
-                
-            case "verification-needed":
-                return (
-                    <Column gap="24" fillWidth horizontal="center">
-                        <div style={{ fontSize: "48px" }}>✉️</div>
-                        <Text variant="heading-strong-s" align="center">
-                            Email verification required
-                        </Text>
-                        <Text variant="body-default-m" align="center">
-                            We've sent a verification link to <strong>{email}</strong>
-                        </Text>
-                        <Text variant="body-default-s" align="center" onBackground="neutral-medium">
-                            Please check your inbox and verify your email to continue
-                        </Text>
-                        <Button
-                            label="Back to sign in"
-                            variant="secondary"
-                            onClick={() => setView("options")}
-                            type="button"
-                            style={{ marginTop: "24px" }}
-                        />
-                    </Column>
-                );
-                
-            default: // options
-                return (
-                    <Column gap="16" fillWidth>
-                        <Button
-                            label="Sign in with email"
-                            fillWidth
-                            variant="primary"
-                            size="l"
-                            onClick={() => setView("password")}
-                            prefixIcon="mail"
-                        />
-                        <Button
-                            label="Sign in with magic link"
-                            fillWidth
-                            variant="secondary"
-                            size="l"
-                            onClick={() => setView("magic")}
-                            prefixIcon="link"
-                        />
-                        
-                        <Row paddingY="16" fillWidth>
-                            <Column fillWidth>
+                            
+                            <Column gap="16" fillWidth>
                                 <Row horizontal="center" gap="16" vertical="center">
                                     <div style={{ height: 1, background: "var(--neutral-alpha-medium)", flex: 1 }} />
                                     <Text variant="label-default-s" onBackground="neutral-medium">OR</Text>
                                     <div style={{ height: 1, background: "var(--neutral-alpha-medium)", flex: 1 }} />
                                 </Row>
+                                
+                                <Row gap="12" fillWidth>
+                                    <Button
+                                        variant="secondary"
+                                        fillWidth
+                                        onClick={handleGoogleLogin}
+                                        disabled={isLoading}
+                                    >
+                                        <Row gap="8" vertical="center" horizontal="center">
+                                            <Icon name="google" size="s" />
+                                            <Text>Google</Text>
+                                        </Row>
+                                    </Button>
+                                    <Button
+                                        variant="secondary"
+                                        fillWidth
+                                        onClick={() => setView("magic")}
+                                    >
+                                        <Row gap="8" vertical="center" horizontal="center">
+                                            <Icon name="sparkles" size="s" />
+                                            <Text>Magic Link</Text>
+                                        </Row>
+                                    </Button>
+                                </Row>
                             </Column>
-                        </Row>
-                        
-                        <Button
-                            label="Continue with Google"
-                            fillWidth
-                            variant="secondary"
-                            prefixIcon="google"
-                            size="l"
-                            onClick={handleGoogleLogin}
-                            disabled={isLoading}
-                        />
-                    </Column>
+                            
+                            <Row horizontal="center" gap="8" center>
+                                <Text variant="body-default-s" onBackground="neutral-medium">
+                                    Don't have an account?
+                                </Text>
+                                <Button
+                                    variant="tertiary"
+                                    label="Sign up"
+                                    href="/register"
+                                />
+                            </Row>
+                        </Column>
+                    </form>
                 );
         }
     };
 
     // Page title and header content based on current view
     const getHeaderContent = () => {
-        switch(view) {
-            case "forgot":
-                return (
-                    <>
-                        <Heading
-                            as="h1"
-                            variant="display-strong-xs"
-                            align="center"
-                            marginTop="24"
-                        >
-                            Reset your password
-                        </Heading>
-                        <Text
-                            onBackground="neutral-medium"
-                            marginBottom="24"
-                            align="center"
-                        >
-                            We'll send instructions to your email
-                        </Text>
-                    </>
-                );
+        switch (view) {
             case "magic-sent":
                 return (
-                    <>
-                        <Heading
-                            as="h1"
-                            variant="display-strong-xs"
-                            align="center"
-                            marginTop="24"
-                        >
-                            Magic link sent
+                    <Column gap="8" padding="16">
+                        <Heading as="h1" variant="heading-strong-xl">
+                            Check your email
                         </Heading>
-                        <Text
-                            onBackground="neutral-medium"
-                            marginBottom="24"
-                            align="center"
-                        >
-                            Follow the instructions in your email
+                        <Text variant="body-default-m" onBackground="neutral-medium">
+                            We've sent a magic link to <strong>{email}</strong>. Click the link to sign in.
                         </Text>
-                    </>
+                    </Column>
                 );
             case "verification-needed":
                 return (
-                    <>
-                        <Heading
-                            as="h1"
-                            variant="display-strong-xs"
-                            align="center"
-                            marginTop="24"
-                        >
+                    <Column gap="8" padding="16">
+                        <Heading as="h1" variant="heading-strong-xl">
                             Verify your email
                         </Heading>
-                        <Text
-                            onBackground="neutral-medium"
-                            marginBottom="24"
-                            align="center"
-                        >
-                            Your account needs verification
+                        <Text variant="body-default-m" onBackground="neutral-medium">
+                            Please check your email at <strong>{email}</strong> and click the verification link to activate your account.
                         </Text>
-                    </>
+                    </Column>
+                );
+            case "forgot":
+                return (
+                    <Column gap="8" padding="16" center>
+                        <Heading as="h1" variant="heading-strong-xl">
+                            Reset your password
+                        </Heading>
+                        <Text variant="body-default-m" onBackground="neutral-medium">
+                            Enter your email and we'll send you a link to reset your password.
+                        </Text>
+                    </Column>
+                );
+            case "magic":
+                return (
+                    <Column gap="8" padding="16">
+                        <Heading as="h1" variant="heading-strong-xl">
+                            Sign in with magic link
+                        </Heading>
+                        <Text variant="body-default-m" onBackground="neutral-medium">
+                            Enter your email and we'll send you a one-time sign in link.
+                        </Text>
+                    </Column>
                 );
             default:
                 return (
-                    <>
-                        <Heading
-                            as="h1"
-                            variant="display-strong-xs"
-                            align="center"
-                            marginTop="24"
-                        >
-                            Welcome back
+                    <Column gap="8" padding="16" center>
+                        <Heading as="h1" variant="heading-strong-xl">
+                            Sign in to Mailbuddy
                         </Heading>
-                        <Text
-                            onBackground="neutral-medium"
-                            marginBottom="24"
-                            align="center"
-                        >
-                            Log in to your account
+                        <Text variant="body-default-m" onBackground="neutral-medium">
+                            AI-powered email organization and analysis
                         </Text>
-                    </>
+                    </Column>
                 );
         }
     };
 
     return (
-        <Column fillWidth padding="l" center paddingTop="80" flex={1}>
-            <Column
-                overflow="hidden"
-                as="main"
-                maxWidth="l"
-                position="relative"
-                radius="xl"
-                horizontal="center"
-                border="neutral-alpha-weak"
-                fillWidth
-            >
-                <Column
-                    fillWidth
-                    horizontal="center"
-                    gap="48"
-                    radius="xl"
-                    position="relative"
-                >
-                    <Row
-                        background="overlay"
-                        fillWidth
+        <Column fillWidth horizontal="center" vertical="center" style={{ minHeight: "100vh" }}>
+            <Background
+                pointerEvents="none"
+                position="fixed"
+                mask={{
+                    cursor: effects.mask.cursor,
+                    x: effects.mask.x,
+                    y: effects.mask.y,
+                    radius: effects.mask.radius,
+                }}
+                gradient={{
+                    display: effects.gradient.display,
+                    x: effects.gradient.x,
+                    y: effects.gradient.y,
+                    width: effects.gradient.width,
+                    height: effects.gradient.height,
+                    tilt: effects.gradient.tilt,
+                    colorStart: effects.gradient.colorStart,
+                    colorEnd: effects.gradient.colorEnd,
+                    opacity: effects.gradient.opacity as
+                        | 0
+                        | 10
+                        | 20
+                        | 30
+                        | 40
+                        | 50
+                        | 60
+                        | 70
+                        | 80
+                        | 90
+                        | 100,
+                }}
+                dots={{
+                    display: effects.dots.display,
+                    color: effects.dots.color,
+                    size: effects.dots.size as any,
+                    opacity: effects.dots.opacity as any,
+                }}
+            />
+
+            {verifyingToken ? (
+                <Column gap="24" horizontal="center" padding="32">
+                    <Spinner size="l" />
+                    <Text>Verifying your magic link...</Text>
+                </Column>
+            ) : (
+                <Row horizontal="center" maxWidth="xl" paddingX="16">
+                    <Column
+                        shadow="m"
                         radius="xl"
                         border="neutral-alpha-weak"
+                        direction="column"
+                        horizontal="center"
+                        maxWidth={40}
+                        padding="0"
+                        background="overlay"
                         overflow="hidden"
                     >
-                        <Row fill hide="m">
-                            <Background
-                                fill
-                                position="absolute"
-                                gradient={{
-                                    display: true,
-                                    tilt: -45,
-                                    height: 150,
-                                    width: 100,
-                                    x: 75,
-                                    y: -50,
-                                    colorStart: "brand-solid-strong",
-                                    colorEnd: "accent-solid-weak",
-                                }}
-                            />
-                        </Row>
-                        <Column
-                            fillWidth
-                            horizontal="center"
-                            gap="20"
-                            padding="xl"
-                            position="relative"
-                        >
-                            <Column fillWidth gap="8" horizontal="center">
-                                <Logo size="xl" wordmark={false} href="/" />
-                                
-                                {getHeaderContent()}
-
+                        <Column fillWidth>
+                            <Row horizontal="center" paddingTop="32" paddingBottom="8">
+                                <Logo size="l" />
+                            </Row>
+                            {getHeaderContent()}
+                            <Column padding="32" gap="32" fillWidth>
                                 {renderForm()}
-
-                                {view !== "magic-sent" && view !== "verification-needed" && (
-                                    <Row paddingTop="32" horizontal="center">
-                                        <Text variant="body-default-s" onBackground="neutral-medium">
-                                            Don't have an account?&nbsp;
-                                        </Text>
-                                        <Link href="/register" style={{ textDecoration: 'none' }}>
-                                            <Text variant="body-strong-s" onBackground="brand-strong">Sign up</Text>
-                                        </Link>
-                                    </Row>
-                                )}
                             </Column>
+                            <Row horizontal="center" padding="16" gap="8">
+                                <Button 
+                                    variant="tertiary" 
+                                    size="s"
+                                    label="Terms" 
+                                    href="/terms"
+                                />
+                                <Button 
+                                    variant="tertiary" 
+                                    size="s"
+                                    label="Privacy" 
+                                    href="/privacy"
+                                />
+                                <Button
+                                    variant="tertiary"
+                                    size="s"
+                                    label="Forgot password?"
+                                    onClick={() => setView("forgot")}
+                                />
+                            </Row>
                         </Column>
-                    </Row>
-                </Column>
-            </Column>
+                    </Column>
+                </Row>
+            )}
         </Column>
     );
 }
