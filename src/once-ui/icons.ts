@@ -9,14 +9,11 @@ import {
     HiChevronLeft,
     HiChevronRight,
     HiChevronUp,
-    HiEnvelope,
     HiExclamationCircle,
     HiExclamationTriangle,
     HiInformationCircle,
     HiMiniMinus,
     HiMiniPlus,
-    HiMiniQuestionMarkCircle,
-    HiMiniUser,
     HiMiniXMark,
     HiOutlineArrowLeft,
     HiOutlineArrowPath,
@@ -39,7 +36,6 @@ import {
     HiOutlineSparkles,
     HiOutlineStar,
     HiOutlineSun,
-    HiOutlineCog, // Settings icon
     HiOutlineArrowRightOnRectangle, // Logout icon
     HiPaperAirplane,
     HiCheck,
@@ -50,6 +46,7 @@ import {
     HiOutlineEnvelope,
     HiOutlineUser,
     HiOutlineTrash,
+    HiPaintBrush,
 } from "react-icons/hi2";
 
 // Font Awesome 6
@@ -60,7 +57,6 @@ import {
     FaGoogle, 
     FaLinkedin, 
     FaMicrosoft, 
-    FaTrash, 
     FaTwitter 
 } from "react-icons/fa6";
 
@@ -143,6 +139,8 @@ export const iconLibrary: Record<string, IconType> = {
     cloud: HiOutlineCloud,
     forward: HiOutlineArrowRight,
     reply: RiReplyAllFill,
+
+    preferences: HiPaintBrush,
 };
 
 export type IconLibrary = typeof iconLibrary;

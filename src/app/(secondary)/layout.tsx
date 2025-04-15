@@ -57,7 +57,7 @@ export default function SecondaryLayout({
   return (
     <Flex
       suppressHydrationWarning
-      as="html"
+      as="body"
       lang="en"
       fillHeight
       background="page"
