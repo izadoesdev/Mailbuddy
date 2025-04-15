@@ -577,7 +577,7 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
               codes to sign in. Each code can only be used once.
             </Text>
             
-            <Card fillWidth>
+            <Card fillWidth radius="l">
               <Column padding="16" gap="8">
                 <pre ref={backupCodesRef} style={{ overflowX: 'auto' }}>
                   {twoFactorData.backupCodes?.join('\n')}
