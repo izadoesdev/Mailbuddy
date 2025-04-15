@@ -21,7 +21,6 @@ import { ComposeEmail } from "./components/ComposeEmail";
 import { SyncOverlay } from "./components/SyncOverlay";
 import { EMAIL_CATEGORIES, PRIORITY_LEVELS } from "@/app/(dev)/ai/new/constants";
 import { useInitialSync } from "./hooks/useInitialSync";
-import { useUserStore, useUserPreferences } from "@/store/userStore";
 
 type CategoryOption = {
     value: string;
@@ -419,7 +418,7 @@ function InboxPage() {
     // Handle signout
     const handleSignOut = useCallback(() => {
         signOut();
-    }, [signOut]);
+    }, []);
 
     // Get compose email props
     const getComposeEmailProps = useCallback(() => {
