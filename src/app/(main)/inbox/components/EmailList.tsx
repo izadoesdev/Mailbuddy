@@ -1,5 +1,5 @@
 import type React from "react";
-import { Column, Text, Skeleton, Icon } from "@/once-ui/components";
+import { Column, Text, Skeleton, Icon, Button } from "@/once-ui/components";
 import type { Email, Thread } from "../types";
 import { EmailItem } from "./EmailItem";
 
@@ -11,6 +11,9 @@ interface EmailListProps {
     searchQuery: string;
     onSelectThread: (thread: Thread) => void;
     onToggleStar: (thread: Thread, e: React.MouseEvent<HTMLButtonElement>) => void;
+    error?: string;
+    errorType?: string;
+    onErrorAction?: () => void;
 }
 
 export function EmailList({
@@ -21,6 +24,9 @@ export function EmailList({
     searchQuery,
     onSelectThread,
     onToggleStar,
+    error,
+    errorType,
+    onErrorAction,
 }: EmailListProps) {
     // If loading, show skeletons
     if (isLoading) {
@@ -29,6 +35,38 @@ export function EmailList({
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
                     <Skeleton key={i} shape="block" style={{ height: "5rem" }} />
                 ))}
+            </Column>
+        );
+    }
+
+    // If there's an error, show error state
+    if (error) {
+        return (
+            <Column fill center padding="64" horizontal="center" vertical="center" gap="16" border="neutral-alpha-medium" bottomRadius="m">
+                <Icon name={
+                    errorType === "no_gmail_account" ? "mail" :
+                    errorType === "sync_in_progress" ? "refresh" :
+                    "alertCircle"
+                } size="m" />
+                <Text variant="heading-strong-m">{error}</Text>
+                <Text variant="body-default-m" onBackground="neutral-weak">
+                    {errorType === "no_gmail_account" ? "Please connect your Gmail account to continue" :
+                    errorType === "invalid_credentials" ? "Your Gmail account needs to be reconnected" :
+                    errorType === "no_emails_synced" ? "No emails have been synced yet" :
+                    errorType === "sync_in_progress" ? "Email sync is in progress..." :
+                    "There was a problem loading your emails"}
+                </Text>
+                {errorType !== "sync_in_progress" && onErrorAction && (
+                    <Button 
+                        variant="primary" 
+                        onClick={onErrorAction}
+                    >
+                        {errorType === "no_gmail_account" ? "Connect Gmail" : 
+                        errorType === "invalid_credentials" ? "Reconnect Gmail" :
+                        errorType === "no_emails_synced" ? "Sync Now" :
+                        "Refresh"}
+                    </Button>
+                )}
             </Column>
         );
     }

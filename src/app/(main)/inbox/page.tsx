@@ -143,7 +143,7 @@ function InboxPage() {
     }, [user, isAuthLoading, router]);
 
     // Only fetch emails if user is authenticated
-    const { threads, emails, totalCount, isLoading, isFetching, hasMore } = useInboxData({
+    const { threads, emails, totalCount, isLoading, isFetching, hasMore, error, errorType } = useInboxData({
         page,
         pageSize,
         searchQuery: debouncedSearchQuery,
@@ -178,12 +178,17 @@ function InboxPage() {
         isInitialSyncInProgress,
         performInitialSync,
         error: syncError,
-        errorType,
+        errorType: syncErrorType,
         resetSyncError
     } = useInitialSync({ 
         enabled: isAuthenticated,
         redirectAfterSync: false,
     });
+
+    // Memoize the triggerSync function to prevent it from changing on each render
+    const memoizedTriggerSync = useCallback(() => {
+        triggerSync();
+    }, [triggerSync]);
 
     useEffect(() => {
         // Prevent multiple syncs - only sync if not in error state and not already syncing
@@ -195,9 +200,9 @@ function InboxPage() {
             syncStatus !== "error") {
             
             hasSyncedRef.current = true; // Mark as synced to prevent future attempts
-            triggerSync();
+            memoizedTriggerSync();
         }
-    }, [isAuthenticated, isLoading, isFetching, triggerSync, isInitialSyncInProgress, syncStatus]);
+    }, [isAuthenticated, isLoading, isFetching, memoizedTriggerSync, isInitialSyncInProgress, syncStatus]);
 
     // Handle thread selection
     const handleThreadSelect = useCallback(
@@ -323,8 +328,8 @@ function InboxPage() {
 
     // Handle sync
     const handleSync = useCallback(() => {
-        triggerSync();
-    }, [triggerSync]);
+        memoizedTriggerSync();
+    }, [memoizedTriggerSync]);
 
     // Handle sync cancellation - create this function to pass to the SyncOverlay
     const handleCancelSync = useCallback(() => {
@@ -470,6 +475,23 @@ function InboxPage() {
         };
     }, [selectedEmail, selectedThread, handleClose]);
 
+    // Function to handle connecting Gmail account or triggering sync based on error type
+    const handleErrorAction = useCallback(() => {
+        if (errorType === "no_gmail_account") {
+            // Redirect to settings page to connect Gmail account
+            router.push("/settings/accounts");
+        } else if (errorType === "invalid_credentials") {
+            // Redirect to settings page to reconnect Gmail account
+            router.push("/settings/accounts");
+        } else if (errorType === "no_emails_synced") {
+            // Trigger initial sync
+            performInitialSync();
+        } else {
+            // For any other error, try refreshing the inbox
+            handleRefresh();
+        }
+    }, [errorType, router, performInitialSync, handleRefresh]);
+
     return (
         <>
             {/* <SyncOverlay 
@@ -522,6 +544,9 @@ function InboxPage() {
                             searchQuery={debouncedSearchQuery}
                             onSelectThread={handleThreadSelect}
                             onToggleStar={handleToggleStar}
+                            error={error}
+                            errorType={errorType}
+                            onErrorAction={handleErrorAction}
                         />
                         <Pagination
                             page={page}

@@ -392,6 +392,72 @@ export async function GET(request: NextRequest) {
     const aiCategory = searchParams.get('aiCategory');
     const aiPriority = searchParams.get('aiPriority');
     
+    // Check if user has a connected Google account
+    const googleAccount = await prisma.account.findFirst({
+        where: {
+            userId,
+            providerId: "google",
+        },
+    });
+
+    if (!googleAccount) {
+        return NextResponse.json({
+            threads: [],
+            totalCount: 0,
+            page,
+            pageSize,
+            hasMore: false,
+            error: "No Gmail account connected",
+            errorType: "no_gmail_account"
+        });
+    }
+
+    // Check if the Google account has valid credentials
+    if (!googleAccount.accessToken) {
+        return NextResponse.json({
+            threads: [],
+            totalCount: 0,
+            page,
+            pageSize,
+            hasMore: false,
+            error: "Gmail account needs to be reconnected",
+            errorType: "invalid_credentials"
+        });
+    }
+
+    // Check if user has any messages synced
+    const messageCount = await prisma.message.count({
+        where: { userId }
+    });
+
+    if (messageCount === 0) {
+        // Check if sync is in progress
+        const syncState = await prisma.syncState.findUnique({
+            where: { userId }
+        });
+
+        if (syncState?.syncInProgress) {
+            return NextResponse.json({
+                threads: [],
+                totalCount: 0,
+                page,
+                pageSize,
+                hasMore: false,
+                error: "Email sync in progress",
+                errorType: "sync_in_progress"
+            });
+        }
+        
+        return NextResponse.json({
+            threads: [],
+            totalCount: 0,
+            page,
+            pageSize,
+            hasMore: false,
+            error: "No emails synced yet",
+            errorType: "no_emails_synced"
+        });
+    }
 
     try {
         let emails: any[] = [];

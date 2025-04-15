@@ -13,6 +13,12 @@ interface FetchEmailsParams {
     isUnread?: boolean;
 }
 
+// Update InboxResponse type to include error information
+interface InboxResponseWithError extends InboxResponse {
+    error?: string;
+    errorType?: string;
+}
+
 /**
  * Fetches emails from the API
  */
@@ -24,7 +30,7 @@ const fetchEmails = async ({
     isStarred,
     isUnread,
     signal,
-}: Omit<FetchEmailsParams, "enabled"> & { signal?: AbortSignal }): Promise<InboxResponse> => {
+}: Omit<FetchEmailsParams, "enabled"> & { signal?: AbortSignal }): Promise<InboxResponseWithError> => {
     try {
         const params = new URLSearchParams();
         params.append("page", page.toString());
@@ -48,8 +54,24 @@ const fetchEmails = async ({
         
         const response = await fetch(`/api/inbox?${params.toString()}`, { signal });
 
+        // Get the response data
+        const data = await response.json();
+
+        // Check if the API returned an error message
+        if (data.error) {
+            console.warn(`API returned error: ${data.error} (${data.errorType || 'unknown'})`);
+            return {
+                threads: [],
+                totalCount: 0,
+                page,
+                pageSize,
+                hasMore: false,
+                error: data.error,
+                errorType: data.errorType
+            };
+        }
+
         // Special case: If we get a 404, it might just mean no emails yet
-        // We'll return an empty inbox rather than throwing an error
         if (response.status === 404) {
             return {
                 threads: [],
@@ -57,11 +79,12 @@ const fetchEmails = async ({
                 page,
                 pageSize,
                 hasMore: false,
+                error: "No emails found",
+                errorType: "not_found"
             };
         }
 
-        // For any other non-ok response, return empty inbox for first load
-        // This prevents errors when the user hasn't synced yet
+        // For any other non-ok response, return empty inbox with error
         if (!response.ok) {
             console.warn(`API returned status ${response.status} when fetching emails`);
             return {
@@ -70,10 +93,11 @@ const fetchEmails = async ({
                 page,
                 pageSize,
                 hasMore: false,
+                error: "Failed to load emails",
+                errorType: "api_error"
             };
         }
 
-        const data = await response.json();
         if (!data || !Array.isArray(data.threads)) {
             console.warn("Invalid response format from API");
             return {
@@ -82,6 +106,8 @@ const fetchEmails = async ({
                 page,
                 pageSize,
                 hasMore: false,
+                error: "Invalid response format",
+                errorType: "format_error"
             };
         }
 
@@ -114,6 +140,8 @@ const fetchEmails = async ({
             page: data.page || page,
             pageSize: data.pageSize || pageSize,
             hasMore: data.hasMore || false,
+            error: data.error,
+            errorType: data.errorType
         };
     } catch (error) {
         // Check if this was an abort error from the AbortController
@@ -124,13 +152,15 @@ const fetchEmails = async ({
             console.warn("Error in fetchEmails:", error);
         }
         
-        // Return empty inbox instead of throwing
+        // Return empty inbox with error information
         return {
             threads: [],
             totalCount: 0,
             page,
             pageSize,
             hasMore: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+            errorType: "client_error"
         };
     }
 };
@@ -153,7 +183,7 @@ export function useInboxData({
     const abortControllerRef = useRef<AbortController | null>(null);
 
     // Define the query options
-    const queryOptions: UseQueryOptions<InboxResponse, Error> = {
+    const queryOptions: UseQueryOptions<InboxResponseWithError, Error> = {
         queryKey: ["inbox", page, pageSize, searchQuery, category, isStarred, isUnread],
         queryFn: ({ signal }) => {
             // Cancel any existing request
@@ -182,7 +212,7 @@ export function useInboxData({
         enabled, // Only run the query when enabled is true
     };
 
-    const queryResult = useQuery<InboxResponse, Error>(queryOptions);
+    const queryResult = useQuery<InboxResponseWithError, Error>(queryOptions);
 
     // Cancel pending requests when component unmounts
     useEffect(() => {
@@ -204,7 +234,20 @@ export function useInboxData({
             return;
         }
 
-        if (error && !hasShownErrorToast.current && enabled && !isFirstLoad.current) {
+        // Check for API-level errors (those included in the response)
+        if (data?.error && !hasShownErrorToast.current && enabled && !isFirstLoad.current) {
+            console.warn(`API Error: ${data.error} (${data.errorType || 'unknown'})`);
+            // Don't show toast for sync-in-progress errors
+            if (data.errorType !== 'sync_in_progress') {
+                addToast({
+                    variant: "danger",
+                    message: data.error,
+                });
+                hasShownErrorToast.current = true;
+            }
+        }
+        // Check for network-level errors
+        else if (error && !hasShownErrorToast.current && enabled && !isFirstLoad.current) {
             // Don't show error toast for aborted requests
             if (!(error instanceof DOMException && error.name === 'AbortError')) {
                 console.error("Error fetching emails:", error);
@@ -214,14 +257,14 @@ export function useInboxData({
                 });
                 hasShownErrorToast.current = true;
             }
-        } else if (!error) {
+        } else if (!error && !data?.error) {
             // Reset the flag when there's no error
             hasShownErrorToast.current = false;
             if (isFirstLoad.current && !isLoading && !isFetching) {
                 isFirstLoad.current = false;
             }
         }
-    }, [error, addToast, enabled, isLoading, isFetching, isError]);
+    }, [error, data, addToast, enabled, isLoading, isFetching, isError]);
 
     // Return the data in a more convenient format
     return {
@@ -229,10 +272,11 @@ export function useInboxData({
         emails: data?.threads ? data.threads.flatMap(thread => thread.emails) : [],
         totalCount: data?.totalCount || 0,
         hasMore: data?.hasMore || false,
+        error: data?.error || (error instanceof Error ? error.message : undefined),
+        errorType: data?.errorType,
         isLoading,
         isFetching,
         isError,
-        error,
         queryResult, // Allow access to the full query result if needed
     };
 }
