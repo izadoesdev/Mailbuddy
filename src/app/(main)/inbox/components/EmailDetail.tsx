@@ -137,6 +137,8 @@ export function EmailDetail({
         }
     };
 
+    const first2Keywords = email.aiMetadata?.keywords?.slice(0, 2);
+
     // Check if we have other emails in this thread
     const hasMultipleEmails = thread?.emails?.length && thread.emails.length > 1;
 
@@ -386,9 +388,9 @@ export function EmailDetail({
                                                 </Text>
                                             </Row>
                                         )}
-                                        <Text variant="body-default-s">
+                                        {/* <Text variant="body-default-s">
                                             {email.aiMetadata.summary}
-                                        </Text>
+                                        </Text> */}
                                     </Column>
                                 )}
 
@@ -399,7 +401,7 @@ export function EmailDetail({
                                             Key Points
                                         </Text>
                                         <Column gap="4" fillWidth>
-                                            {email.aiMetadata.keywords.map((keyword: string) => (
+                                            {first2Keywords?.map((keyword: string) => (
                                                 <Row 
                                                     key={`keyword-${keyword}`} 
                                                     gap="8" 
