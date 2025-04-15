@@ -109,7 +109,7 @@ export default function RootLayout({
             <ThemeProvider>
                 <ToastProvider>
                   <NuqsAdapter>
-                    <Column as="body" fillWidth margin="0" padding="0">
+                    <Column as="body" fillWidth margin="0" padding="0" marginTop="8">
                     <Background
                         pointerEvents="none"
                             position="fixed"
