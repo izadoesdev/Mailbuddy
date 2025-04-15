@@ -54,7 +54,7 @@ function decryptEmail(email: any) {
 /**
  * GET handler for retrieving a specific email by ID
  */
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
 
     if (!id) {
