@@ -77,13 +77,13 @@ export default function Footer() {
             variant="tertiary"
             size="s"
             icon="twitter"
-            href="https://twitter.com/databuddyps"
+            href="/"
           />
           <IconButton
             variant="tertiary"
             size="s"
             icon="linkedin"
-            href="https://linkedin.com/in/issanassar"
+            href="/"
           />
           <IconButton
             variant="tertiary"
