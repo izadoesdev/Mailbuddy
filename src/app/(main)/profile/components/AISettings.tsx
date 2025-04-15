@@ -413,7 +413,7 @@ export default function AISettings({ user }: { user: User }) {
           
           {localSettings?.enabled ? (
             <Column fill>
-          <Row gap="4" fillWidth data-border="rounded" paddingX="24" paddingTop="24" paddingBottom="16">
+          <Row gap="4" fillWidth data-border="rounded" paddingX="24" paddingTop="24" paddingBottom="16" horizontal="center">
             <Button
               size="s"
               weight={activeTab === 'preferences' ? 'strong' : 'default'}

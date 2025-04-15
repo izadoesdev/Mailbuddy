@@ -9,6 +9,8 @@ import {
   Row,
   Icon,
   Spinner,
+  Heading,
+  Tag
 } from "@/once-ui/components";
 import { authClient } from "@/libs/auth/client";
 import { createParser, useQueryState } from "nuqs";
@@ -358,6 +360,26 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
             </Column>
           </Column>
       )}
+
+      {/* Mailbuddy Email Provider Section */}
+      <Column paddingX="24" paddingTop="24" fillWidth gap="16">
+        <Row horizontal="space-between" vertical="center">
+          <Heading variant="heading-strong-s">Mailbuddy Email Provider</Heading>
+          <Tag variant="brand" label="Coming Soon" />
+        </Row>
+        <Card radius="m" padding="16" background="brand-alpha-weak" borderLeft="brand-medium" borderWidth={2}>
+          <Column gap="8">
+            <Row gap="8" vertical="center">
+              <Icon name="mail" size="m" />
+              <Text variant="body-strong-m">Use Mailbuddy as your email provider</Text>
+            </Row>
+            <Text>
+              Soon you'll be able to use Mailbuddy as your primary email provider with your own custom domain. 
+              Enjoy seamless integration with all our features while maintaining full control over your email ecosystem.
+            </Text>
+          </Column>
+        </Card>
+      </Column>
     </>
   );
 } 

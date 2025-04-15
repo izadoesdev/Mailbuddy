@@ -408,9 +408,9 @@ export default function CalendarPage() {
             disabled={isLoadingEvents}
             aria-label="Refresh" 
           />
-          <Button variant="primary" label="Add Event" onClick={() => setIsCreateOpen(true)}>
+          {/* <Button variant="primary" label="Add Event" onClick={() => setIsCreateOpen(true)}>
             <Icon name="plus" size="s" />
-          </Button>
+          </Button> */}
         </Row>
       </Row>
       
@@ -470,7 +470,7 @@ export default function CalendarPage() {
                           : !dayInfo.isCurrentMonth ? "color-neutral-medium" : ""
                       }
                     />
-                    <Button
+                    {/* <Button
                       variant="tertiary"
                       size="s"
                       aria-label="Add event"
@@ -480,7 +480,7 @@ export default function CalendarPage() {
                       }}
                     >
                       <Icon name="plus" size="s" />
-                    </Button>
+                    </Button> */}
                   </Flex>
                   
                   {/* Events */}
@@ -623,16 +623,16 @@ export default function CalendarPage() {
             <Column fillWidth horizontal="center" vertical="center" padding="64" gap="16">
               <Icon name="calendar" size="xl" onBackground="neutral-weak" />
               <Text variant="body-default-m" onBackground="neutral-weak">No upcoming events</Text>
-              <Button variant="primary" label="Add Event" onClick={() => setIsCreateOpen(true)}>
+              {/* <Button variant="primary" label="Add Event" onClick={() => setIsCreateOpen(true)}>
                 <Icon name="plus" size="s" />
-              </Button>
+              </Button> */}
             </Column>
           )}
         </Column>
       )}
       
       {/* Create Event Dialog */}
-      <Dialog
+      {/* <Dialog
         isOpen={isCreateOpen}
         onClose={() => {
           setIsCreateOpen(false);
@@ -724,7 +724,7 @@ export default function CalendarPage() {
           />
           <Button variant="primary" label="Create" onClick={handleCreateEvent} />
         </Row>
-      </Dialog>
+      </Dialog> */}
       
       {/* Event Details Dialog */}
       {selectedEvent && (
