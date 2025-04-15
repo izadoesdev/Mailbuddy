@@ -16,6 +16,10 @@ export default async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/login", request.url));
     }
 
+    if (authRoutes.includes(pathname) && session) {
+        return NextResponse.redirect(new URL("/inbox", request.url));
+    }
+
     return NextResponse.next();
 
 }

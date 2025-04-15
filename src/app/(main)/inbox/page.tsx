@@ -21,6 +21,7 @@ import { ComposeEmail } from "./components/ComposeEmail";
 import { SyncOverlay } from "./components/SyncOverlay";
 import { EMAIL_CATEGORIES, PRIORITY_LEVELS } from "@/app/(dev)/ai/new/constants";
 import { useInitialSync } from "./hooks/useInitialSync";
+import { useUserStore, useUserPreferences } from "@/store/userStore";
 
 type CategoryOption = {
     value: string;
@@ -105,6 +106,8 @@ function InboxPage() {
     // Authentication check
     const router = useRouter();
     const { user, isLoading: isAuthLoading } = useUser();
+    const { logout } = useUserStore();
+    const userPreferences = useUserPreferences();
 
     if (!isAuthLoading && !user) {
         redirect("/login");
@@ -117,6 +120,13 @@ function InboxPage() {
         defaultValue: 'inbox',
         history: 'replace'
     });
+
+    // Use user preferences for page size if available
+    useEffect(() => {
+        if (userPreferences.emailsPerPage && pageSize !== userPreferences.emailsPerPage) {
+            setPageSize(userPreferences.emailsPerPage);
+        }
+    }, [userPreferences.emailsPerPage, pageSize, setPageSize]);
 
     // Local state
     const [searchQuery, setSearchQuery] = useState("");
@@ -326,10 +336,11 @@ function InboxPage() {
     }, [setPage, page, hasMore]);
 
     // Handle page size change
-    const handlePageSizeChange = useCallback((size: number) => {
-        setPageSize(size);
-        setPage(1);
-    }, [setPageSize, setPage]);
+    const handlePageSizeChange = useCallback((newSize: number) => {
+        // Update both URL state and user preferences
+        setPageSize(newSize);
+        useUserStore.getState().updatePreferences({ emailsPerPage: newSize });
+    }, [setPageSize]);
 
     // Handle refresh
     const handleRefresh = useCallback(() => {
@@ -417,8 +428,8 @@ function InboxPage() {
 
     // Handle signout
     const handleSignOut = useCallback(() => {
-        authClient.signOut();
-    }, []);
+        logout();
+    }, [logout]);
 
     // Get compose email props
     const getComposeEmailProps = useCallback(() => {
