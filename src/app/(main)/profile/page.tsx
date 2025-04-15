@@ -19,6 +19,7 @@ import EmailSettings from "./components/EmailSettings";
 import SecuritySettings from "./components/SecuritySettings";
 import AISettings from "./components/AISettings";
 import ConnectedAccounts from "./components/ConnectedAccounts";
+import Preferences from "./components/Preferences";
 import { effects } from "@/app/resources/config";
 
 // Profile category options
@@ -27,7 +28,8 @@ const PROFILE_CATEGORIES = [
   { value: "email", label: "Notifications", icon: "mail" },
   { value: "ai", label: "AI Preferences", icon: "sparkles" },
   { value: "accounts", label: "Accounts", icon: "link" },
-  { value: "security", label: "Security", icon: "shield" }
+  { value: "security", label: "Security", icon: "shield" },
+  { value: "preferences", label: "Preferences", icon: "gear" }
 ];
 
 function ProfileContent() {
@@ -185,6 +187,11 @@ function ProfileContent() {
             {tab === "accounts" && (
               <ConnectedAccounts user={user} />
             )}
+            {
+              tab === "preferences" && (
+                <Preferences />
+              )
+            }
           </Suspense>
         </Column>
       </Column>
