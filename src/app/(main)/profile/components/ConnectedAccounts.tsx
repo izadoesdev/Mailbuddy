@@ -9,7 +9,6 @@ import {
   Row,
   Icon,
   Spinner,
-  Heading,
 } from "@/once-ui/components";
 import { authClient } from "@/libs/auth/client";
 import { createParser, useQueryState } from "nuqs";
@@ -195,8 +194,8 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
 
   return (
     <>
-      <Column padding="l" gap="l" fillWidth>
-        <Text onBackground="neutral-weak">
+      <Column paddingX="24" paddingTop="24" fillWidth>
+        <Text>
           Connect additional accounts to your profile for simplified sign-in. You can use any connected account to access your account.
         </Text>
         
@@ -226,7 +225,7 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
         
         {/* List of connected accounts */}
         {accounts.length > 0 ? (
-          <Column gap="m">
+          <Column fillWidth>
             {accounts.map(account => (
               <Row 
                 key={account.id} 
@@ -266,16 +265,15 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
       
       {/* Available accounts to connect */}
       {availableToConnect.length > 0 && (
-          <Column padding="l" gap="l">
-            <Column gap="m">
+          <Column paddingX="24" fillWidth>
+            <Column fillWidth border="neutral-alpha-medium" radius="l" overflow="hidden">
               {availableToConnect.map(provider => (
                 <Row 
+                  borderBottom="neutral-alpha-medium"
                   key={provider.id} 
                   horizontal="space-between" 
                   vertical="center" 
-                  padding="m"
-                  border="neutral-alpha-medium"
-                  radius="l"
+                  padding="24"
                 >
                   <Row gap="m" vertical="center">
                     <Icon name={provider.icon} size="m" />
@@ -285,8 +283,7 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
                   <Button
                     variant="primary"
                     size="s"
-                    label={isLinking && linkingProvider === provider.id ? "Connecting..." : "Connect"}
-                    prefixIcon="link"
+                    label={isLinking && linkingProvider === provider.id ? "Connecting" : "Connect"}
                     disabled={isLinking}
                     loading={isLinking && linkingProvider === provider.id}
                     onClick={() => handleLinkAccount(provider.id as "google")}
@@ -295,15 +292,14 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
               ))}
               
               {/* Coming soon providers */}
-              {comingSoonProviders.map(provider => (
+              {comingSoonProviders.map((provider, index) => (
                 <Row 
                   key={provider.id} 
                   horizontal="space-between" 
                   vertical="center" 
-                  padding="m"
+                  padding="24"
                   background="surface"
-                  border="neutral-alpha-medium"
-                  radius="l"
+                  borderBottom={index === 0 ? "neutral-alpha-medium" : undefined}
                 >
                   <Row gap="m" vertical="center">
                     <Icon name={provider.icon} size="m" />

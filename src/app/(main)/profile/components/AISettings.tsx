@@ -269,9 +269,8 @@ export default function AISettings({ user }: { user: User }) {
       
       case 'analysis':
         return (
-          <Column gap="24" fillWidth>
-            <Heading variant="heading-strong-xs">Email Analysis</Heading>
-            <Text variant="body-default-s">Configure how AI analyzes your emails</Text>
+          <Column gap="24" fillWidth paddingX="24" paddingTop="8">
+            <Text variant="body-default-m">Configure how AI analyzes your emails</Text>
 
             <Row gap="16">
               <Column gap="12" width={24}>
@@ -320,7 +319,7 @@ export default function AISettings({ user }: { user: User }) {
       
       case 'stats':
         return (
-          <Column gap="24" fillWidth>
+          <Column gap="24" fillWidth paddingX="24" paddingTop="8">
             {isLoadingStats ? (
               <Row horizontal="center" paddingY="32">
                 <Column horizontal="center" gap="16">
@@ -334,35 +333,43 @@ export default function AISettings({ user }: { user: User }) {
             ) : (
               <>
                 <Column gap="16" fillWidth>
-                  <Row horizontal="space-between" vertical="center" fillWidth>
-                    <Column gap="4">
-                      <Text variant="body-strong-m">Analyzed Emails</Text>
+                  <Row horizontal="space-between" vertical="center" fillWidth gap="8">
+                    <Column gap="4" horizontal="center" fillWidth radius="l" border="neutral-alpha-medium" padding="12">
                       <Row gap="8" vertical="center">
                         <Text variant="heading-strong-l">{metadataStats.emailsWithMetadata}</Text>
                         <Text variant="body-default-s" onBackground="neutral-weak">
-                          of {metadataStats.totalEmails} total emails
+                          of {metadataStats.totalEmails}
                         </Text>
                       </Row>
+                      <Text variant="label-default-s" onBackground="neutral-weak">Analyzed Emails</Text>
                     </Column>
                     
-                    <Column gap="4" horizontal="end">
-                      <Text variant="body-strong-m">Storage Used</Text>
+                    <Column gap="4" horizontal="center" fillWidth radius="l" border="neutral-alpha-medium" padding="12">
                       <Text variant="heading-strong-m">{metadataStats.metadataSize}</Text>
+                      <Text variant="label-default-s" onBackground="neutral-weak">Storage Used</Text>
                     </Column>
+                  
+                    <Column gap="4" horizontal="center" fillWidth radius="l" border="neutral-alpha-medium" padding="12">
+                        <Text variant="heading-strong-m">
+                          {metadataStats.lastAnalyzedDate
+                            ? formatDistanceToNow(new Date(metadataStats.lastAnalyzedDate))
+                            : "Never"}
+                        </Text>
+                        <Text variant="label-default-s" onBackground="neutral-weak">Last Analysis</Text>
+                      </Column>
                   </Row>
                   
-                  <Row horizontal="space-between" vertical="center" fillWidth>
-                    <Column gap="8" width={32}>
-                      <Text variant="body-strong-s">Top Priorities</Text>
+                  <Row horizontal="space-between" vertical="center" fillWidth marginTop="16">
+                    <Column gap="8" fillWidth>
+                      <Text variant="label-default-s" onBackground="neutral-weak">Top Priorities</Text>
                       {metadataStats.topPriorities && metadataStats.topPriorities.length > 0 ? (
                         <Row gap="8">
                           {metadataStats.topPriorities.map((priority) => (
                             <Tag 
                               key={priority.label}
-                              prefixIcon="star"
                               size="l"
                             >
-                              <Text variant="body-default-xs">{`${priority.label} (${priority.count})`}</Text>
+                              <Row textVariant="body-default-xs" gap="8" vertical="center">{priority.label} <Kbd style={{marginRight: "-0.75rem"}} data-border="rounded" data-scaling="90">{priority.count}</Kbd></Row>
                             </Tag>
                           ))}
                         </Row>
@@ -370,35 +377,32 @@ export default function AISettings({ user }: { user: User }) {
                         <Text variant="body-default-s" onBackground="neutral-weak">No priority data available</Text>
                       )}
                     </Column>
-                    
-                    <Column gap="8" width={32}>
-                      <Text variant="body-strong-s">Last Analysis</Text>
-                      <Text>
-                        {metadataStats.lastAnalyzedDate
-                          ? formatDistanceToNow(new Date(metadataStats.lastAnalyzedDate))
-                          : "Never"}
-                      </Text>
-                    </Column>
                   </Row>
-                  
-                  <Row gap="16" horizontal="space-between" fillWidth>
-                    <Button
-                      variant="danger"
-                      label="Clear All Metadata"
-                      prefixIcon="trash"
-                      loading={isClearing}
-                      disabled={isClearing || isAnalyzing || metadataStats.emailsWithMetadata === 0}
-                      onClick={() => clearMetadata()}
-                    />
-                    
-                    <Button
-                      label="Analyze All Emails"
-                      prefixIcon="sparkles"
-                      loading={isAnalyzing}
-                      disabled={isClearing || isAnalyzing}
-                      onClick={() => runAnalysis()}
-                    />
-                  </Row>
+                  <Column fillWidth gap="12" marginTop="16">
+                    <Text variant="label-default-s" onBackground="neutral-weak">Manage</Text>
+                    <Row gap="16" fillWidth>
+                      <Button
+                        data-border="rounded"
+                        size="s"
+                        variant="danger"
+                        label="Clear all metadata"
+                        prefixIcon="trash"
+                        loading={isClearing}
+                        disabled={isClearing || isAnalyzing || metadataStats.emailsWithMetadata === 0}
+                        onClick={() => clearMetadata()}
+                      />
+                      
+                      <Button
+                        data-border="rounded"
+                        size="s"
+                        label="Analyze All Emails"
+                        prefixIcon="sparkles"
+                        loading={isAnalyzing}
+                        disabled={isClearing || isAnalyzing}
+                        onClick={() => runAnalysis()}
+                      />
+                    </Row>
+                  </Column>
                 </Column>
               </>
             )}
@@ -464,7 +468,7 @@ export default function AISettings({ user }: { user: User }) {
           <Row horizontal="end" gap="8" paddingX="20" paddingY="12" borderTop="neutral-alpha-medium" data-border="rounded">
             <Button
               label="Cancel"
-              variant="tertiary"
+              variant="secondary"
               onClick={resetToDefaults}
               disabled={isUpdating}
             />

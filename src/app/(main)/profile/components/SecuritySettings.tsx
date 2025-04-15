@@ -112,12 +112,14 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
   };
 
   return (
-        <Column gap="24" fillWidth>
+        <Column gap="12" fill>
+          <Column fill padding="24" gap="16">
           <Heading variant="heading-strong-s">Change Password</Heading>
           
           <form onSubmit={handleChangePassword}>
-            <Column gap="16" fillWidth>
+            <Column gap="-1" fillWidth>
               <PasswordInput
+                radius="top"
                 label="Current Password"
                 name="currentPassword"
                 id="currentPassword"
@@ -127,6 +129,7 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
               />
               
               <PasswordInput
+                radius="none"
                 label="New Password"
                 name="newPassword"
                 id="newPassword"
@@ -136,6 +139,7 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
               />
               
               <PasswordInput
+                radius="bottom"
                 label="Confirm New Password"
                 name="confirmPassword"
                 id="confirmPassword"
@@ -143,34 +147,16 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
                 onChange={handlePasswordChange}
                 required
               />
-              
-              <Row horizontal="end">
-                <Button
-                  label="Update Password"
-                  variant="primary"
-                  type="submit"
-                  loading={isLoading}
-                  disabled={isLoading || 
-                    !passwords.currentPassword || 
-                    !passwords.newPassword || 
-                    !passwords.confirmPassword}
-                />
-              </Row>
             </Column>
           </form>
       
-        <Column gap="24" fillWidth>
-          <Heading variant="heading-strong-s">Two-Factor Authentication</Heading>
-          
+        <Column paddingTop="12" fill>
           <Column gap="16" fillWidth>
-            <Row gap="8" vertical="center" horizontal="space-between">
-              <Column gap="4">
-                <Text variant="body-strong-m">Enable Two-Factor Authentication</Text>
-                <Text variant="body-default-s" onBackground="neutral-medium">
-                  Add an extra layer of security to your account by requiring both your password and authentication code.
-                </Text>
-              </Column>
+            <Row fillWidth radius="l" paddingX="16" paddingY="12" border="neutral-alpha-medium">
               <Switch 
+                reverse
+                label="Two-Factor Authentication"
+                description="Add an extra layer of security to your account by requiring an additional authentication code"
                 isChecked={is2FAEnabled}
                 onToggle={handleToggle2FA}
                 id="two-factor-auth"
@@ -179,6 +165,19 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
             </Row>
           </Column>
         </Column>
+        </Column>
+
+        <Row horizontal="end" gap="8" paddingX="20" paddingY="12" borderTop="neutral-alpha-medium" data-border="rounded">
+        <Button
+          label="Save changes"
+          type="submit"
+          loading={isLoading}
+          disabled={isLoading || 
+            !passwords.currentPassword || 
+            !passwords.newPassword || 
+            !passwords.confirmPassword}
+        />
+        </Row>
     </Column>
   );
 } 
