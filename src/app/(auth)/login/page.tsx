@@ -503,7 +503,7 @@ function LoginPage() {
     };
 
     return (
-        <Column fillWidth horizontal="center" vertical="center" style={{ minHeight: "100vh" }}>
+        <Column fillWidth horizontal="center" vertical="center" fillHeight>
             <Background
                 pointerEvents="none"
                 position="fixed"
