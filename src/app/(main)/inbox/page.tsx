@@ -328,7 +328,6 @@ function InboxPage() {
     const handlePageSizeChange = useCallback((newSize: number) => {
         // Update both URL state and user preferences
         setPageSize(newSize);
-        useUserStore.getState().updatePreferences({ emailsPerPage: newSize });
     }, [setPageSize]);
 
     // Handle refresh
