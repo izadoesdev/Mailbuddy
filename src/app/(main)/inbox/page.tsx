@@ -96,13 +96,17 @@ const pageSizeParser = createParser({
     serialize: String,
 }).withDefault(20);
 
+// Use string parser for pageToken with undefined default
+const stringParser = createParser({
+    parse: String,
+    serialize: String,
+});
 
 function InboxPage() {
     // Authentication check
     const router = useRouter();
     const { user, isLoading: isAuthLoading } = useUser();
     const { logout } = useUserStore();
-    const userPreferences = useUserPreferences();
 
     if (!isAuthLoading && !user) {
         redirect("/login");
@@ -115,14 +119,6 @@ function InboxPage() {
         defaultValue: 'inbox',
         history: 'replace'
     });
-
-    // Use user preferences for page size if available
-    useEffect(() => {
-        if (userPreferences.emailsPerPage && pageSize !== userPreferences.emailsPerPage) {
-            setPageSize(userPreferences.emailsPerPage);
-        }
-    }, [userPreferences.emailsPerPage, pageSize, setPageSize]);
-
     // Local state
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
