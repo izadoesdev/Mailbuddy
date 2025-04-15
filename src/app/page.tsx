@@ -268,7 +268,7 @@ export default function Home() {
                 style={{
                   backdropFilter: "blur(1rem)"
                 }}
-                key={index}
+                key={item.title}
                 background="overlay"
                 radius="l"
                 shadow="xl"
@@ -307,7 +307,7 @@ export default function Home() {
             {features.map((feature, index) => (
               <Row
                 fillWidth
-                key={index}
+                key={feature.title}
                 gap="xl"
                 direction={index % 2 === 0 ? "row" : "row-reverse"}
                 vertical="center"
@@ -348,7 +348,7 @@ export default function Home() {
                   flex={4}
                   border="neutral-alpha-medium"
                   src={feature.img}
-                  alt={"Image for " + feature.title}
+                  alt={`Image for ${feature.title}`}
                   sizes={"(max-width: 1024px) 90vw, 640px"}
                   radius="l"
                   aspectRatio="4 / 3"
