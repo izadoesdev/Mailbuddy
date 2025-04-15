@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { prisma } from "./src/libs/db";
+import { prisma, redis } from "./src/libs/db";
 import { customSession, emailOTP, multiSession, magicLink, twoFactor } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 import index from "@/app/(dev)/ai/new/index";
@@ -64,10 +64,24 @@ export const auth = betterAuth({
         updateAge: 60 * 60 * 24, // 1 day
         cookieCache: {
             enabled: true,
-            maxAge: 5 * 60, // 5 minutes
+            maxAge: 5 * 60,
         },
     },
+    secondaryStorage: {
+		get: async (key) => {
+			const value = await redis.get(key);
+			return value ? value : null;
+		},
+		set: async (key, value, ttl) => {
+			if (ttl) await redis.set(key, value, 'EX', ttl);
+			else await redis.set(key, value);
+		},
+		delete: async (key) => {
+            await redis.del(key);
+        }
+    },
     plugins: [
+        
         customSession(async ({ user, session }) => {
             const dbUser = await prisma.user.findUnique({
                 where: { id: user.id },
