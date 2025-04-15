@@ -1,15 +1,14 @@
 import { prisma } from "@/libs/db";
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/libs/auth";
 import { decryptEmails } from "@/libs/services";
 import { headers } from "next/headers";
 
-export async function GET(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: NextRequest) {
   try {
     // Get the email ID from the URL
-    const { id: emailId } = await params;
+    const { searchParams } = new URL(req.url);
+    const emailId = searchParams.get('id');
     
     if (!emailId) {
       return NextResponse.json(
