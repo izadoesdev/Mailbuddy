@@ -257,7 +257,7 @@ export async function deleteVectors(ids: string[], userId: string) {
 
         // Delete vectors directly from the user's namespace
         // This is secure because it only affects vectors in this user's namespace
-        await index.index.delete(ids, { namespace });
+        await index.index.delete({ ids }, { namespace });
 
         return { success: true, deletedCount: ids.length };
     } catch (error) {

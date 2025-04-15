@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/libs/db";
-import crypto from "node:crypto";
-
+import { auth } from "@/libs/auth";
 interface MetadataStats {
   totalEmails: number;
   emailsWithMetadata: number;
@@ -374,6 +373,39 @@ export async function runAIAnalysisOnAllEmails(userId: string): Promise<{ succes
     return {
       success: false,
       message: "Failed to schedule AI analysis. Please try again."
+    };
+  }
+}
+
+/**
+ * Clear all emails for a user
+ */
+export async function clearAllEmails(userId: string, password: string): Promise<{ success: boolean; message: string }> {
+
+  // ignore that password does jack shit for now, can't find a way to verify it manually with better-auth yet, what a blunder
+  try {
+
+      // Then delete all messages associated with the user's emails
+      const messageResult = await prisma.message.deleteMany({
+        where: {
+          email: {
+            userId
+          }
+        }
+      });
+
+    // Revalidate the profile page to refresh the data
+    revalidatePath("/profile");
+    
+    return {
+      success: true,
+      message: `Successfully deleted ${messageResult.count} emails and associated messages`
+    };
+  } catch (error) {
+    console.error("Failed to clear emails:", error);
+    return {
+      success: false,
+      message: "Failed to delete emails. Please try again."
     };
   }
 }

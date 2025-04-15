@@ -14,9 +14,12 @@ import {
   OTPInput,
   Kbd,
   Dialog,
-  Input
+  Input,
 } from "@/once-ui/components";
 import { authClient } from "@/libs/auth/client";
+import { useRouter } from "next/navigation";
+import { clearAllEmails } from "../actions";
+
 interface SecuritySettingsProps {
   user: any;
 }
@@ -29,6 +32,7 @@ interface TwoFactorData {
 
 export default function SecuritySettings({ user }: SecuritySettingsProps) {
   const { addToast } = useToast();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [is2FAEnabled, setIs2FAEnabled] = useState(user?.twoFactorEnabled ?? false);
   const [passwords, setPasswords] = useState({
@@ -46,6 +50,13 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
   const backupCodesRef = useRef<HTMLPreElement>(null);
+
+  // Add state for account deletion and purge
+  const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
+  const [showPurgeEmailsDialog, setShowPurgeEmailsDialog] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [purgePassword, setPurgePassword] = useState("");
 
   // Generate QR code when totpURI is available
   useEffect(() => {
@@ -95,6 +106,33 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      addToast({
+        variant: "danger",
+        message: "Password is required to delete account",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await authClient.deleteUser({ password: deletePassword });
+      addToast({
+        variant: "success",
+        message: "Account deleted successfully",
+      });
+      router.push("/login");
+    } catch (error) {
+      console.error("Failed to delete account:", error);
+      addToast({
+        variant: "danger",
+        message: "Failed to delete account. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const handleDisable2FA = async () => {
     if (!disable2FAPassword) {
       addToast({
@@ -314,6 +352,44 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
     }
   };
 
+  const handlePurgeEmails = async () => {
+    if (!purgePassword) {
+      addToast({
+        variant: "danger",
+        message: "Password is required to delete all emails",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await clearAllEmails(user.id, purgePassword);
+      
+      if (result.success) {
+        addToast({
+          variant: "success",
+          message: result.message,
+        });
+        setShowPurgeEmailsDialog(false);
+        setPurgePassword("");
+      } else {
+        addToast({
+          variant: "danger",
+          message: result.message,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to delete all emails:", error);
+      addToast({
+        variant: "danger",
+        message: "Failed to delete all emails. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
   return (
     <>
       <Column gap="12" fill>
@@ -367,6 +443,39 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
                   disabled={isLoading}
                 />
               </Row>
+
+              {/* Adding Data Management Section */}
+              <Heading variant="heading-strong-s" paddingTop="16">Data Management</Heading>
+              
+              <Card fillWidth radius="l">
+                <Column padding="16" gap="16">
+                  <Column gap="4">
+                    <Text weight="strong">Delete All Emails and Messages</Text>
+                    <Text>This will permanently delete all emails and messages from your account. This action cannot be undone.</Text>
+                  </Column>
+                  <Button
+                    label="Delete All Emails"
+                    variant="danger"
+                    onClick={() => setShowPurgeEmailsDialog(true)}
+                    size="s"
+                  />
+                </Column>
+              </Card>
+              
+              <Card fillWidth radius="l">
+                <Column padding="16" gap="16">
+                  <Column gap="4">
+                    <Text weight="strong">Delete Account</Text>
+                    <Text>This will permanently delete your account and all associated data. This action cannot be undone.</Text>
+                  </Column>
+                  <Button
+                    label="Delete Account"
+                    variant="danger"
+                    onClick={() => setShowDeleteAccountDialog(true)}
+                    size="s"
+                  />
+                </Column>
+              </Card>
             </Column>
           </Column>
         </Column>
@@ -523,6 +632,98 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
               onClick={handleDisable2FA}
               loading={isLoading}
               disabled={!disable2FAPassword || isLoading}
+            />
+          </Row>
+        </Column>
+      </Dialog>
+
+      {/* Purge Emails Dialog */}
+      <Dialog
+        isOpen={showPurgeEmailsDialog}
+        onClose={() => {
+          setShowPurgeEmailsDialog(false);
+          setPurgePassword("");
+        }}
+        title="Delete All Emails"
+      >
+        <Column gap="16">
+          <Text>
+            This will permanently delete all emails and messages from your account. This action cannot be undone.
+          </Text>
+          <Text>Please enter your password to confirm.</Text>
+          <Input
+            type="password"
+            id="purge-emails-password"
+            label="Password"
+            value={purgePassword}
+            onChange={(e) => setPurgePassword(e.target.value)}
+          />
+          <Row gap="8" horizontal="end">
+            <Button
+              label="Cancel"
+              variant="secondary"
+              onClick={() => {
+                setShowPurgeEmailsDialog(false);
+                setPurgePassword("");
+              }}
+            />
+            <Button
+              label="Delete All Emails"
+              variant="danger"
+              onClick={handlePurgeEmails}
+              loading={isLoading}
+              disabled={!purgePassword || isLoading}
+            />
+          </Row>
+        </Column>
+      </Dialog>
+
+      {/* Delete Account Dialog */}
+      <Dialog
+        isOpen={showDeleteAccountDialog}
+        onClose={() => {
+          setShowDeleteAccountDialog(false);
+          setDeletePassword("");
+          setDeleteConfirmText("");
+        }}
+        title="Delete Account"
+      >
+        <Column gap="16">
+          <Text>
+            This will permanently delete your account and all associated data. This action cannot be undone.
+          </Text>
+          <Text>Please enter your password to confirm.</Text>
+          <Input
+            type="password"
+            id="delete-account-password"
+            label="Password"
+            value={deletePassword}
+            onChange={(e) => setDeletePassword(e.target.value)}
+          />
+          <Text>Type "DELETE" to confirm.</Text>
+          <Input
+            type="text"
+            id="delete-account-confirm"
+            label="Confirmation"
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+          />
+          <Row gap="8" horizontal="end">
+            <Button
+              label="Cancel"
+              variant="secondary"
+              onClick={() => {
+                setShowDeleteAccountDialog(false);
+                setDeletePassword("");
+                setDeleteConfirmText("");
+              }}
+            />
+            <Button
+              label="Delete Account"
+              variant="danger"
+              onClick={handleDeleteAccount}
+              loading={isLoading}
+              disabled={!deletePassword || deleteConfirmText !== "DELETE" || isLoading}
             />
           </Row>
         </Column>

@@ -3,7 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./src/libs/db";
 import { customSession, emailOTP, multiSession, magicLink, twoFactor } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
-
+import index from "@/app/(dev)/ai/new/index";
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -13,6 +13,14 @@ export const auth = betterAuth({
         provider: "postgresql",
     }),
     appName: "mailbuddy.dev",
+    user: {
+        deleteUser: {
+            enabled: true,
+            beforeDelete: async (user) => {
+                await index.index.deleteNamespace(`user_${user.id}`);
+            },
+        },
+    },
     socialProviders: {
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID as string,
