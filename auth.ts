@@ -1,10 +1,11 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma, redis } from "./src/libs/db";
-import { customSession, emailOTP, multiSession, magicLink, twoFactor, oneTap } from "better-auth/plugins";
+import { customSession, emailOTP, multiSession, magicLink, twoFactor } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 import index from "@/app/(dev)/ai/new/index";
 import { Resend } from "resend";
+import env from "@/libs/env";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -23,8 +24,8 @@ export const auth = betterAuth({
     },
     socialProviders: {
         google: {
-            clientId: process.env.GOOGLE_CLIENT_ID as string,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+            clientId: env.GOOGLE_CLIENT_ID as string,
+            clientSecret: env.GOOGLE_CLIENT_SECRET as string,
             scope: [
                 "email",
                 "https://www.googleapis.com/auth/gmail.modify",
@@ -101,7 +102,6 @@ export const auth = betterAuth({
                 session,
             };
         }),
-        oneTap(),
         multiSession(),
         nextCookies(),
         twoFactor(),

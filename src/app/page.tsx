@@ -2,20 +2,18 @@
 
 import type React from "react";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import TopNav from "@/components/Boxes/TopNav";
 import Footer from "@/components/Boxes/Footer";
+import { authClient } from "../../auth-client";
 import {
     Heading,
     Text,
     Button,
     Icon,
-    Logo,
     Row,
     Column,
     Background,
     Line,
-    IconButton,
     Fade,
     Input,
     Badge,
@@ -82,6 +80,7 @@ export default function Home() {
       ];    
     
     useEffect(() => {
+        authClient.oneTap();
         const fetchUserCount = async () => {
             try {
                 const response = await fetch('/api/wishlist');
