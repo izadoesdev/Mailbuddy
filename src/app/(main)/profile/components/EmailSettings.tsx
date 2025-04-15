@@ -58,6 +58,7 @@ export default function EmailSettings({ user }: EmailSettingsProps) {
   return (
       <Column gap="24" fill>
         <Column gap="16" fill padding="24">
+        <Row fillWidth border="neutral-alpha-medium" paddingX="16" paddingY="12" radius="l">
           <Switch 
             reverse
             label="New email notifications"
@@ -66,7 +67,9 @@ export default function EmailSettings({ user }: EmailSettingsProps) {
             onToggle={() => handleToggle("notifyNewEmails")}
             id="notify-new-emails"
           />
+          </Row>
 
+          <Row fillWidth border="neutral-alpha-medium" paddingX="16" paddingY="12" radius="l">
           <Switch 
             reverse
             label="Reply notifications"
@@ -75,7 +78,9 @@ export default function EmailSettings({ user }: EmailSettingsProps) {
             onToggle={() => handleToggle("notifyReplies")}
             id="notify-replies"
           />
+          </Row>
           
+          <Row fillWidth border="neutral-alpha-medium" paddingX="16" paddingY="12" radius="l">
           <Switch 
             reverse
             label="Important email alerts"
@@ -84,7 +89,9 @@ export default function EmailSettings({ user }: EmailSettingsProps) {
             onToggle={() => handleToggle("notifyImportant")}
             id="notify-important"
           />
+          </Row>
 
+        <Row fillWidth border="neutral-alpha-medium" paddingX="16" paddingY="12" radius="l">
           <Switch
             reverse
             label="Weekly digest"
@@ -93,6 +100,7 @@ export default function EmailSettings({ user }: EmailSettingsProps) {
             onToggle={() => handleToggle("weeklyDigest")}
             id="weekly-digest"
           />
+          </Row>
         </Column>
         
         <Row horizontal="end" gap="8" paddingX="20" paddingY="12" borderTop="neutral-alpha-medium" data-border="rounded">

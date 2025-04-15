@@ -110,7 +110,7 @@ export function EmailDetail({
     const hasMultipleEmails = thread?.emails?.length && thread.emails.length > 1;
 
     return (
-        <Column fill radius="m" border="neutral-alpha-medium" overflow="hidden">
+        <Column fill radius="m" border="neutral-alpha-medium" background="overlay" overflow="hidden">
             <Column fill>
                 <Row
                     horizontal="space-between"
