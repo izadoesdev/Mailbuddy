@@ -9,14 +9,11 @@ import {
     HiChevronLeft,
     HiChevronRight,
     HiChevronUp,
-    HiEnvelope,
     HiExclamationCircle,
     HiExclamationTriangle,
     HiInformationCircle,
     HiMiniMinus,
     HiMiniPlus,
-    HiMiniQuestionMarkCircle,
-    HiMiniUser,
     HiMiniXMark,
     HiOutlineArrowLeft,
     HiOutlineArrowPath,
@@ -39,7 +36,6 @@ import {
     HiOutlineSparkles,
     HiOutlineStar,
     HiOutlineSun,
-    HiOutlineCog, // Settings icon
     HiOutlineArrowRightOnRectangle, // Logout icon
     HiPaperAirplane,
     HiCheck,
@@ -56,13 +52,11 @@ import {
 // Font Awesome 6
 import { 
     FaApple,
-    FaBrush,
     FaDiscord, 
     FaGithub, 
     FaGoogle, 
     FaLinkedin, 
     FaMicrosoft, 
-    FaTrash, 
     FaTwitter 
 } from "react-icons/fa6";
 
