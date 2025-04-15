@@ -479,7 +479,7 @@ function LoginPage() {
                 );
             case "magic":
                 return (
-                    <Column gap="8" padding="16">
+                    <Column gap="8" padding="16" center>
                         <Heading as="h1" variant="heading-strong-xl">
                             Sign in with magic link
                         </Heading>
