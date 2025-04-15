@@ -3,6 +3,8 @@
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import TopNav from "@/components/Boxes/TopNav";
+import Footer from "@/components/Boxes/Footer";
 import {
     Heading,
     Text,
@@ -112,29 +114,6 @@ export default function Home() {
             horizontal="center"
             flex={1}
         >
-            <Background
-                position="absolute"
-                pointerEvents="none"
-                mask={{ x: 100, y: 0, radius: 100 }}
-                gradient={{
-                    display: true,
-                    x: 100,
-                    y: 60,
-                    width: 70,
-                    height: 50,
-                    tilt: -40,
-                    opacity: 90,
-                    colorStart: "accent-background-strong",
-                    colorEnd: "page-background",
-                }}
-                grid={{
-                    display: true,
-                    opacity: 100,
-                    width: "0.25rem",
-                    color: "neutral-alpha-medium",
-                    height: "0.25rem",
-                }}
-            />
             <Fade
                 zIndex={3}
                 pattern={{ display: true, size: "4" }}
@@ -147,43 +126,7 @@ export default function Home() {
                 blur={0.25}
             />
 
-            <Row position="fixed" top="0" fillWidth horizontal="center" zIndex={3}>
-                <Row
-                    data-border="rounded"
-                    horizontal="space-between"
-                    maxWidth="l"
-                    paddingX="24"
-                    paddingY="20"
-                    fillWidth
-                >
-                    <Row gap="8" vertical="center">
-                        <Logo size="m" href="/" />
-                        <Row paddingLeft="24" gap="8">
-                            <Button
-                                weight="default"
-                                size="s"
-                                href="/features"
-                                label="Features"
-                                variant="tertiary"
-                            />
-                            <Button
-                                weight="default"
-                                size="s"
-                                href="/pricing"
-                                label="Pricing"
-                                variant="tertiary"
-                            />
-                        </Row>
-                    </Row>
-                    <Row gap="8" hide="s">
-                        <Button size="s" href="/login" label="Log in" variant="secondary" />
-                        <Button size="s" href="/register" label="Sign up" arrowIcon />
-                    </Row>
-                    <Row gap="16" show="s">
-                        <IconButton icon="menu" variant="tertiary" aria-label="Menu" />
-                    </Row>
-                </Row>
-            </Row>
+            <TopNav />
 
             <Column
                 overflow="hidden"
@@ -417,147 +360,7 @@ export default function Home() {
                 <Line background="neutral-alpha-medium" />
             </Background>
 
-            <Row
-                as="footer"
-                maxWidth="l"
-                paddingX="32"
-                paddingY="48"
-                gap="64"
-                mobileDirection="column"
-                marginTop="48"
-            >
-                <Column gap="24" maxWidth={24}>
-                    <Logo style={{marginLeft: "-0.5rem"}} size="l" icon={false} />
-                    <Text variant="label-default-s" onBackground="neutral-medium" wrap="balance">
-                        Your secure email companion that makes managing Gmail simple and efficient.
-                    </Text>
-                    <Row gap="8" data-border="rounded">
-                        <IconButton
-                            href="https://www.twitter.com/mailbuddy"
-                            icon="twitter"
-                            variant="tertiary"
-                            aria-label="Twitter"
-                        />
-                        <IconButton
-                            href="https://www.linkedin.com/company/mailbuddy/"
-                            icon="linkedin"
-                            variant="tertiary"
-                            aria-label="LinkedIn"
-                        />
-                        <IconButton
-                            href="https://github.com/mailbuddy"
-                            icon="github"
-                            variant="tertiary"
-                            aria-label="GitHub"
-                        />
-                    </Row>
-                </Column>
-
-                <Row gap="64" fillWidth mobileDirection="column" data-border="rounded">
-                    <Column gap="8" fillWidth>
-                        <Heading
-                            as="h3"
-                            variant="heading-strong-s"
-                            marginLeft="12"
-                            marginBottom="24"
-                        >
-                            Product
-                        </Heading>
-                        <Button
-                            size="s"
-                            weight="default"
-                            label="Features"
-                            href="/features"
-                            variant="tertiary"
-                        />
-                        <Button
-                            size="s"
-                            weight="default"
-                            label="Pricing"
-                            href="/pricing"
-                            variant="tertiary"
-                        />
-                        <Button
-                            size="s"
-                            weight="default"
-                            label="Security"
-                            href="/security"
-                            variant="tertiary"
-                        />
-                    </Column>
-
-                    <Column gap="8" fillWidth>
-                        <Heading
-                            as="h3"
-                            variant="heading-strong-s"
-                            marginLeft="12"
-                            marginBottom="24"
-                        >
-                            Company
-                        </Heading>
-                        <Button
-                            size="s"
-                            weight="default"
-                            label="About"
-                            href="/about"
-                            variant="tertiary"
-                        />
-                        <Button
-                            size="s"
-                            weight="default"
-                            label="Blog"
-                            href="/blog"
-                            variant="tertiary"
-                        />
-                        <Button
-                            size="s"
-                            weight="default"
-                            label="Contact"
-                            href="/contact"
-                            variant="tertiary"
-                        />
-                    </Column>
-
-                    <Column gap="8" fillWidth>
-                        <Heading
-                            as="h3"
-                            variant="heading-strong-s"
-                            marginLeft="12"
-                            marginBottom="24"
-                        >
-                            Legal
-                        </Heading>
-                        <Button
-                            size="s"
-                            weight="default"
-                            label="Terms"
-                            href="/terms"
-                            variant="tertiary"
-                        />
-                        <Button
-                            size="s"
-                            weight="default"
-                            label="Privacy"
-                            href="/privacy"
-                            variant="tertiary"
-                        />
-                    </Column>
-                </Row>
-            </Row>
-
-            <Row
-                fillWidth
-                maxWidth="l"
-                paddingX="32"
-                paddingY="24"
-                horizontal="space-between"
-                mobileDirection="column"
-                gap="16"
-            >
-                <Text variant="label-default-s" onBackground="neutral-weak">
-                    {new Date().getFullYear()} Mailbuddy. All rights reserved.
-                </Text>
-            </Row>
+            <Footer />
         </Column>
     );
 }
