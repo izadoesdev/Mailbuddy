@@ -297,7 +297,7 @@ export default function Pricing() {
           </Column>
 
           {/* Pricing cards grid */}
-          <RevealFx speed="medium" translateY={12} delay={0.2}>
+          <RevealFx speed="medium" translateY={12} delay={0}>
             <Grid 
               columns={3}
               gap="24" 
@@ -381,101 +381,8 @@ export default function Pricing() {
             </Grid>
           </RevealFx>
 
-          {/* Feature comparison section */}
-          <RevealFx speed="medium" translateY={12} delay={0.4}>
-            <Column paddingX="32" paddingTop="32" paddingBottom="64" horizontal="center" position="relative">
-              <Background
-                position="absolute"
-                mask={{
-                  x: 50,
-                  y: 0,
-                  radius: 100,
-                }}
-                grid={{
-                  display: true,
-                  opacity: 10,
-                  color: "brand-alpha-weak",
-                  width: "16",
-                  height: "16",
-                }}
-              />
-              
-              <Heading variant="heading-strong-l" align="center" marginBottom="40">
-                Compare All Features
-              </Heading>
-              
-              <Card 
-                border="neutral-alpha-medium" 
-                radius="xl" 
-                padding="0" 
-                overflow="hidden"
-                background="overlay"
-              >
-                {/* Plan headers */}
-                <Row fillWidth borderBottom="neutral-alpha-medium">
-                  <Column padding="16" fillWidth maxWidth={30}>
-                    <Text variant="label-strong-m">Features</Text>
-                  </Column>
-                  {displayPlans.map(plan => (
-                    <Column 
-                      key={`header-${plan.id}`} 
-                      fillWidth 
-                      padding="16" 
-                      background={plan.popular ? "brand-weak" : undefined}
-                      borderLeft="neutral-alpha-weak"
-                    >
-                      <Heading as="h3" variant="heading-strong-s">{plan.name}</Heading>
-                      <Text variant="body-default-s" onBackground="neutral-medium">
-                        ${billingCycle === "monthly" ? plan.monthlyPrice : Math.round(plan.yearlyPrice / 12)}/mo
-                      </Text>
-                    </Column>
-                  ))}
-                </Row>
-                
-                {/* Feature categories and details */}
-                {featureCategories.map(category => (
-                  <Column key={category.id} fillWidth>
-                    {/* Category header */}
-                    <Row fillWidth background="neutral-alpha-weak" paddingY="12" paddingX="16">
-                      <Text variant="label-strong-s">{category.name}</Text>
-                    </Row>
-                    
-                    {/* Features in this category */}
-                    {featuresList
-                      .filter(feature => feature.category === category.id)
-                      .map((feature, featureIndex) => (
-                        <Row 
-                          key={`${category.id}-${featureIndex}`} 
-                          fillWidth 
-                          borderTop="neutral-alpha-weak"
-                        >
-                          <Column padding="16" fillWidth maxWidth={30}>
-                            <Text variant="body-default-s">{feature.name}</Text>
-                          </Column>
-                          {displayPlans.map(plan => (
-                            <Column 
-                              key={`${plan.id}-${feature.name}`} 
-                              fillWidth 
-                              padding="16" 
-                              horizontal="center"
-                              vertical="center"
-                              background={plan.popular ? "brand-alpha-weak" : undefined}
-                              borderLeft="neutral-alpha-weak"
-                            >
-                              {renderPlanFeatureValue(plan.id, feature)}
-                            </Column>
-                          ))}
-                        </Row>
-                      ))
-                    }
-                  </Column>
-                ))}
-              </Card>
-            </Column>
-          </RevealFx>
-
           {/* FAQ Section */}
-          <RevealFx speed="medium" translateY={12} delay={0.6}>
+          <RevealFx speed="medium" translateY={12} delay={0.1}>
             <Column paddingX="32" paddingTop="32" paddingBottom="64" position="relative">
               <Background
                 position="absolute"
@@ -544,7 +451,7 @@ export default function Pricing() {
           </RevealFx>
 
           {/* CTA Section */}
-          <RevealFx speed="medium" translateY={12} delay={0.8}>
+          <RevealFx speed="medium" translateY={12} delay={0.1}>
             <Column
               background="overlay"
               paddingX="40"
