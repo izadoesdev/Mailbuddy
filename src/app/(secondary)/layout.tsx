@@ -77,52 +77,13 @@ export default function SecondaryLayout({
         tertiary ? tertiary.variable : "",
       )}
     >
-      <Schema
-        as="organization"
-        title={schema.name}
-        description={schema.description}
-        baseURL={baseURL}
-        path="/"
-        image={schema.logo}
-      />
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  const theme = localStorage.getItem('theme') || 'system';
-                  const root = document.documentElement;
-                  if (theme === 'system') {
-                    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                    root.setAttribute('data-theme', isDark ? 'dark' : 'light');
-                  } else {
-                    root.setAttribute('data-theme', theme);
-                  }
-                } catch (e) {
-                  document.documentElement.setAttribute('data-theme', 'dark');
-                }
-              })();
-            `,
-          }}
-        />
-      </head>
-      <ThemeProvider>
-        <ToastProvider>
           <Column as="body" fillWidth margin="0" padding="0">
-
-            
             <TopNav />
-            
-            <Column fillWidth paddingTop="128" center vertical="center">
-              {children}
-            </Column>
-            
-            {/* Footer */}
+                <Column fillWidth paddingTop="128" center vertical="center">
+                {children}
+                </Column>
             <Footer />
           </Column>
-        </ToastProvider>
-      </ThemeProvider>
     </Flex>
   );
 }
