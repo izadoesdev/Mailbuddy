@@ -79,7 +79,7 @@ export default function CalendarPage() {
     data: aiEvents = [], 
     isLoading: isLoadingEvents,
     refetch: refetchEvents
-  } = useUpcomingEvents(user?.id || "");
+  } = useUpcomingEvents();
 
   // Combine AI events with manually created events
   useEffect(() => {
@@ -569,7 +569,7 @@ export default function CalendarPage() {
                         horizontal="space-between"
                         background={bgColor}
                         borderLeft={borderColor}
-                        borderWidth={4}
+                        borderWidth={2}
                         onClick={() => {
                           setSelectedEvent(event);
                           setIsDetailsOpen(true);

@@ -29,22 +29,25 @@ model User {
   syncState     SyncState?
   aiSettings    AIUserSettings?
 
+  twoFactorEnabled Boolean?
+  twofactors       TwoFactor[]
+
   @@map("users")
 }
 
 model AIUserSettings {
-  id                 String   @id @default(uuid())
-  userId             String   @unique
-  enabled            Boolean  @default(true)
-  customPrompt       String?
-  preserveMetadata   Boolean  @default(true)
-  priorityKeywords   String[]
-  contentAlerts      Json     @default("{\"urgentRequests\":true,\"financialContent\":false,\"deadlines\":true,\"meetings\":false,\"legalDocuments\":false,\"personalInfo\":false}")
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  enabled             Boolean  @default(true)
+  customPrompt        String?
+  preserveMetadata    Boolean  @default(true)
+  priorityKeywords    String[]
+  contentAlerts       Json     @default("{\"urgentRequests\":true,\"financialContent\":false,\"deadlines\":true,\"meetings\":false,\"legalDocuments\":false,\"personalInfo\":false}")
   analysisPreferences Json     @default("{\"summarize\":true,\"categorize\":true,\"extractActions\":true,\"detectSentiment\":false,\"highlightImportant\":true}")
-  aiAssistLevel      String   @default("balanced")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiAssistLevel       String   @default("balanced")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("ai_user_settings")
 }
@@ -95,7 +98,7 @@ model Verification {
 }
 
 model Email {
-  id           String   @id
+  id           String           @id
   threadId     String
   userId       String
   subject      String?
@@ -103,15 +106,15 @@ model Email {
   to           String?
   snippet      String?
   body         String?
-  isRead       Boolean  @default(false)
-  isStarred    Boolean  @default(false)
+  isRead       Boolean          @default(false)
+  isStarred    Boolean          @default(false)
   labels       String[]
   internalDate String?
-  fetchedAt    DateTime @default(now())
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  message      Message? @relation(fields: [id], references: [id], onDelete: Cascade)
+  fetchedAt    DateTime         @default(now())
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message      Message?         @relation(fields: [id], references: [id], onDelete: Cascade)
   aiMetadata   EmailAIMetadata?
 
   @@index([userId])
@@ -150,29 +153,29 @@ model SyncState {
 }
 
 model EmailAIMetadata {
-  id                 String   @id @default(uuid())
-  emailId            String   @unique
-  category           String?
-  categories         String[] // Store multiple categories
-  categoryConfidences Json?   // Store confidence scores for each category
-  priority           String?
+  id                  String    @id @default(uuid())
+  emailId             String    @unique
+  category            String?
+  categories          String[] // Store multiple categories
+  categoryConfidences Json? // Store confidence scores for each category
+  priority            String?
   priorityExplanation String?
-  summary            String?
-  sentiment          String?  // Positive, Negative, Neutral
-  importance         String?  // Critical, High, Medium, Low
-  requiresResponse   Boolean? // Whether the email requires a response
-  responseTimeframe  String?  // Suggested timeframe for response
-  keywords           String[] // Key topics or keywords from the email
-  deadlines          Json?    // Store structured deadline information (event, date, time)
-  importantDates     String[] // Store array of important dates in string format
-  hasDeadline        Boolean? @default(false) // Quick flag to identify emails with deadlines
-  nextDeadline       DateTime? // The nearest upcoming deadline if present
-  processingTime     Int?     // Time taken to process in milliseconds
-  modelUsed          String?  // Store which model was used for analysis
-  tokensUsed         Int?     // Store token usage for analytics
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  email              Email    @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  summary             String?
+  sentiment           String? // Positive, Negative, Neutral
+  importance          String? // Critical, High, Medium, Low
+  requiresResponse    Boolean? // Whether the email requires a response
+  responseTimeframe   String? // Suggested timeframe for response
+  keywords            String[] // Key topics or keywords from the email
+  deadlines           Json? // Store structured deadline information (event, date, time)
+  importantDates      String[] // Store array of important dates in string format
+  hasDeadline         Boolean?  @default(false) // Quick flag to identify emails with deadlines
+  nextDeadline        DateTime? // The nearest upcoming deadline if present
+  processingTime      Int? // Time taken to process in milliseconds
+  modelUsed           String? // Store which model was used for analysis
+  tokensUsed          Int? // Store token usage for analytics
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  email               Email     @relation(fields: [emailId], references: [id], onDelete: Cascade)
 
   @@index([emailId])
   @@index([category])
@@ -183,4 +186,14 @@ model EmailAIMetadata {
   @@index([hasDeadline])
   @@index([nextDeadline])
   @@map("email_ai_metadata")
+}
+
+model TwoFactor {
+  id          String @id
+  secret      String
+  backupCodes String
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("twoFactor")
 }

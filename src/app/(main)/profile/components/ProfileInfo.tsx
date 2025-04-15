@@ -10,6 +10,9 @@ import {
   Button,
   Row,
   useToast,
+  Kbd,
+  OTPInput,
+  SmartImage
 } from "@/once-ui/components";
 import { authClient } from "@/libs/auth/client";
 
@@ -62,6 +65,23 @@ export default function ProfileInfo({ user }: ProfileInfoProps) {
       name: user?.name || "",
       bio: user?.bio || "",
     });
+  };
+
+  const handleTwoFactor = async (password: string) => {
+    const { data } = await authClient.twoFactor.enable({ password });
+    if (!data) {
+      return { error: "Failed to enable two-factor authentication" };
+    }
+    const { totpURI, backupCodes } = data;
+    return { totpURI, backupCodes };
+  };
+
+  const handleVerifyTwoFactor = async (code: string) => {
+    const { data } = await authClient.twoFactor.verifyTotp({ code });
+    if (!data) {
+      return { error: "Failed to verify two-factor authentication" };
+    }
+    return data;
   };
 
   return (

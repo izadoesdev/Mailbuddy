@@ -52,10 +52,10 @@ export function useBackgroundSync({ enabled = true } = {}) {
                 return;
             }
 
-            addToast({
-                variant: "success",
-                message: "Sync successful. New messages will appear shortly.",
-            });
+            // addToast({
+            //     variant: "success",
+            //     message: "Sync successful. New messages will appear shortly.",
+            // });
 
             // Invalidate the email queries to refresh data
             setTimeout(() => {

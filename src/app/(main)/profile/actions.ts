@@ -351,8 +351,8 @@ export async function clearAIMetadata(userId: string): Promise<{ success: boolea
  */
 export async function runAIAnalysisOnAllEmails(userId: string): Promise<{ success: boolean; message: string }> {
   try {
-    // In a real implementation, this would add emails to a queue for processing
-    // Here we'll just count how many emails would be processed
+    // TODO: add emails to a queue for processing
+    // -- For now, just count how many emails would be processed for the sake of the demo.. god help us all
     const unprocessedEmails = await prisma.email.count({
       where: {
         userId,
@@ -360,14 +360,15 @@ export async function runAIAnalysisOnAllEmails(userId: string): Promise<{ succes
       }
     });
     
-    // Revalidate the profile page to refresh the data
-    revalidatePath("/profile");
+    // Revalidate the profile page to refresh the data -- disabled for now cause let's be real we ain't revalidating this page anytime soon without that queue justin
+    // revalidatePath("/profile");
     
     return {
       success: true,
       message: `AI analysis has been scheduled for ${unprocessedEmails} emails`
     };
   } catch (error) {
+    // if this errors, the database is fucked and we need to fix it
     console.error("Failed to schedule AI analysis:", error);
     return {
       success: false,

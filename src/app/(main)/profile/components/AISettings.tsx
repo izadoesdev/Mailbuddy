@@ -346,7 +346,7 @@ export default function AISettings({ user }: { user: User }) {
                   <Row horizontal="space-between" vertical="center" fillWidth marginTop="16">
                     <Column gap="8" fillWidth>
                       <Text variant="label-default-s" onBackground="neutral-weak">Top Priorities</Text>
-                      {metadataStats.topPriorities && metadataStats.topPriorities.length > 0 ? (
+                      {metadataStats?.topPriorities?.length > 0 ? (
                         <Row gap="8">
                           {metadataStats.topPriorities.map((priority) => (
                             <Tag 
@@ -372,7 +372,7 @@ export default function AISettings({ user }: { user: User }) {
                         label="Clear all metadata"
                         prefixIcon="trash"
                         loading={isClearing}
-                        disabled={isClearing || isAnalyzing || metadataStats.emailsWithMetadata === 0}
+                        disabled={isClearing || isAnalyzing || (metadataStats?.emailsWithMetadata === 0)}
                         onClick={() => clearMetadata()}
                       />
                       

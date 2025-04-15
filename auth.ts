@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./src/libs/db";
-import { customSession, emailOTP, multiSession, magicLink } from "better-auth/plugins";
+import { customSession, emailOTP, multiSession, magicLink, twoFactor } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 
 import { Resend } from "resend";
@@ -81,6 +81,7 @@ export const auth = betterAuth({
         }),
         multiSession(),
         nextCookies(),
+        twoFactor(),
         emailOTP({
             sendVerificationOTP: async ({ email, otp }) => {
                 await resend.emails.send({
