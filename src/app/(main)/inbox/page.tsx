@@ -1,7 +1,7 @@
 "use client";
 
 import type { Email, Thread } from "./types";
-import { Row, Column, useToast, Text, Spinner } from "@/once-ui/components";
+import { Row, Column, useToast, Text, Spinner, Background } from "@/once-ui/components";
 import { EmailList } from "./components/EmailList";
 import { EmailDetail } from "./components/EmailDetail";
 import { InboxControls } from "./components/InboxControls";
@@ -21,6 +21,7 @@ import { ComposeEmail } from "./components/ComposeEmail";
 import { SyncOverlay } from "./components/SyncOverlay";
 import { EMAIL_CATEGORIES, PRIORITY_LEVELS } from "@/app/(dev)/ai/new/constants";
 import { useInitialSync } from "./hooks/useInitialSync";
+import { effects } from "@/app/resources/config";
 
 type CategoryOption = {
     value: string;
@@ -505,6 +506,55 @@ function InboxPage() {
             /> */}
             
             <Row fill padding="8" gap="8">
+            <Background
+                pointerEvents="none"
+                  position="fixed"
+                  mask={{
+                    cursor: effects.mask.cursor,
+                    x: effects.mask.x,
+                    y: effects.mask.y,
+                    radius: effects.mask.radius,
+                  }}
+                  gradient={{
+                    display: effects.gradient.display,
+                    x: effects.gradient.x,
+                    y: effects.gradient.y,
+                    width: effects.gradient.width,
+                    height: effects.gradient.height,
+                    tilt: effects.gradient.tilt,
+                    colorStart: effects.gradient.colorStart,
+                    colorEnd: effects.gradient.colorEnd,
+                    opacity: effects.gradient.opacity as
+                      | 0
+                      | 10
+                      | 20
+                      | 30
+                      | 40
+                      | 50
+                      | 60
+                      | 70
+                      | 80
+                      | 90
+                      | 100,
+                  }}
+                  dots={{
+                    display: effects.dots.display,
+                    color: effects.dots.color,
+                    size: effects.dots.size as any,
+                    opacity: effects.dots.opacity as any,
+                  }}
+                  grid={{
+                    display: effects.grid.display,
+                    color: effects.grid.color,
+                    width: effects.grid.width as any,
+                    height: effects.grid.height as any,
+                    opacity: effects.grid.opacity as any,
+                  }}
+                  lines={{
+                    display: effects.lines.display,
+                    opacity: effects.lines.opacity as any,
+                  }}
+                />
                 <Column
                     gap="-1"
                     fillWidth

@@ -98,7 +98,7 @@ export function EmailItem({
                     padding="16"
                     gap="16"
                     transition="micro-medium"
-                    background={isSelected ? "neutral-medium" : email.isRead ? "page" : "overlay"}
+                    background={isSelected ? "neutral-alpha-weak" : email.isRead ? "overlay" : "overlay"}
                 >
                     <Column vertical="center" gap="8">
 

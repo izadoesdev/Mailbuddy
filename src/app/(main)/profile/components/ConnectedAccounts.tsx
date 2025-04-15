@@ -300,7 +300,7 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
                   horizontal="space-between" 
                   vertical="center" 
                   padding="24"
-                  background="surface"
+                  background="neutral-alpha-weak"
                   borderBottom={index === 0 ? "neutral-alpha-medium" : undefined}
                 >
                   <Row gap="m" vertical="center">
@@ -367,18 +367,18 @@ export default function ConnectedAccounts({ user }: ConnectedAccountsProps) {
           <Heading variant="heading-strong-s">Mailbuddy Email Provider</Heading>
           <Tag variant="brand" label="Coming Soon" />
         </Row>
-        <Card radius="m" padding="16" background="brand-alpha-weak" borderLeft="brand-medium" borderWidth={2}>
-          <Column gap="8">
-            <Row gap="8" vertical="center">
+        <Row radius="m" padding="24" background="brand-alpha-weak" borderLeft="brand-alpha-strong" borderWidth={2}>
+          <Column gap="16">
+            <Row gap="16" vertical="center">
               <Icon name="mail" size="m" />
               <Text variant="body-strong-m">Use Mailbuddy as your email provider</Text>
             </Row>
-            <Text>
+            <Text variant="body-default-s">
               Soon you'll be able to use Mailbuddy as your primary email provider with your own custom domain. 
               Enjoy seamless integration with all our features while maintaining full control over your email ecosystem.
             </Text>
           </Column>
-        </Card>
+        </Row>
       </Column>
     </>
   );

@@ -447,35 +447,35 @@ export default function SecuritySettings({ user }: SecuritySettingsProps) {
               {/* Adding Data Management Section */}
               <Heading variant="heading-strong-s" paddingTop="16">Data Management</Heading>
               
-              <Card fillWidth radius="l">
-                <Column padding="16" gap="16">
-                  <Column gap="4">
-                    <Text weight="strong">Delete All Emails and Messages</Text>
-                    <Text>This will permanently delete all emails and messages from your account. This action cannot be undone.</Text>
+              <Row fillWidth radius="l" border="neutral-alpha-medium">
+                <Column padding="20" gap="16">
+                  <Column gap="8">
+                    <Text variant="label-strong-l">Delete All Emails and Messages</Text>
+                    <Text variant="body-default-s" onBackground="neutral-weak">This will permanently delete all emails and messages from your account. This action cannot be undone.</Text>
                   </Column>
                   <Button
-                    label="Delete All Emails"
+                    label="Delete all emails"
                     variant="danger"
                     onClick={() => setShowPurgeEmailsDialog(true)}
                     size="s"
                   />
                 </Column>
-              </Card>
+              </Row>
               
-              <Card fillWidth radius="l">
-                <Column padding="16" gap="16">
-                  <Column gap="4">
-                    <Text weight="strong">Delete Account</Text>
-                    <Text>This will permanently delete your account and all associated data. This action cannot be undone.</Text>
+              <Row fillWidth radius="l" border="neutral-alpha-medium">
+                <Column padding="20" gap="16">
+                  <Column gap="8">
+                    <Text variant="label-strong-l">Delete Account</Text>
+                    <Text variant="body-default-s" onBackground="neutral-weak">This will permanently delete your account and all associated data. This action cannot be undone.</Text>
                   </Column>
                   <Button
-                    label="Delete Account"
+                    label="Delete account"
                     variant="danger"
                     onClick={() => setShowDeleteAccountDialog(true)}
                     size="s"
                   />
                 </Column>
-              </Card>
+              </Row>
             </Column>
           </Column>
         </Column>

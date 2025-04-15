@@ -10,6 +10,7 @@ import {
   Column,
   Icon,
   Spinner,
+  Background,
 } from "@/once-ui/components";
 import { useUser } from "@/libs/auth/client";
 import { useQueryState } from "nuqs";
@@ -18,6 +19,7 @@ import EmailSettings from "./components/EmailSettings";
 import SecuritySettings from "./components/SecuritySettings";
 import AISettings from "./components/AISettings";
 import ConnectedAccounts from "./components/ConnectedAccounts";
+import { effects } from "@/app/resources/config";
 
 // Profile category options
 const PROFILE_CATEGORIES = [
@@ -60,13 +62,62 @@ function ProfileContent() {
   
   return (
     <Row fill padding="8">
+      <Background
+                pointerEvents="none"
+                  position="fixed"
+                  mask={{
+                    cursor: effects.mask.cursor,
+                    x: effects.mask.x,
+                    y: effects.mask.y,
+                    radius: effects.mask.radius,
+                  }}
+                  gradient={{
+                    display: effects.gradient.display,
+                    x: effects.gradient.x,
+                    y: effects.gradient.y,
+                    width: effects.gradient.width,
+                    height: effects.gradient.height,
+                    tilt: effects.gradient.tilt,
+                    colorStart: effects.gradient.colorStart,
+                    colorEnd: effects.gradient.colorEnd,
+                    opacity: effects.gradient.opacity as
+                      | 0
+                      | 10
+                      | 20
+                      | 30
+                      | 40
+                      | 50
+                      | 60
+                      | 70
+                      | 80
+                      | 90
+                      | 100,
+                  }}
+                  dots={{
+                    display: effects.dots.display,
+                    color: effects.dots.color,
+                    size: effects.dots.size as any,
+                    opacity: effects.dots.opacity as any,
+                  }}
+                  grid={{
+                    display: effects.grid.display,
+                    color: effects.grid.color,
+                    width: effects.grid.width as any,
+                    height: effects.grid.height as any,
+                    opacity: effects.grid.opacity as any,
+                  }}
+                  lines={{
+                    display: effects.lines.display,
+                    opacity: effects.lines.opacity as any,
+                  }}
+                />
       {/* Left sidebar */}
       <Column 
-        width={16} 
-        minWidth={16} 
+        maxWidth={18} 
         fillHeight
         radius="l"
-        background="neutral-alpha-weak" 
+        background="overlay" 
+        border="neutral-alpha-weak"
         paddingTop="32"
         paddingBottom="16"
         paddingX="16"
@@ -105,7 +156,7 @@ function ProfileContent() {
       
       {/* Main content */}
       <Column fillWidth horizontal="center">
-      <Column fill maxWidth="s" overflowY="auto" radius="xl" border="neutral-alpha-medium">
+      <Column fill maxWidth="s" overflowY="auto" radius="xl" border="neutral-alpha-medium" background="overlay">
         <Row vertical="center" paddingX="20" paddingY="16" horizontal="space-between" fillWidth borderBottom="neutral-alpha-medium">
           <Row vertical="center" gap="12">
             <Icon name={currentCategory?.icon || "person"} size="m" />
