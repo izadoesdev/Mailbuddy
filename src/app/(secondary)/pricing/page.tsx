@@ -479,7 +479,7 @@ export default function Pricing() {
                   label="Get started for free"
                   size="l"
                   variant="primary"
-                  href="/signup"
+                  href="/register"  
                 />
                 <Button
                   label="Contact sales"

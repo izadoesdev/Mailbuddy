@@ -28,15 +28,15 @@ export default function TopNav() {
             variant="tertiary"
           />
           <Button
-            href="/features"
+            href="/security"
             size="s"
-            label="Features"
+            label="Security"
             variant="tertiary"
           />
           <Button
-            href="/about"
+            href="/features"
             size="s"
-            label="About"
+            label="Features"
             variant="tertiary"
           />
           <Button

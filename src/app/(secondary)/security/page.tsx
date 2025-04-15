@@ -317,7 +317,7 @@ export default function Security() {
                 </Column>
                 <Row gap="16" horizontal="center" paddingTop="8">
                   <Button
-                    href="/signup"
+                    href="/register"
                     size="l"
                     variant="primary"
                     prefixIcon="sparkles"

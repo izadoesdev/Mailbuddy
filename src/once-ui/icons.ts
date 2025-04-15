@@ -47,6 +47,9 @@ import {
     HiOutlineUser,
     HiOutlineTrash,
     HiPaintBrush,
+    HiOutlineLightBulb,
+    HiOutlineHome,
+    HiOutlineExclamationTriangle,
 } from "react-icons/hi2";
 
 // Font Awesome 6
@@ -141,6 +144,10 @@ export const iconLibrary: Record<string, IconType> = {
     reply: RiReplyAllFill,
 
     preferences: HiPaintBrush,
+    support: HiOutlineQuestionMarkCircle,
+    lightbulb: HiOutlineLightBulb,
+    home: HiOutlineHome,
+    mailWarning: HiOutlineExclamationTriangle,
 };
 
 export type IconLibrary = typeof iconLibrary;
