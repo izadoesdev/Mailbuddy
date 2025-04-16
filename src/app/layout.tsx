@@ -2,7 +2,6 @@ import "@/once-ui/styles/index.scss";
 import "@/once-ui/tokens/index.scss";
 
 import classNames from "classnames";
-import { headers } from "next/headers";
 
 import { baseURL, effects, meta, og, schema, style } from "@/app/resources/config";
 import { Background, Column, Flex, ThemeProvider, ToastProvider } from "@/once-ui/components";
