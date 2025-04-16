@@ -276,12 +276,12 @@ export function InboxControls({
     );
 
     // Render category group
-    const renderCategoryGroup = (title: string, categories: CategoryOption[]) => {
+    const renderCategoryGroup = (categories: CategoryOption[]) => {
         if (categories.length === 0) return null;
         
         return (
             <Flex direction="column" gap="4" paddingTop="8">
-                <Text variant="body-strong-xs" paddingX="8" paddingBottom="4" onBackground="neutral-weak">{categories[0].label}</Text>
+                {/* <Text variant="body-strong-xs" paddingX="8" paddingBottom="4" onBackground="neutral-weak">{categories[0].label}</Text> */}
                 {categories.map(renderCategoryItem)}
             </Flex>
         );
@@ -304,21 +304,21 @@ export function InboxControls({
     // AI priorities dropdown content
     const prioritiesDropdown = (
         <Flex direction="column" padding="8" gap="4" minWidth={16}>
-            {renderCategoryGroup("Urgent", groupedPriorities.urgent)}
-            {renderCategoryGroup("High", groupedPriorities.high)}
-            {renderCategoryGroup("Medium", groupedPriorities.medium)}
-            {renderCategoryGroup("Low", groupedPriorities.low)}
+            {renderCategoryGroup(groupedPriorities.urgent)}
+            {renderCategoryGroup(groupedPriorities.high)}
+            {renderCategoryGroup(groupedPriorities.medium)}
+            {renderCategoryGroup(groupedPriorities.low)}
         </Flex>
     );
 
     // AI topics dropdown content
     const topicsDropdown = (
         <Flex direction="column" padding="8" gap="4" minWidth={16}>
-            {renderCategoryGroup("Work & Business", groupedTopics.workBusiness)}
-            {renderCategoryGroup("Personal & Social", groupedTopics.personalSocial)}
-            {renderCategoryGroup("Updates & Marketing", groupedTopics.updatesMarketing)}
-            {renderCategoryGroup("Events & Travel", groupedTopics.eventsTravel)}
-            {renderCategoryGroup("Other", groupedTopics.other)}
+            {renderCategoryGroup(groupedTopics.workBusiness)}
+            {renderCategoryGroup(groupedTopics.personalSocial)}
+            {renderCategoryGroup(groupedTopics.updatesMarketing)}
+            {renderCategoryGroup(groupedTopics.eventsTravel)}
+            {renderCategoryGroup(groupedTopics.other)}
         </Flex>
     );
 

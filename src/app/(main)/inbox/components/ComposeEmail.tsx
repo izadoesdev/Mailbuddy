@@ -242,7 +242,7 @@ export function ComposeEmail({
       maxWidth={40}
       maxHeight={48}
       overflow="hidden"
-      background="neutral-weak"
+      background="overlay"
       border="neutral-alpha-medium"
       radius="m"
       position="fixed"
@@ -478,46 +478,12 @@ export function ComposeEmail({
                 onMouseUp={handleTextSelection}
                 className="compose-editor"
               />
-
-              {/* Display Enhanced Content */}
-              {enhancedContent && (
-                <Column gap="8" paddingX="12" paddingY="8" borderTop="neutral-alpha-medium">
-                  <Row horizontal="space-between" vertical="center">
-                    <Text variant="body-strong-s">Enhanced version {selectedText ? "(selected text)" : ""}</Text>
-                    <Row gap="8">
-                      <Button 
-                        variant="primary" 
-                        size="s" 
-                        label="Apply" 
-                        onClick={applyEnhancement} 
-                      />
-                      <Button 
-                        variant="secondary" 
-                        size="s" 
-                        label="Dismiss" 
-                        onClick={dismissEnhancement} 
-                      />
-                    </Row>
-                  </Row>
-                  <Column 
-                    padding="12" 
-                    radius="m" 
-                    background="neutral-strong"
-                    border="neutral-alpha-medium"
-                  >
-                    <div 
-                      dangerouslySetInnerHTML={{ __html: enhancedContent }} 
-                      className="enhanced-content"
-                    />
-                  </Column>
-                </Column>
-              )}
             </Column>
           </Column>
 
           <Row
             gap="8"
-            horizontal="space-between"
+            horizontal="end"
             vertical="center"
             borderTop="neutral-alpha-medium"
             paddingY="12"
@@ -525,82 +491,6 @@ export function ComposeEmail({
             data-border="rounded"
             background="neutral-alpha-weak"
           >
-            {/* Enhancement Options */}
-            {!enhancedContent && (
-              <Row gap="4" wrap>
-                {showEnhancementOptions ? (
-                  <>
-                    <Button 
-                      variant="secondary" 
-                      weight="default"
-                      size="s" 
-                      label="Improve" 
-                      type="button"
-                      onClick={() => {
-                        setEnhancementType("improve");
-                      }}
-                    />
-                    <Button 
-                      variant="secondary" 
-                      weight="default"
-                      size="s" 
-                      label="Shorten" 
-                      type="button"
-                      onClick={() => {
-                        setEnhancementType("shorten");
-                      }}
-                    />
-                    <Button 
-                      variant="secondary" 
-                      weight="default"
-                      size="s" 
-                      label="Formal" 
-                      type="button"
-                      onClick={() => {
-                        setEnhancementType("formal");
-                      }}
-                    />
-                    <Button 
-                      variant="secondary" 
-                      weight="default"
-                      size="s" 
-                      label="Friendly" 
-                      type="button"
-                      onClick={() => {
-                        setEnhancementType("friendly");
-                      }}
-                    />
-                    <Button 
-                      variant="secondary" 
-                      weight="default"
-                      size="s" 
-                      label="Enhance" 
-                      type="button"
-                      onClick={handleEnhance}
-                      loading={isEnhancing}
-                    />
-                    <Button 
-                      variant="tertiary" 
-                      weight="default"
-                      size="s" 
-                      prefixIcon="close" 
-                      type="button"
-                      onClick={() => setShowEnhancementOptions(false)}
-                    />
-                  </>
-                ) : (
-                  <Button 
-                    variant="secondary" 
-                    size="s" 
-                    prefixIcon="sparkles" 
-                    weight="default"
-                    label="Enhance with AI"
-                    type="button"
-                    onClick={() => setShowEnhancementOptions(true)} 
-                  />
-                )}
-              </Row>
-            )}
             <Row maxWidth={6}>
               <Button
                 fillWidth
