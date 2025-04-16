@@ -31,25 +31,25 @@ export default function Home() {
     const features = [
         {
           title: "Smart Email Categorization",
-          img: "/images/landing/product-1.jpg",
+          img: "/images/landing/prod-1.png",
           description: "AI automatically organizes your emails into intuitive categories like Work, Personal, Finance, and more, helping you focus on what matters.",
           icon: "folder",
         },
         {
           title: "Priority Inbox",
-          img: "/images/landing/product-2.jpg",
+          img: "/images/landing/prod-2.png",
           description: "Never miss important emails again. Our AI analyzes content and automatically flags urgent messages that need your immediate attention.",
           icon: "flag",
         },
         {
           title: "Secure & Private",
-          img: "/images/landing/product-3.jpg",
+          img: "/images/landing/prod-3.png",
           description: "End-to-end encryption keeps your emails safe. We never scan your content for advertising - your data remains private and protected.",
           icon: "shield",
         },
         {
           title: "Seamless Gmail Integration",
-          img: "/images/landing/product-4.jpg",
+          img: "/images/landing/prod-4.png",
           description: "Works with your existing Gmail account. No need to change email addresses or migrate data - just connect and start experiencing smarter email.",
           icon: "mail",
         },
