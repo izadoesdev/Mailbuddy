@@ -63,23 +63,23 @@ const meta = {
 const og = {
     title: meta.title,
     description: meta.description,
-    image: "/images/mailbuddy-cover.jpg",
+    image: "/og-image.png",
 };
 
 // default schema data
 const schema = {
-    logo: "/images/mailbuddy-logo.png",
+    logo: "/og-image.png",
     type: "Organization",
     name: "Mailbuddy",
     description: meta.description,
-    email: "hello@mailbuddy.app",
+    email: "hello@mailbuddy.dev",
 };
 
 // social links
 const social = {
     twitter: "https://www.twitter.com/mailbuddy",
     linkedin: "https://www.linkedin.com/company/mailbuddy/",
-    github: "https://github.com/mailbuddy",
+    github: "https://github.com/izadoesdev/mailer",
 };
 
 export { baseURL, style, meta, og, schema, social, effects };
