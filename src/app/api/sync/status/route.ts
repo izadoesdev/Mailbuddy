@@ -47,18 +47,18 @@ export async function GET() {
     }
 
     // Check if the Google account has valid credentials
-    if (!googleAccount.accessToken) {
-      return NextResponse.json({
-        needsInitialSync: false,
-        error: "Gmail account missing valid credentials",
-        errorType: "invalid_credentials",
-        syncState: null,
-      }, {
-        headers: {
-          'Cache-Control': `public, max-age=${CACHE_MAX_AGE}`
-        }
-      });
-    }
+    // if (!googleAccount.accessToken) {
+    //   return NextResponse.json({
+    //     needsInitialSync: false,
+    //     error: "Gmail account missing valid credentials",
+    //     errorType: "invalid_credentials",
+    //     syncState: null,
+    //   }, {
+    //     headers: {
+    //       'Cache-Control': `public, max-age=${CACHE_MAX_AGE}`
+    //     }
+    //   });
+    // }
 
     // Check if user has sync state with historyId
     const syncState = await prisma.syncState.findUnique({

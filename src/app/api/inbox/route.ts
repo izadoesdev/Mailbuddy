@@ -412,18 +412,18 @@ export async function GET(request: NextRequest) {
         });
     }
 
-    // Check if the Google account has valid credentials
-    if (!googleAccount.accessToken) {
-        return NextResponse.json({
-            threads: [],
-            totalCount: 0,
-            page,
-            pageSize,
-            hasMore: false,
-            error: "Gmail account needs to be reconnected",
-            errorType: "invalid_credentials"
-        });
-    }
+    // Check if the Google account has valid credentials -- Disabled for now for demo
+    // if (!googleAccount.accessToken) {
+    //     return NextResponse.json({
+    //         threads: [],
+    //         totalCount: 0,
+    //         page,
+    //         pageSize,
+    //         hasMore: false,
+    //         error: "Gmail account needs to be reconnected",
+    //         errorType: "invalid_credentials"
+    //     });
+    // }
 
     // Check if user has any messages synced
     const messageCount = await prisma.message.count({

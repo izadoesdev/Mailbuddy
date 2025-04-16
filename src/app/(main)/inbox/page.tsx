@@ -529,10 +529,10 @@ function InboxPage() {
     const handleErrorAction = useCallback(() => {
         if (errorType === "no_gmail_account") {
             // Redirect to settings page to connect Gmail account
-            router.push("/settings/accounts");
+            router.push("/settings?tab=accounts");
         } else if (errorType === "invalid_credentials") {
             // Redirect to settings page to reconnect Gmail account
-            router.push("/settings/accounts");
+            router.push("/settings?tab=accounts");
         } else if (errorType === "no_emails_synced") {
             // Trigger initial sync
             performInitialSync();
@@ -544,7 +544,7 @@ function InboxPage() {
 
     return (
         <>
-            <SyncOverlay 
+            {/* <SyncOverlay 
                 isVisible={isInitialSyncInProgress || syncStatus === "error"}
                 progress={progress}
                 message={syncStatus === "error" ? syncError || "Error occurred during sync" : message}
@@ -553,7 +553,7 @@ function InboxPage() {
                 error={syncStatus === "error"}
                 errorType={errorType}
             />
-            
+             */}
             <Row fill padding="8" gap="8">
                 <Column
                     gap="-1"
