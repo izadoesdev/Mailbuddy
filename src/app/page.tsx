@@ -307,6 +307,9 @@ export default function Home() {
                     </Text>
                   </Column>
                 </Column>
+                <Background position="absolute" top="0" mask={{x: 25, y: 0, radius: 100}}>
+                    <SmartImage opacity={30} alt="Email app background" sizes="(max-width: 1024px) 100vw, 90vw" aspectRatio="16/9" radius="xl" src="/images/landing/fantasy-background-1.jpg" />
+                </Background>
                 <SmartImage
                   flex={4}
                   border="neutral-alpha-medium"
@@ -332,11 +335,14 @@ export default function Home() {
           </Row>
           <Row gap="24" maxWidth="l" mobileDirection="column">
             <Column fillWidth gap="8">
+            <Background position="absolute" top="0" mask={{x: 25, y: 0, radius: 100}}>
+                    <SmartImage opacity={30} alt="Email app background" sizes="(max-width: 1024px) 100vw, 90vw" aspectRatio="16/9" radius="xl" src="/images/landing/fantasy-background-1.jpg" />
+                </Background>
               <SmartImage
                 radius="xl"
                 fillWidth
                 sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 720px"
-                aspectRatio="1/1"
+                aspectRatio="1.2/1"
                 alt="AI categorization"
                 src="/images/landing/prod-1.png"
                 border="neutral-alpha-medium"/>
