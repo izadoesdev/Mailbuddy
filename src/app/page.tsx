@@ -31,13 +31,13 @@ export default function Home() {
     const features = [
         {
           title: "Smart Email Categorization",
-          img: "/images/landing/prod-1.png",
+          img: "/images/landing/prod-5.png",
           description: "AI automatically organizes your emails into intuitive categories like Work, Personal, Finance, and more, helping you focus on what matters.",
           icon: "folder",
         },
         {
           title: "Priority Inbox",
-          img: "/images/landing/prod-2.png",
+          img: "/images/landing/prod-4.png",
           description: "Never miss important emails again. Our AI analyzes content and automatically flags urgent messages that need your immediate attention.",
           icon: "flag",
         },
@@ -49,7 +49,7 @@ export default function Home() {
         },
         {
           title: "Seamless Gmail Integration",
-          img: "/images/landing/prod-4.png",
+          img: "/images/landing/prod-2.png",
           description: "Works with your existing Gmail account. No need to change email addresses or migrate data - just connect and start experiencing smarter email.",
           icon: "mail",
         },
@@ -314,7 +314,7 @@ export default function Home() {
                   alt={`Image for ${feature.title}`}
                   sizes={"(max-width: 1024px) 90vw, 640px"}
                   radius="l"
-                  aspectRatio="4 / 3"
+                  aspectRatio=""
                 />
               </Row>
             ))}
