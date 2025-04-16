@@ -544,15 +544,15 @@ function InboxPage() {
 
     return (
         <>
-            {/* <SyncOverlay 
-                isVisible={isSyncing || isInitialSyncInProgress || syncStatus === "error"}
+            <SyncOverlay 
+                isVisible={isInitialSyncInProgress || syncStatus === "error"}
                 progress={progress}
                 message={syncStatus === "error" ? syncError || "Error occurred during sync" : message}
                 onCancel={handleCancelSync}
                 onReset={resetSyncError}
                 error={syncStatus === "error"}
                 errorType={errorType}
-            /> */}
+            />
             
             <Row fill padding="8" gap="8">
                 <Column
