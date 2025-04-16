@@ -12,10 +12,10 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import { useUser } from "@/libs/auth/client";
 import { EmailDetail } from "../../components/EmailDetail";
+import { ComposeEmail } from "../../components/ComposeEmail";
 import { extractName } from "../../utils";
 import type { Email, Thread } from "../../types";
 import { useEmail } from "../../hooks/useEmail";
-import { useThreadEmails } from "../../hooks/useThreadEmails";
 import { useEmailMutations } from "../../hooks/useEmailMutations";
 
 export default function EmailDetailPage() {
@@ -26,34 +26,36 @@ export default function EmailDetailPage() {
   
   const [thread, setThread] = useState<Thread | null>(null);
   const [error, setError] = useState("");
+  
+  // Compose email states
+  const [isReplying, setIsReplying] = useState(false);
+  const [isForwarding, setIsForwarding] = useState(false);
+  const [composeData, setComposeData] = useState({
+    to: "",
+    subject: "",
+    body: "",
+    threadId: ""
+  });
 
   // Use TanStack Query to fetch the email
   const { 
     data: email, 
     isLoading, 
     isError, 
-    error: emailError 
+    error: emailError,
+    refetch: refetchEmail
   } = useEmail(emailId, { enabled: !!emailId && !!user });
 
   // Use email mutations
   const { toggleStar, trashEmail } = useEmailMutations();
 
-  // Fetch thread data when email is loaded and has a threadId
-  const {
-    emails: threadEmails,
-    threadMessageCount,
-    isLoading: isThreadLoading
-  } = useThreadEmails({
-    threadId: email?.threadId || null,
-    enabled: !!email?.threadId
-  });
 
   // Construct thread object from email and threadEmails
   useEffect(() => {
-    if (email?.threadId && threadEmails.length > 0) {
+    if (email?.threadId && email) {
       setThread({
         threadId: email.threadId,
-        emails: threadEmails,
+        emails: [email],
         subject: email.subject || "",
         from: email.from || "",
         to: email.to || "",
@@ -63,10 +65,10 @@ export default function EmailDetailPage() {
         labels: email.labels || [],
         internalDate: email.internalDate || "",
         aiMetadata: email.aiMetadata,
-        emailCount: threadEmails.length
+        emailCount: 1
       });
     }
-  }, [email, threadEmails]);
+  }, [email]);
 
   // Set error from email query if it fails
   useEffect(() => {
@@ -98,12 +100,52 @@ export default function EmailDetailPage() {
     }
   };
 
-  const handleReply = (email: Email) => {
-    router.push(`/compose?reply=${email.id}`);
+  const handleReply = (emailToReply: Email) => {
+    // Create a reply template
+    const senderName = emailToReply.fromName || extractName(emailToReply.from || "");
+    const subject = emailToReply.subject?.startsWith("Re:") 
+      ? emailToReply.subject 
+      : `Re: ${emailToReply.subject || ""}`;
+    
+    // Create the reply body with quoted original content
+    const date = emailToReply.createdAt ? new Date(emailToReply.createdAt).toLocaleString() : "";
+    const replyBody = `<br/><br/>On ${date}, ${senderName} &lt;${emailToReply.from}&gt; wrote:<br/><blockquote style="border-left: 2px solid #ccc; padding-left: 10px; color: #777;">${emailToReply.body || ""}</blockquote>`;
+    
+    setComposeData({
+      to: emailToReply.from || "",
+      subject: subject,
+      body: replyBody,
+      threadId: emailToReply.threadId || ""
+    });
+    
+    setIsReplying(true);
+    setIsForwarding(false);
   };
 
-  const handleForward = (email: Email) => {
-    router.push(`/compose?forward=${email.id}`);
+  const handleForward = (emailToForward: Email) => {
+    // Create a forward template
+    const subject = emailToForward.subject?.startsWith("Fwd:") 
+      ? emailToForward.subject 
+      : `Fwd: ${emailToForward.subject || ""}`;
+    
+    // Create the forward body with the original content
+    const date = emailToForward.createdAt ? new Date(emailToForward.createdAt).toLocaleString() : "";
+    const forwardBody = `<br/><br/>---------- Forwarded message ----------<br/>
+From: ${emailToForward.from}<br/>
+Date: ${date}<br/>
+Subject: ${emailToForward.subject}<br/>
+To: ${emailToForward.to}<br/><br/>
+${emailToForward.body || ""}`;
+    
+    setComposeData({
+      to: "",
+      subject: subject,
+      body: forwardBody,
+      threadId: ""  // Don't attach to thread when forwarding
+    });
+    
+    setIsForwarding(true);
+    setIsReplying(false);
   };
 
   const handleTrash = async (email: Email) => {
@@ -121,6 +163,11 @@ export default function EmailDetailPage() {
     
     // Navigate to the selected email
     router.push(`/inbox/email/${selectedEmail.id}`);
+  };
+  
+  const handleComposeSuccess = () => {
+    // Refetch email and thread data after sending
+    refetchEmail();
   };
 
   if (isLoading) {
@@ -175,6 +222,21 @@ export default function EmailDetailPage() {
         onTrash={handleTrash}
         onSelectEmail={handleSelectEmail}
       />
+      
+      {/* Compose Email for Reply/Forward */}
+      {(isReplying || isForwarding) && (
+        <ComposeEmail
+          threadId={composeData.threadId}
+          initialTo={composeData.to}
+          initialSubject={composeData.subject}
+          initialBody={composeData.body}
+          onClose={() => {
+            setIsReplying(false);
+            setIsForwarding(false);
+          }}
+          onSuccess={handleComposeSuccess}
+        />
+      )}
     </Column>
   );
 } 
