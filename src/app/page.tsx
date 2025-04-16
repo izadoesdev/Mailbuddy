@@ -338,9 +338,9 @@ export default function Home() {
                 sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 720px"
                 aspectRatio="1/1"
                 alt="AI categorization"
-                src="/images/landing/changelog.jpg"
+                src="/images/landing/prod-1.png"
                 border="neutral-alpha-medium"/>
-              <Column gap="8" padding="24">
+              <Column gap="8" padding="24"> 
                 <Heading as="h3" variant="heading-strong-xl" marginBottom="8">
                   Business & Work
                 </Heading>
