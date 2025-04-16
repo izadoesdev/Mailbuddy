@@ -189,7 +189,7 @@ export default function Home() {
                     Your AI-Powered Email Companion
                 </Heading>
                 <Text align="center" onBackground="neutral-medium" variant="heading-default-xl" wrap="balance">
-                    MailBuddy organizes your Gmail with smart AI categories and priority management, making email simple and efficient
+                    Mailbuddy organizes your Gmail with smart AI categories and priority management, making email simple and efficient
                 </Text>
                 
                 <Row gap="16" horizontal="center" data-border="rounded">
