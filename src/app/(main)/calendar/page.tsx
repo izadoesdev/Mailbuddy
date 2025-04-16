@@ -428,14 +428,17 @@ export default function CalendarPage() {
   return (
     <Column fillWidth>
       {/* Header with month and controls */}
-      <Row 
+      <Flex 
         horizontal="space-between" 
         vertical="center" 
         padding="24" 
         gap="16"
         fillWidth
+        border="neutral-alpha-weak"
+        borderWidth={1}
+        style={{ position: "sticky", top: 0, zIndex: 10 }}
       >
-        <Row vertical="center" gap="16">
+        <Flex gap="24" vertical="center">
           <Heading variant="display-strong-l">
             {viewMode === 'calendar' 
               ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
@@ -443,7 +446,7 @@ export default function CalendarPage() {
             }
           </Heading>
           
-          <Row gap="8" vertical="center">
+          <Flex gap="8" vertical="center">
             <Button 
               variant={viewMode === 'calendar' ? 'primary' : 'secondary'} 
               size="s" 
@@ -458,31 +461,44 @@ export default function CalendarPage() {
               onClick={() => setViewMode('list')}
               prefixIcon="list"
             />
-          </Row>
-        </Row>
+          </Flex>
+        </Flex>
         
-        <Row gap="8">
-          {viewMode === 'calendar' && (
-            <>
-              <Button variant="secondary" size="s" label="Today" onClick={handleToday} />
-              <Button variant="tertiary" size="s" onClick={handlePrevMonth} aria-label="Previous">
-                <Icon name="chevronLeft" size="s" />
-              </Button>
-              <Button variant="tertiary" size="s" onClick={handleNextMonth} aria-label="Next">
-                <Icon name="chevronRight" size="s" />
-              </Button>
-            </>
-          )}
-          <Button 
-            variant="tertiary" 
-            size="s" 
-            onClick={() => refetchEvents()} 
-            prefixIcon={isLoadingEvents ? "spinner" : "refresh"}
-            disabled={isLoadingEvents}
-            aria-label="Refresh" 
-          />
-        </Row>
-      </Row>
+        <Flex gap="16" vertical="center">
+          <Flex gap="8" vertical="center">
+            {viewMode === 'calendar' && (
+              <>
+                <Button variant="tertiary" size="s" onClick={handlePrevMonth} aria-label="Previous month">
+                  <Icon name="chevronLeft" size="s" />
+                </Button>
+                <Button variant="secondary" size="s" label="Today" onClick={handleToday} />
+                <Button variant="tertiary" size="s" onClick={handleNextMonth} aria-label="Next month">
+                  <Icon name="chevronRight" size="s" />
+                </Button>
+              </>
+            )}
+          </Flex>
+          
+          <Flex gap="8">
+            <Button 
+              variant="tertiary" 
+              size="s" 
+              onClick={() => refetchEvents()} 
+              loading={isLoadingEvents}
+              prefixIcon={isLoadingEvents ? "spinner" : "refresh"}
+              disabled={isLoadingEvents}
+              aria-label="Refresh events" 
+            />
+            {/* <Button
+              variant="primary"
+              size="s"
+              label="New Event"
+              onClick={() => setIsCreateOpen(true)}
+              prefixIcon="plus"
+            /> */}
+          </Flex>
+        </Flex>
+      </Flex>
       
       {/* Main Content Area */}
       {isLoadingEvents && !events.length ? (
@@ -704,7 +720,7 @@ export default function CalendarPage() {
       )}
       
       {/* Create Event Dialog */}
-      {/* <Dialog
+      <Dialog
         isOpen={isCreateOpen}
         onClose={() => {
           setIsCreateOpen(false);
@@ -735,7 +751,7 @@ export default function CalendarPage() {
                 label="Category"
                 options={EVENT_OPTIONS.categories}
                 value={eventCategory}
-                onChange={(value: any) => {
+                onChange={(value) => {
                   if (typeof value === 'string') setEventCategory(value);
                 }}
               />
@@ -747,7 +763,7 @@ export default function CalendarPage() {
                 label="Color"
                 options={EVENT_OPTIONS.colors}
                 value={eventColor}
-                onChange={(value: any) => {
+                onChange={(value) => {
                   if (typeof value === 'string') setEventColor(value);
                 }}
               />
@@ -759,7 +775,7 @@ export default function CalendarPage() {
             label="Priority"
             options={EVENT_OPTIONS.priorities}
             value={eventPriority}
-            onChange={(value: any) => {
+            onChange={(value) => {
               if (typeof value === 'string') setEventPriority(value);
             }}
           />
@@ -796,7 +812,7 @@ export default function CalendarPage() {
           />
           <Button variant="primary" label="Create" onClick={handleCreateEvent} />
         </Row>
-      </Dialog> */}
+      </Dialog>
       
       {/* Event Details Dialog */}
       {selectedEvent && (
