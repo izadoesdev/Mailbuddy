@@ -10,7 +10,6 @@ import {
   Button,
   Icon,
   IconButton,
-  Card,
   Line,
   Switch,
   Grid,
@@ -18,7 +17,6 @@ import {
   Badge,
 } from "@/once-ui/components";
 import { ScrollToTop } from "@/once-ui/components/ScrollToTop";
-import { effects } from "@/app/resources/config";
 
 export default function Pricing() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
@@ -194,45 +192,6 @@ export default function Pricing() {
 
   return (
     <Column fillWidth horizontal="center">
-      <Background
-        pointerEvents="none"
-        position="fixed"
-        mask={{
-          cursor: effects.mask.cursor,
-          x: effects.mask.x,
-          y: effects.mask.y,
-          radius: effects.mask.radius,
-        }}
-        gradient={{
-          display: effects.gradient.display,
-          x: effects.gradient.x,
-          y: effects.gradient.y,
-          width: effects.gradient.width,
-          height: effects.gradient.height,
-          tilt: effects.gradient.tilt,
-          colorStart: effects.gradient.colorStart,
-          colorEnd: effects.gradient.colorEnd,
-          opacity: effects.gradient.opacity as
-            | 0
-            | 10
-            | 20
-            | 30
-            | 40
-            | 50
-            | 60
-            | 70
-            | 80
-            | 90
-            | 100,
-        }}
-        dots={{
-          display: effects.dots.display,
-          color: effects.dots.color,
-          size: effects.dots.size as any,
-          opacity: effects.dots.opacity as any,
-        }}
-      />
-      
       <Column
         fillWidth
         horizontal="center"
