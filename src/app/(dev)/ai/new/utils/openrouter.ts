@@ -322,7 +322,7 @@ THE ABOVE INSTRUCTIONS FROM THE USER TAKE PRECEDENCE OVER ANY CONFLICTING STANDA
     
 ${customPromptSection}Your output must follow this JSON format with all fields properly quoted:
 {
-  "category": "Choose from this list: ${AI_PROMPTS.CATEGORIZE}",
+  "category": "Choose ONLY the ones that apply from this list if you're confident: ${AI_PROMPTS.CATEGORIZE}",
   "priority": "Choose one from this list: ${Object.values(PRIORITY_LEVELS).join(", ")}",
   "priorityExplanation": "Briefly explain why this matters to the user, addressing them directly with 'you' and 'your'",
   "summary": "Write a personalized 2-3 sentence summary in the format 'You have...' or 'You need to...' - always use second-person perspective. Make it feel like it's written directly to the user.",

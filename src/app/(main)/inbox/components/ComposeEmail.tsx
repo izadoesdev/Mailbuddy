@@ -334,24 +334,149 @@ export function ComposeEmail({
 
           <Column fill overflow="auto">
             <Column fillWidth fitHeight>
+              <style>{`
+                .compose-editor {
+                  font-family: var(--font-sans);
+                  font-size: var(--font-size-body-m);
+                  line-height: 1.6;
+                  min-height: 200px;
+                  width: 100%;
+                  height: 100%;
+                  border-radius: var(--radius-m);
+                  padding: var(--static-space-20);
+                  background: var(--static-color-neutral-800);
+                  color: var(--static-white);
+                  outline: none;
+                  overflow-y: auto;
+                }
+                
+                .compose-editor:focus {
+                  outline: 1px solid var(--static-color-brand-500);
+                }
+                
+                .compose-editor p {
+                  margin-top: 0;
+                  margin-bottom: 1em;
+                }
+                
+                .compose-editor a {
+                  color: var(--static-color-brand-300);
+                  text-decoration: underline;
+                }
+                
+                .compose-editor a:hover {
+                  color: var(--static-color-brand-200);
+                }
+                
+                .compose-editor h1, 
+                .compose-editor h2, 
+                .compose-editor h3, 
+                .compose-editor h4, 
+                .compose-editor h5, 
+                .compose-editor h6 {
+                  margin-top: 1.5em;
+                  margin-bottom: 0.5em;
+                  font-weight: 600;
+                  line-height: 1.25;
+                  color: var(--static-white);
+                }
+                
+                .compose-editor h1 { font-size: 1.5rem; }
+                .compose-editor h2 { font-size: 1.3rem; }
+                .compose-editor h3 { font-size: 1.2rem; }
+                .compose-editor h4 { font-size: 1.1rem; }
+                .compose-editor h5, 
+                .compose-editor h6 { font-size: 1rem; }
+                
+                .compose-editor ul, 
+                .compose-editor ol {
+                  margin-top: 0;
+                  margin-bottom: 1em;
+                  padding-left: 2em;
+                }
+                
+                .compose-editor li {
+                  margin-bottom: 0.5em;
+                }
+                
+                .compose-editor li::marker {
+                  color: var(--static-white);
+                }
+                
+                .compose-editor blockquote {
+                  margin: 1em 0;
+                  padding-left: 1em;
+                  border-left: 3px solid var(--static-color-neutral-600);
+                  color: var(--static-color-neutral-300);
+                }
+                
+                .compose-editor code {
+                  font-family: var(--static-font-family-mono);
+                  font-size: 0.9em;
+                  background: var(--static-color-neutral-900);
+                  color: var(--static-color-neutral-200);
+                  padding: 0.2em 0.4em;
+                  border-radius: 3px;
+                }
+                
+                .compose-editor pre {
+                  font-family: var(--static-font-family-mono);
+                  font-size: 0.9em;
+                  line-height: 1.4;
+                  background: var(--static-color-neutral-900);
+                  color: var(--static-color-neutral-200);
+                  padding: 1em;
+                  border-radius: 6px;
+                  overflow-x: auto;
+                  margin: 1em 0;
+                }
+                
+                .compose-editor img {
+                  max-width: 100%;
+                  height: auto;
+                  border-radius: 6px;
+                }
+                
+                .compose-editor hr {
+                  margin: 2em 0;
+                  border: 0;
+                  border-top: 1px solid var(--static-color-neutral-600);
+                }
+                
+                .compose-editor table {
+                  border-collapse: collapse;
+                  width: 100%;
+                  margin: 1em 0;
+                }
+                
+                .compose-editor th, 
+                .compose-editor td {
+                  border: 1px solid var(--static-color-neutral-600);
+                  padding: 0.5em;
+                  text-align: left;
+                }
+                
+                .compose-editor th {
+                  background: var(--static-color-neutral-700);
+                  font-weight: 600;
+                }
+
+                /* Enhanced content styles in dark mode */
+                .enhanced-content {
+                  color: var(--static-white) !important;
+                  background: var(--static-color-neutral-800) !important;
+                  font-family: var(--font-sans);
+                  font-size: var(--font-size-body-m);
+                  line-height: 1.6;
+                  border-radius: var(--radius-m);
+                  padding: var(--static-space-12);
+                }
+              `}</style>
               <div
                 ref={bodyRef}
                 onInput={handleBodyChange}
                 onMouseUp={handleTextSelection}
-                style={{
-                  minHeight: "200px",
-                  width: "100%", 
-                  height: "100%",
-                  borderRadius: "var(--radius-m)",
-                  padding: "var(--static-space-20)",
-                  background: "var(--static-white)",
-                  color: "var(--static-black)",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "var(--font-size-body-m)",
-                  lineHeight: "1.6",
-                  outline: "none",
-                  overflowY: "auto",
-                }}
+                className="compose-editor"
               />
 
               {/* Display Enhanced Content */}
@@ -377,20 +502,12 @@ export function ComposeEmail({
                   <Column 
                     padding="12" 
                     radius="m" 
-                    background="neutral-weak"
+                    background="neutral-strong"
                     border="neutral-alpha-medium"
-                    style={{
-                      background: "var(--static-white)"
-                    }}
                   >
                     <div 
                       dangerouslySetInnerHTML={{ __html: enhancedContent }} 
-                      style={{
-                        color: "var(--static-black)",
-                        fontFamily: "var(--font-sans)",
-                        fontSize: "var(--font-size-body-m)",
-                        lineHeight: "1.6"
-                      }}
+                      className="enhanced-content"
                     />
                   </Column>
                 </Column>

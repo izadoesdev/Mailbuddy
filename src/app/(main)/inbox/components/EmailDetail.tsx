@@ -66,6 +66,52 @@ function hasEmailStyling(html: string): boolean {
     return stylePatterns.some(pattern => pattern.test(html));
 }
 
+/**
+ * Formats plain text email content for better display
+ * @param content Plain text email content
+ * @returns Formatted HTML content
+ */
+function formatPlainTextEmail(content: string): string {
+    if (!content) return "";
+    
+    // Check if content is already HTML
+    if (content.includes('<') && content.includes('>')) {
+        return content;
+    }
+    
+    // Format plain text by:
+    // 1. Replace multiple consecutive line breaks with paragraph breaks
+    // 2. Replace single line breaks with <br>
+    // 3. Convert URLs to actual links
+    // 4. Preserve indentation and spacing
+    
+    // Replace URLs with actual links
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    let formattedContent = content.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+    
+    // Detect and format email addresses
+    const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+    formattedContent = formattedContent.replace(emailRegex, '<a href="mailto:$1">$1</a>');
+    
+    // Format paragraphs (multiple line breaks)
+    formattedContent = formattedContent.replace(/\n{2,}/g, '</p><p>');
+    
+    // Format single line breaks
+    formattedContent = formattedContent.replace(/\n/g, '<br />');
+    
+    // Wrap the whole content in paragraphs
+    formattedContent = `<p>${formattedContent}</p>`;
+    
+    // Format potential lists (lines starting with - or * or numbers)
+    const listItemRegex = /<p>(\s*)[-*•]\s+(.+?)<\/p>/g;
+    formattedContent = formattedContent.replace(listItemRegex, '<ul><li>$2</li></ul>');
+    
+    // Clean up multiple adjacent list tags
+    formattedContent = formattedContent.replace(/<\/ul>\s*<ul>/g, '');
+    
+    return formattedContent;
+}
+
 export function EmailDetail({ 
     email, 
     thread,
@@ -85,6 +131,14 @@ export function EmailDetail({
     const emailHasStyling = useMemo(() => {
         return hasEmailStyling(email.body || "");
     }, [email.body]);
+    
+    // Format the email content if it's plain text
+    const formattedEmailContent = useMemo(() => {
+        if (emailHasStyling) {
+            return email.body || decodeHtmlEntities(email.snippet || "");
+        }
+        return formatPlainTextEmail(email.body || decodeHtmlEntities(email.snippet || ""));
+    }, [email.body, email.snippet, emailHasStyling]);
     
     const handleStarClick = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
@@ -423,148 +477,62 @@ export function EmailDetail({
 
                 <Row fillWidth fitHeight paddingX="8">
                     <style>{`
-                        /* Only apply these styles to emails without styling */
-                        .email-body.no-styling {
+                        /* Base styles for all emails */
+                        .email-body {
+                            width: 100%;
+                            height: 100%;
+                            border-radius: 12px;
+                            padding: var(--static-space-20);
+                            position: relative;
                             font-family: var(--static-font-family-sans);
                             font-size: 14px;
                             line-height: 1.5;
-                            color: var(--static-black);
                         }
-                        .email-body.dark-mode.no-styling {
+                        
+                        /* Default styling for emails without their own styling */
+                        .email-body.no-styling {
                             color: var(--static-white);
                             background-color: var(--static-color-neutral-800);
                         }
+                        
+                        /* Styling for formatted plain text */
+                        .email-body.no-styling p {
+                            margin-top: 0;
+                            margin-bottom: 1.2em;
+                        }
+                        
                         .email-body.no-styling a {
-                            color: var(--static-color-brand);
+                            color: var(--static-color-brand-300);
                             text-decoration: underline;
                             font-weight: 500;
                         }
+                        
                         .email-body.no-styling a:hover {
-                            color: var(--static-color-brand-dark);
+                            color: var(--static-color-brand-200);
+                            text-decoration: none;
                         }
-                        .email-body.dark-mode.no-styling a {
-                            color: var(--static-color-brand-light);
-                        }
-                        .email-body.dark-mode.no-styling a:hover {
-                            color: var(--static-color-brand);
-                        }
-                        .email-body.no-styling p {
-                            margin-top: 0;
-                            margin-bottom: 1em;
-                        }
-                        .email-body.no-styling h1, 
-                        .email-body.no-styling h2, 
-                        .email-body.no-styling h3, 
-                        .email-body.no-styling h4, 
-                        .email-body.no-styling h5, 
-                        .email-body.no-styling h6 {
-                            margin-top: 1.5em;
-                            margin-bottom: 0.5em;
-                            font-weight: 600;
-                            line-height: 1.25;
-                        }
-                        .email-body.no-styling h1 { font-size: 1.5rem; }
-                        .email-body.no-styling h2 { font-size: 1.3rem; }
-                        .email-body.no-styling h3 { font-size: 1.2rem; }
-                        .email-body.no-styling h4 { font-size: 1.1rem; }
-                        .email-body.no-styling h5, 
-                        .email-body.no-styling h6 { font-size: 1rem; }
+                        
                         .email-body.no-styling ul, 
                         .email-body.no-styling ol {
-                            margin-top: 0;
-                            margin-bottom: 1em;
+                            margin: 0.5em 0 1em 0;
                             padding-left: 2em;
                         }
+                        
                         .email-body.no-styling li {
                             margin-bottom: 0.5em;
+                            padding-left: 0.5em;
                         }
-                        .email-body.no-styling li::marker {
-                            color: inherit;
-                        }
-                        .email-body.no-styling blockquote {
-                            margin: 1em 0;
-                            padding-left: 1em;
-                            border-left: 3px solid var(--static-color-neutral-200);
-                            color: var(--static-color-neutral-700);
-                        }
-                        .email-body.dark-mode.no-styling blockquote {
-                            border-left-color: var(--static-color-neutral-600);
-                            color: var(--static-color-neutral-300);
-                        }
-                        .email-body.no-styling code {
-                            font-family: var(--static-font-family-mono);
-                            font-size: 0.9em;
-                            background: var(--static-color-neutral-100);
-                            padding: 0.2em 0.4em;
-                            border-radius: 3px;
-                        }
-                        .email-body.dark-mode.no-styling code {
-                            background: var(--static-color-neutral-900);
-                            color: var(--static-color-neutral-200);
-                        }
-                        .email-body.no-styling pre {
-                            font-family: var(--static-font-family-mono);
-                            font-size: 0.9em;
-                            line-height: 1.4;
-                            background: var(--static-color-neutral-100);
-                            padding: 1em;
-                            border-radius: 6px;
-                            overflow-x: auto;
-                            margin: 1em 0;
-                        }
-                        .email-body.dark-mode.no-styling pre {
-                            background: var(--static-color-neutral-900);
-                            color: var(--static-color-neutral-200);
-                        }
-                        .email-body.no-styling img {
-                            max-width: 100%;
-                            height: auto;
-                            border-radius: 6px;
-                        }
-                        .email-body.no-styling hr {
-                            margin: 2em 0;
-                            border: 0;
-                            border-top: 1px solid var(--static-color-neutral-200);
-                        }
-                        .email-body.dark-mode.no-styling hr {
-                            border-top-color: var(--static-color-neutral-600);
-                        }
-                        .email-body.no-styling table {
-                            border-collapse: collapse;
-                            width: 100%;
-                            margin: 1em 0;
-                        }
-                        .email-body.no-styling th, 
-                        .email-body.no-styling td {
-                            border: 1px solid var(--static-color-neutral-200);
-                            padding: 0.5em;
-                            text-align: left;
-                        }
-                        .email-body.dark-mode.no-styling th, 
-                        .email-body.dark-mode.no-styling td {
-                            border-color: var(--static-color-neutral-600);
-                        }
-                        .email-body.no-styling th {
-                            background: var(--static-color-neutral-100);
-                            font-weight: 600;
-                        }
-                        .email-body.dark-mode.no-styling th {
-                            background: var(--static-color-neutral-700);
+                        
+                        /* Styles for emails with their own styling */
+                        .email-body.has-styling {
+                            background: var(--static-white);
+                            color: var(--static-black);
                         }
                     `}</style>
                     <div
-                        className={`email-body ${!emailHasStyling ? 'no-styling' : ''}`}
+                        className={`email-body ${!emailHasStyling ? 'no-styling' : 'has-styling'}`}
                         dangerouslySetInnerHTML={{
-                            __html: DOMPurify.sanitize(email.body || decodeHtmlEntities(email.snippet || "")),
-                        }}
-                        style={{ 
-                            width: "100%", 
-                            height: "100%", 
-                            borderRadius: "12px", 
-                            background: "var(--static-white)", 
-                            padding: "var(--static-space-20)", 
-                            color: "var(--static-black)",
-                            position: "relative" 
+                            __html: DOMPurify.sanitize(formattedEmailContent),
                         }}
                     />
                 </Row>
