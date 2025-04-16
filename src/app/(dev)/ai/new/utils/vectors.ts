@@ -28,7 +28,14 @@ export async function storeEmail(email: Email) {
         const namespace = getUserNamespace(email.userId);
 
         // Clean and prepare the email content
-        const content = cleanEmail(email);
+        const body = cleanEmail(email);
+
+        const content = `
+        Subject: ${email.subject}
+        Body: ${body}
+        From: ${email.from}
+        Date: ${email.internalDate ? new Date(email.internalDate).toLocaleString() : "N/A"}
+        `
 
         // Skip if content is too short to be meaningful
         if (!content || content.length < EMAIL_CLEANING.MIN_CONTENT_LENGTH) {
