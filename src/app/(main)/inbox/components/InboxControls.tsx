@@ -221,6 +221,16 @@ export function InboxControls({
                     weight="default"
                     variant="tertiary"
                     size="s"
+                    label="Calendar"
+                    prefixIcon="calendar"
+                    href="/calendar"
+                />
+                <Button 
+                    fillWidth
+                    justifyContent="start"
+                    weight="default"
+                    variant="tertiary"
+                    size="s"
                     label="Sign Out" 
                     prefixIcon="logout"
                     onClick={handleSignOut}
