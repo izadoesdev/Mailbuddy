@@ -73,15 +73,14 @@ export default function PrivacyPolicy() {
         {/* Main content */}
         <Column
           as="main"
-          maxWidth="l"
+          maxWidth="m"
           position="relative"
           radius="xl"
           horizontal="center"
           border="neutral-alpha-weak"
-          fillWidth
           background="overlay"
         >
-          <Column paddingX="32" gap="24" paddingY="64">
+          <Column paddingX="xl" gap="24" paddingY="64">
             <Heading variant="display-strong-xl" align="center">Privacy Policy</Heading>
             <Text variant="body-default-m" align="center" onBackground="neutral-medium" marginBottom="40">
               Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}

@@ -9,8 +9,7 @@ import {
   Background,
   Button,
   Icon,
-  IconButton,
-  Card,
+  IconButton
 } from "@/once-ui/components";
 import { ScrollToTop } from "@/once-ui/components/ScrollToTop";
 import { effects } from "@/app/resources/config";
@@ -71,24 +70,22 @@ export default function Security() {
         gap="-1"
         fillWidth
         horizontal="center"
-        maxWidth="l"
+        maxWidth="m"
       >
         <ScrollToTop><IconButton variant="secondary" icon="chevronUp"/></ScrollToTop>
 
         {/* Main content */}
         <Column
           as="main"
-          maxWidth="l"
-          position="relative"
           radius="xl"
           horizontal="center"
           border="neutral-alpha-weak"
           fillWidth
           background="overlay"
         >
-          <Column paddingX="32" gap="24" paddingY="64">
+          <Column padding="xl" gap="24">
             <Heading variant="display-strong-xl" align="center">Security & Privacy</Heading>
-            <Text variant="body-default-m" align="center" onBackground="neutral-medium" marginBottom="40">
+            <Text variant="heading-default-xl" align="center" onBackground="neutral-medium" marginBottom="40">
               Your data's security is our top priority
             </Text>
 
@@ -105,39 +102,37 @@ export default function Security() {
               <Column gap="24" position="relative">
                 <Heading as="h2" variant="heading-strong-l">Key Security Features</Heading>
                 
-                <Card padding="24" border="neutral-alpha-medium" radius="l" background="neutral-alpha-weak">
-                  <Column gap="24">
-                    <Row gap="16" vertical="center">
-                      <Icon name="shield" size="l" onBackground="brand-strong" />
-                      <Column gap="8">
+                  <Row gap="8" mobileDirection="column">
+                    <Column fillWidth gap="16" vertical="center" padding="l" border="neutral-alpha-medium" radius="l" background="neutral-alpha-weak">
+                      <Icon name="shield" onBackground="brand-strong" />
+                      <Column gap="12">
                         <Heading as="h3" variant="heading-strong-m">End-to-End Encryption</Heading>
-                        <Text variant="body-default-m">
+                        <Text variant="body-default-s" onBackground="neutral-medium">
                           Your email content is encrypted at rest and only decrypted on demand when you need to access it. This ensures that even in the unlikely event of a breach, your data remains unreadable.
                         </Text>
                       </Column>
-                    </Row>
+                    </Column>
                     
-                    <Row gap="16" vertical="center">
-                      <Icon name="sparkles" size="l" onBackground="brand-strong" />
-                      <Column gap="8">
+                    <Column fillWidth gap="16" vertical="center" padding="l" border="neutral-alpha-medium" radius="l" background="neutral-alpha-weak">
+                      <Icon name="sparkles" onBackground="brand-strong" />
+                      <Column gap="12">
                         <Heading as="h3" variant="heading-strong-m">AI-Powered with Privacy Focus</Heading>
-                        <Text variant="body-default-m">
+                        <Text variant="body-default-s" onBackground="neutral-medium">
                           Emails are stored as vectors for AI search capabilities, making them more efficient while maintaining privacy. Our AI processing follows strict no-retention policies—your data is never stored for training purposes.
                         </Text>
                       </Column>
-                    </Row>
+                    </Column>
                     
-                    <Row gap="16" vertical="center">
-                      <Icon name="checkCircle" size="l" onBackground="brand-strong" />
-                      <Column gap="8">
+                    <Column fillWidth gap="16" vertical="center" padding="l" border="neutral-alpha-medium" radius="l" background="neutral-alpha-weak">
+                      <Icon name="checkCircle" onBackground="brand-strong" />
+                      <Column gap="12">
                         <Heading as="h3" variant="heading-strong-m">Complete Data Anonymization</Heading>
-                        <Text variant="body-default-m">
+                        <Text variant="body-default-s" onBackground="neutral-medium">
                           All data processed by our AI systems is completely anonymized. We strip identifying information before any analysis, ensuring your personal information is never exposed.
                         </Text>
                       </Column>
-                    </Row>
-                  </Column>
-                </Card>
+                    </Column>
+                  </Row>
               </Column>
 
               {/* Authentication & Access */}
@@ -171,43 +166,37 @@ export default function Security() {
                 <Text variant="body-default-m">
                   Our platform adheres to the highest industry standards for data protection and compliance, including:
                 </Text>
-                <Column gap="24" paddingY="16">
-                  <Card padding="20" border="neutral-alpha-medium" radius="l" background="neutral-alpha-weak">
-                    <Row gap="16" vertical="center">
-                      <Icon name="infoCircle" size="l" onBackground="brand-strong" />
+                <Row gap="8" paddingY="16" mobileDirection="column">
+                  <Column fillWidth gap="16" padding="l" border="neutral-alpha-medium" radius="l" background="neutral-alpha-weak">
+                      <Icon name="infoCircle" onBackground="brand-strong" />
                       <Column gap="8">
                         <Heading as="h3" variant="heading-strong-m">GDPR Compliance</Heading>
-                        <Text variant="body-default-m">
+                        <Text variant="body-default-s" onBackground="neutral-medium">
                           We're fully compliant with the General Data Protection Regulation, ensuring European users' data rights are respected. This includes the right to access, correct, delete, and export your data.
                         </Text>
                       </Column>
-                    </Row>
-                  </Card>
+                  </Column>
                   
-                  <Card padding="20" border="neutral-alpha-medium" radius="l" background="neutral-alpha-weak">
-                    <Row gap="16" vertical="center">
-                      <Icon name="shield" size="l" onBackground="brand-strong" />
+                  <Column fillWidth gap="16" padding="l" border="neutral-alpha-medium" radius="l" background="neutral-alpha-weak">
+                      <Icon name="shield" onBackground="brand-strong" />
                       <Column gap="8">
                         <Heading as="h3" variant="heading-strong-m">Zero-Knowledge Architecture</Heading>
-                        <Text variant="body-default-m">
+                        <Text variant="body-default-s" onBackground="neutral-medium">
                           Our system is designed so that even we cannot access your unencrypted data. Your encryption keys are generated and stored locally on your device, giving you complete control.
                         </Text>
                       </Column>
-                    </Row>
-                  </Card>
+                    </Column>
                   
-                  <Card padding="20" border="neutral-alpha-medium" radius="l" background="neutral-alpha-weak">
-                    <Row gap="16" vertical="center">
-                      <Icon name="trash" size="l" onBackground="brand-strong" />
+                  <Column fillWidth gap="16" padding="l" border="neutral-alpha-medium" radius="l" background="neutral-alpha-weak">
+                      <Icon name="trash" onBackground="brand-strong" />
                       <Column gap="8">
                         <Heading as="h3" variant="heading-strong-m">Data Deletion & Retention</Heading>
-                        <Text variant="body-default-m">
+                        <Text variant="body-default-s" onBackground="neutral-medium">
                           You control how long your data is stored. Deleted emails are completely purged from our systems, with no backups retained. You can also schedule automatic data deletion after a period you specify.
                         </Text>
                       </Column>
-                    </Row>
-                  </Card>
-                </Column>
+                    </Column>
+                </Row>
               </Column>
 
               {/* Technical Security */}
@@ -216,7 +205,7 @@ export default function Security() {
                 <Text variant="body-default-m">
                   Our infrastructure is designed with multiple layers of security to protect against both external and internal threats:
                 </Text>
-                <Column gap="8" paddingLeft="24">
+                <Column gap="8">
                   <Row gap="12" vertical="start">
                     <Icon name="checkCircle" size="s" />
                     <Text variant="body-default-m">
@@ -264,25 +253,25 @@ export default function Security() {
                 </Text>
                 <Column gap="12" paddingY="16">
                   <Row gap="16" vertical="center">
-                    <Icon name="eye" size="m" onBackground="brand-strong" />
+                    <Icon name="eye" size="s" onBackground="brand-strong" />
                     <Text variant="body-default-m">
                       Regular updates on our security practices and improvements
                     </Text>
                   </Row>
                   <Row gap="16" vertical="center">
-                    <Icon name="eye" size="m" onBackground="brand-strong" />
+                    <Icon name="eye" size="s" onBackground="brand-strong" />
                     <Text variant="body-default-m">
                       Clear documentation of how your data is processed and stored
                     </Text>
                   </Row>
                   <Row gap="16" vertical="center">
-                    <Icon name="eye" size="m" onBackground="brand-strong" />
+                    <Icon name="eye" size="s" onBackground="brand-strong" />
                     <Text variant="body-default-m">
                       Prompt notification in the unlikely event of a security incident
                     </Text>
                   </Row>
                   <Row gap="16" vertical="center">
-                    <Icon name="eye" size="m" onBackground="brand-strong" />
+                    <Icon name="eye" size="s" onBackground="brand-strong" />
                     <Text variant="body-default-m">
                       Open source components where possible for community review
                     </Text>
@@ -307,7 +296,7 @@ export default function Security() {
                     opacity: 30,
                   }}
                 />
-                <Heading as="h2" variant="heading-strong-xl" align="center">
+                <Heading as="h2" variant="display-strong-m" align="center">
                   Ready to secure your emails?
                 </Heading>
                 <Column maxWidth={48} horizontal="center">

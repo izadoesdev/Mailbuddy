@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from "react";
-import { Row, Logo, Button, IconButton, Column, Flex, Background, Text } from "@/once-ui/components";
+import { Row, Logo, Button, IconButton, Column, Flex, Background, ToggleButton } from "@/once-ui/components";
+import { usePathname } from "next/navigation";
 
 export default function TopNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -14,8 +15,11 @@ export default function TopNav() {
     setMobileMenuOpen(false);
   };
 
+  const pathname = usePathname();
+
   return (
-    <Row position="fixed" top="0" fillWidth horizontal="center" zIndex={10} paddingY="16">
+    <Row fillWidth horizontal="center">
+    <Row position="fixed" top="0" maxWidth="l" horizontal="center" zIndex={10} paddingY="16" paddingX="8">
       <Row
         horizontal="space-between"
         maxWidth="xl"
@@ -30,28 +34,27 @@ export default function TopNav() {
       >
         <Row vertical="center" gap="12">
           <Logo size="s" href="/" />
+          <Row paddingLeft="16" gap="4">
+            <ToggleButton
+              selected={pathname === "/pricing"}
+              href="/pricing"
+              label="Pricing"
+            />
+            <ToggleButton
+              selected={pathname === "/security"}
+              href="/security"
+              label="Security"
+            />
+            <ToggleButton
+              selected={pathname === "/features"}
+              href="/features"
+              label="Features"
+            />
+          </Row>
         </Row>
         
         {/* Desktop Navigation */}
         <Row gap="8" hide="s" vertical="center">
-          <Button
-            href="/pricing"
-            size="s"
-            label="Pricing"
-            variant="tertiary"
-          />
-          <Button
-            href="/security"
-            size="s"
-            label="Security"
-            variant="tertiary"
-          />
-          <Button
-            href="/features"
-            size="s"
-            label="Features"
-            variant="tertiary"
-          />
           <Button
             href="/login"
             size="s"
@@ -77,6 +80,7 @@ export default function TopNav() {
           />
         </Row>
       </Row>
+    </Row>
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (

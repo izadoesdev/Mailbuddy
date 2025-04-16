@@ -134,7 +134,7 @@ export default function Pricing() {
       ],
       cta: "Get Started",
       popular: false,
-      variant: "tertiary" as const,
+      variant: "secondary" as const,
     },
     {
       id: "essential-plan",
@@ -244,17 +244,14 @@ export default function Pricing() {
         {/* Main content wrapper */}
         <Column
           as="main"
-          radius="xl"
           horizontal="center"
-          border="neutral-alpha-weak"
           fillWidth
-          background="overlay"
           overflow="hidden"
         >
           {/* Hero section */}
-          <RevealFx speed="medium" translateY={12}>
-            <Column paddingX="32" paddingTop="64" paddingBottom="32" horizontal="center" position="relative">
-              <Badge icon="sparkles" marginBottom="16">Pricing</Badge>
+          <RevealFx speed="medium" translateY={1}>
+            <Column paddingX="32" paddingTop="32" paddingBottom="32" horizontal="center" position="relative">
+              <Badge icon="sparkles" marginBottom="16" arrow={false}>Pricing</Badge>
               <Heading variant="display-strong-xl" align="center" marginBottom="16">Choose your perfect plan</Heading>
               <Column maxWidth={40} horizontal="center">
                 <Text 
@@ -269,6 +266,7 @@ export default function Pricing() {
           </RevealFx>
 
           {/* Billing Toggle */}
+          <RevealFx speed="medium" translateY={1}>
           <Column horizontal="center" paddingTop="16" paddingBottom="40">
             <Row 
               background="neutral-alpha-weak" 
@@ -295,22 +293,23 @@ export default function Pricing() {
               </Row>
             </Row>
           </Column>
+          </RevealFx>
 
           {/* Pricing cards grid */}
-          <RevealFx speed="medium" translateY={12} delay={0}>
+          <RevealFx speed="medium" translateY={1.25} delay={0}>
             <Grid 
               columns={3}
-              gap="24" 
+              gap="16"
+              mobileColumns={1}
               padding="32"
               position="relative"
             >
               {displayPlans.map((plan, index) => (
-                <Card
+                <Column
                   key={plan.id}
                   fillWidth
                   padding="32"
                   gap="24"
-                  direction="column"
                   radius="xl"
                   shadow={plan.popular ? "l" : "s"}
                   border={plan.popular ? "brand-medium" : "neutral-alpha-weak"}
@@ -320,12 +319,16 @@ export default function Pricing() {
                   {plan.popular && (
                     <Row
                       position="absolute"
-                      style={{ top: "-12px" }}
+                      style={{ transform: "translateY(-50%)", top: "0" }}
+                      right="24"
                       horizontal="center"
-                      fillWidth
                     >
                       <Badge 
+                        paddingY="8"
+                        paddingX="12"
+                        textVariant="label-default-s"
                         icon="sparkles"
+                        arrow={false}
                       >
                         Most Popular
                       </Badge>
@@ -376,13 +379,13 @@ export default function Pricing() {
                       ))}
                     </Column>
                   </Column>
-                </Card>
+                </Column>
               ))}
             </Grid>
           </RevealFx>
 
           {/* FAQ Section */}
-          <RevealFx speed="medium" translateY={12} delay={0.1}>
+          <RevealFx speed="medium" translateY={1.5} delay={0.1}>
             <Column paddingX="32" paddingTop="32" paddingBottom="64" position="relative">
               <Background
                 position="absolute"
@@ -398,12 +401,12 @@ export default function Pricing() {
                   opacity: 20,
                 }}
               />
-              <Heading variant="heading-strong-l" align="center" marginBottom="32">
-                Questions? We have answers
+              <Heading variant="display-strong-m" align="center" marginBottom="40" marginTop="xl">
+                Got questions?<br/> We have answers.
               </Heading>
               
-              <Grid columns={2} gap="24" maxWidth="l">
-                <Card padding="24" radius="l" border="neutral-alpha-weak" background="overlay">
+              <Grid columns={2} gap="8" maxWidth="l">
+                <Row padding="24" radius="l" border="neutral-alpha-weak" background="overlay">
                   <Column gap="8">
                     <Heading as="h3" variant="heading-strong-s">
                       How does billing work?
@@ -412,9 +415,9 @@ export default function Pricing() {
                       Plans are billed either monthly or yearly, with a 20% discount for yearly subscriptions. You can change your billing cycle at any time.
                     </Text>
                   </Column>
-                </Card>
+                </Row>
                 
-                <Card padding="24" radius="l" border="neutral-alpha-weak" background="overlay">
+                <Row padding="24" radius="l" border="neutral-alpha-weak" background="overlay">
                   <Column gap="8">
                     <Heading as="h3" variant="heading-strong-s">
                       Can I change my plan later?
@@ -423,9 +426,9 @@ export default function Pricing() {
                       Yes! You can upgrade or downgrade your plan at any time. If you upgrade, the change will take effect immediately. If you downgrade, the change will take effect at the end of your current billing cycle.
                     </Text>
                   </Column>
-                </Card>
+                </Row>
                 
-                <Card padding="24" radius="l" border="neutral-alpha-weak" background="overlay">
+                <Row padding="24" radius="l" border="neutral-alpha-weak" background="overlay">
                   <Column gap="8">
                     <Heading as="h3" variant="heading-strong-s">
                       Do you offer a free trial?
@@ -434,9 +437,9 @@ export default function Pricing() {
                       Yes, all paid plans come with a 14-day free trial. No credit card is required to start your trial.
                     </Text>
                   </Column>
-                </Card>
+                </Row>
                 
-                <Card padding="24" radius="l" border="neutral-alpha-weak" background="overlay">
+                <Row padding="24" radius="l" border="neutral-alpha-weak" background="overlay">
                   <Column gap="8">
                     <Heading as="h3" variant="heading-strong-s">
                       What payment methods do you accept?
@@ -445,24 +448,22 @@ export default function Pricing() {
                       We accept all major credit cards, PayPal, and bank transfers for yearly plans.
                     </Text>
                   </Column>
-                </Card>
+                </Row>
               </Grid>
             </Column>
           </RevealFx>
 
           {/* CTA Section */}
-          <RevealFx speed="medium" translateY={12} delay={0.1}>
+          <RevealFx speed="medium" translateY={1.75} delay={0.2}>
             <Column
-              background="overlay"
               paddingX="40"
-              paddingY="64"
+              paddingY="104"
               horizontal="center"
               gap="32"
-              position="relative"
-              topRadius="xl"
+              maxWidth="s"
             >
 
-              <Heading variant="heading-strong-xl" align="center">
+              <Heading variant="display-strong-m" align="center">
                 Ready to transform your email experience?
               </Heading>
               <Column horizontal="center" maxWidth={40}>
