@@ -30,51 +30,51 @@ export default function Home() {
 
     const features = [
         {
-          title: "Automatic sidebar",
+          title: "Smart Email Categorization",
           img: "/images/landing/product-1.jpg",
-          description: "The navigation is generated from your folder structure. Your pages are automatically turned into a hierarchical sidebar.",
+          description: "AI automatically organizes your emails into intuitive categories like Work, Personal, Finance, and more, helping you focus on what matters.",
           icon: "folder",
         },
         {
-          title: "Smart search",
+          title: "Priority Inbox",
           img: "/images/landing/product-2.jpg",
-          description: "Integrated Kbar search. Fast, intuitive, and keyboard-first—exactly what modern users expect.",
-          icon: "search",
+          description: "Never miss important emails again. Our AI analyzes content and automatically flags urgent messages that need your immediate attention.",
+          icon: "flag",
         },
         {
-          title: "MDX + Components",
+          title: "Secure & Private",
           img: "/images/landing/product-3.jpg",
-          description: "Write docs in MDX and drop in Once UI components with clean, minimal syntax. Build rich, interactive docs without custom code.",
-          icon: "code",
+          description: "End-to-end encryption keeps your emails safe. We never scan your content for advertising - your data remains private and protected.",
+          icon: "shield",
         },
         {
-          title: "Single-file customization",
+          title: "Seamless Gmail Integration",
           img: "/images/landing/product-4.jpg",
-          description: "Adjust fonts, colors, spacing, and more from a single config file. Your docs will match your brand—without hacking CSS.",
-          icon: "swatch",
+          description: "Works with your existing Gmail account. No need to change email addresses or migrate data - just connect and start experiencing smarter email.",
+          icon: "mail",
         },
       ];
 
       const targetAudience = [
         {
-          title: "Solo SaaS founders",
-          description: "Monetize sooner, document later.",
-          icon: "person",
+          title: "Busy professionals",
+          description: "Focus on high-priority communications without drowning in your inbox.",
+          icon: "briefcase",
         },
         {
-          title: "Startups",
-          description: "Compete with clarity through sleek docs and trust signals.",
-          icon: "rocket",
+          title: "Team leaders",
+          description: "Efficiently manage work communications with smart filters and categorization.",
+          icon: "group",
         },
         {
-          title: "Communities",
-          description: "Structure your knowledge base without clunky CMS.",
-          icon: "people",
+          title: "Privacy-conscious users",
+          description: "Keep your email data secure with our privacy-first approach.",
+          icon: "shield",
         },
         {
-          title: "Indie devs",
-          description: "Finally, beautiful docs that reflect your product's quality.",
-          icon: "code",
+          title: "Gmail power users",
+          description: "Take your Gmail experience to the next level with AI-powered organization.",
+          icon: "sparkles",
         },
       ];    
     
@@ -189,7 +189,7 @@ export default function Home() {
                     Your AI-Powered Email Companion
                 </Heading>
                 <Text align="center" onBackground="neutral-medium" variant="heading-default-xl" wrap="balance">
-                    Mailbuddy is your secure, privacy-focused email companion that makes managing Gmail simple and efficient
+                    MailBuddy organizes your Gmail with smart AI categories and priority management, making email simple and efficient
                 </Text>
                 
                 <Row gap="16" horizontal="center" data-border="rounded">
@@ -208,12 +208,12 @@ export default function Home() {
         <Row fillWidth horizontal="center" paddingTop="l" paddingLeft="l">
         
         <Background position="absolute" top="0" mask={{x: 25, y: 0, radius: 100}}>
-          <SmartImage alt="Documentation background image" sizes="(max-width: 1024px) 100vw, 90vw" aspectRatio="16/9" radius="xl" src="/images/landing/fantasy-background-1.jpg" />
+          <SmartImage alt="Email app background" sizes="(max-width: 1024px) 100vw, 90vw" aspectRatio="16/9" radius="xl" src="/images/landing/fantasy-background-1.jpg" />
         </Background>
         <Column maxWidth="l">
           <Column height={4} hide="m"/>
           <Background mask={{x: 50, y: 25, radius: 250}} style={{transform: "skewX(24deg) skewY(-7deg) scaleY(0.85) translateX(0)"}} minWidth={56}>
-            <SmartImage alt="Documentation demo image" sizes="(max-width: 1024px) 100vw, 1200px" aspectRatio="1920/1200" src="/images/landing/docs-1.jpg" radius="l" border="neutral-alpha-medium" />
+            <SmartImage alt="Email organization demo" sizes="(max-width: 1024px) 100vw, 1200px" aspectRatio="1920/1200" src="/images/landing/docs-1.jpg" radius="l" border="neutral-alpha-medium" />
           </Background>
           <Grid
             style={{
@@ -259,11 +259,11 @@ export default function Home() {
         <Column fillWidth horizontal="center" gap="40">
           <Column maxWidth={32} gap="20">
             <Heading as="h2" variant="display-strong-s" align="center">
-              Simple setup.<br/>
-              Advanced features.
+              Smart organization.<br/>
+              Peace of mind.
             </Heading>
             <Text wrap="balance" onBackground="neutral-medium" align="center" variant="body-default-xl" marginBottom="l">
-              Spend your time writing documentation content instead of hacking CSS properties.
+              Stop drowning in your inbox. Let AI help you focus on what truly matters.
             </Text>
           </Column>
           <Column gap="104" maxWidth="l">
@@ -323,11 +323,11 @@ export default function Home() {
         
         <Background height="1" marginTop="l" marginBottom="l" borderBottom="neutral-alpha-medium" mask={{x: 50, y: 0, radius: 50}}/>
 
-        {/* Roadmap + Changelog */}
+        {/* Categories Section */}
         <Column fillWidth horizontal="center" gap="40">
           <Row maxWidth="l" paddingX="24">
             <Heading as="h2" variant="display-strong-m">
-              It's not about building a product.<br/> It's about building a presence.
+              Smart categories for<br/>a smarter inbox.
             </Heading>
           </Row>
           <Row gap="24" maxWidth="l" mobileDirection="column">
@@ -337,15 +337,15 @@ export default function Home() {
                 fillWidth
                 sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 720px"
                 aspectRatio="1/1"
-                alt="Magic Docs changelog"
+                alt="AI categorization"
                 src="/images/landing/changelog.jpg"
                 border="neutral-alpha-medium"/>
               <Column gap="8" padding="24">
                 <Heading as="h3" variant="heading-strong-xl" marginBottom="8">
-                  Changelog
+                  Business & Work
                 </Heading>
                 <Text onBackground="neutral-weak" wrap="balance">
-                  Maintain a changelog without hassle. Celebrate your launches: be proud of what you've shipped.
+                  Separate work emails from personal ones. Keep track of invoices, receipts, and financial communications automatically.
                 </Text>
               </Column>
             </Column>
@@ -355,15 +355,15 @@ export default function Home() {
                 fillWidth
                 sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 720px"
                 aspectRatio="1/1"
-                alt="Magic Docs changelog"
+                alt="Priority inbox"
                 src="/images/landing/roadmap.jpg"
                 border="neutral-alpha-medium"/>
               <Column gap="8" padding="24">
                 <Heading as="h3" variant="heading-strong-xl" marginBottom="8">
-                  Roadmap
+                  Priority Management
                 </Heading>
                 <Text onBackground="neutral-weak" wrap="balance">
-                  Generate a roadmap with contextual data. Show your customers that you're open to ideas.
+                  Our AI identifies urgent emails that need immediate attention, letting you focus on what matters most right now.
                 </Text>
               </Column>
             </Column>
@@ -458,7 +458,7 @@ export default function Home() {
                                             <Button
                                                 type="submit"
                                                 variant="primary"
-                                                label={isSubmitting ? "Adding you..." : "Join Wishlist"}
+                                                label={isSubmitting ? "Adding you..." : "Join Waitlist"}
                                                 loading={isSubmitting}
                                                 fillWidth
                                             />
@@ -489,7 +489,7 @@ export default function Home() {
                             onBackground="neutral-weak"
                             wrap="balance"
                         >
-                            Join thousands of users who have made email secure and simple again.
+                            Join thousands of users who have made email secure and simple again with AI-powered organization.
                         </Text>
                         <Button
                             data-border="rounded"
