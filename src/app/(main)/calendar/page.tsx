@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { 
   Row, 
   Column, 
@@ -22,7 +22,7 @@ import {
   Spinner
 } from "@/once-ui/components";
 import { useUser } from "@/libs/auth/client";
-import { redirect } from "next/navigation";
+import { redirect, useRouter, usePathname } from "next/navigation";
 import { useUpcomingEvents } from "./queries";
 import type { CalendarEvent } from "./types";
 
@@ -64,6 +64,9 @@ export default function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   
+  // Add error handling for events data
+  const [loadError, setLoadError] = useState<string | null>(null);
+  
   // Form state
   const [eventTitle, setEventTitle] = useState("");
   const [eventDescription, setEventDescription] = useState("");
@@ -78,8 +81,54 @@ export default function CalendarPage() {
   const { 
     data: aiEvents = [], 
     isLoading: isLoadingEvents,
-    refetch: refetchEvents
+    refetch: refetchEvents,
+    error: eventsError,
   } = useUpcomingEvents();
+
+  // Set load error from API error
+  useEffect(() => {
+    if (eventsError) {
+      setLoadError(
+        eventsError instanceof Error 
+          ? eventsError.message 
+          : "Failed to load calendar events"
+      );
+    } else {
+      setLoadError(null);
+    }
+  }, [eventsError]);
+
+  // Navigation tracking effect
+  useEffect(() => {
+    // Set navigation source for inbox page tracking  
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('navigationSource', 'calendar');
+      
+      // Clean up any stale dialog state that might have been left open
+      document.body.style.overflow = 'auto';
+      const elements = document.querySelectorAll('[inert]');
+      for (const el of elements) {
+        el.removeAttribute('inert');
+      }
+    }
+    
+    return () => {
+      // No cleanup needed
+    };
+  }, []);
+
+  // Fix dialog closing behavior with for...of loops
+  const handleCloseDetails = () => {
+    setIsDetailsOpen(false);
+    // Reset dialog state to ensure proper cleanup
+    setTimeout(() => {
+      document.body.style.overflow = 'auto';
+      const elements = document.querySelectorAll('[inert]');
+      for (const el of elements) {
+        el.removeAttribute('inert');
+      }
+    }, 100);
+  };
 
   // Combine AI events with manually created events
   useEffect(() => {
@@ -351,6 +400,31 @@ export default function CalendarPage() {
     return groups;
   }, [chronologicalEvents]);
 
+  // Loading state component
+  const LoadingState = () => (
+    <Column fillWidth horizontal="center" padding="64" gap="24">
+      <Spinner size="l" />
+      <Text variant="body-default-m" onBackground="neutral-weak">Loading calendar events...</Text>
+    </Column>
+  );
+
+  // Error state component
+  const ErrorState = () => (
+    <Column fillWidth horizontal="center" vertical="center" padding="64" gap="16">
+      <Icon name="errorCircle" size="xl" color="danger" />
+      <Text variant="heading-strong-m">Unable to load events</Text>
+      <Text variant="body-default-m" onBackground="neutral-weak">
+        {loadError || "An error occurred while fetching your calendar data."}
+      </Text>
+      <Button 
+        variant="primary" 
+        label="Retry" 
+        onClick={() => refetchEvents()} 
+        prefixIcon="refresh"
+      />
+    </Column>
+  );
+
   return (
     <Column fillWidth>
       {/* Header with month and controls */}
@@ -399,7 +473,6 @@ export default function CalendarPage() {
               </Button>
             </>
           )}
-          <Button variant="secondary" size="s" label="Demo Data" onClick={loadDemoEvents} />
           <Button 
             variant="tertiary" 
             size="s" 
@@ -408,227 +481,230 @@ export default function CalendarPage() {
             disabled={isLoadingEvents}
             aria-label="Refresh" 
           />
-          {/* <Button variant="primary" label="Add Event" onClick={() => setIsCreateOpen(true)}>
-            <Icon name="plus" size="s" />
-          </Button> */}
         </Row>
       </Row>
       
-      {/* Loading state */}
-      {isLoadingEvents && (
-        <Row horizontal="center" padding="24">
-          <Spinner size="m" />
-          <Text>Loading events...</Text>
-        </Row>
-      )}
-      
-      {/* Calendar View */}
-      {viewMode === 'calendar' && (
+      {/* Main Content Area */}
+      {isLoadingEvents && !events.length ? (
+        <LoadingState />
+      ) : loadError ? (
+        <ErrorState />
+      ) : (
         <>
-          {/* Day labels */}
-          <Grid columns={7} gap="0" fillWidth paddingX="24">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <Flex key={day} horizontal="center" paddingY="12" border="neutral-alpha-weak" borderWidth={1}>
-                <Text variant="label-strong-m">{day}</Text>
-              </Flex>
-            ))}
-          </Grid>
+          {/* Loading state */}
+          {isLoadingEvents && (
+            <Row horizontal="center" padding="24">
+              <Spinner size="m" />
+              <Text>Loading events...</Text>
+            </Row>
+          )}
           
-          {/* Calendar grid */}
-          <Grid columns={7} gap="0" fillWidth paddingX="24" paddingBottom="24">
-            {calendarDays.map(dayInfo => {
-              const dayKey = `${dayInfo.date.getFullYear()}-${dayInfo.date.getMonth()}-${dayInfo.date.getDate()}`;
-              const dayEvents = getEventsForDay(dayInfo.date);
-              const currentDay = isToday(dayInfo.date);
-              
-              // Sort events by priority
-              const sortedEvents = [...dayEvents].sort((a, b) => {
-                const priorityOrder = { "urgent": 0, "high": 1, "medium": 2, "low": 3 };
-                const aPriority = a.priority ? priorityOrder[a.priority] : 4;
-                const bPriority = b.priority ? priorityOrder[b.priority] : 4;
-                return aPriority - bPriority;
-              });
-              
-              return (
-                <Flex 
-                  key={dayKey}
-                  direction="column"
-                  padding="8"
-                  border="neutral-alpha-weak"
-                  borderWidth={1}
-                  style={{ minHeight: "100px" }}
-                  background={dayInfo.isCurrentMonth ? "surface" : "neutral-alpha-weak"}
-                >
-                  {/* Day number */}
-                  <Flex horizontal="space-between" vertical="center" paddingBottom="8">
-                    <Chip
-                      label={dayInfo.day.toString()}
-                      selected={currentDay}
-                      className={
-                        currentDay 
-                          ? "radius-full background-brand-solid-medium color-static-white"
-                          : !dayInfo.isCurrentMonth ? "color-neutral-medium" : ""
-                      }
-                    />
-                    {/* <Button
-                      variant="tertiary"
-                      size="s"
-                      aria-label="Add event"
-                      onClick={() => {
-                        setEventDate(dayInfo.date);
-                        setIsCreateOpen(true);
-                      }}
-                    >
-                      <Icon name="plus" size="s" />
-                    </Button> */}
+          {/* Calendar View */}
+          {viewMode === 'calendar' && (
+            <>
+              {/* Day labels */}
+              <Grid columns={7} gap="0" fillWidth paddingX="24">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <Flex key={day} horizontal="center" paddingY="12" border="neutral-alpha-weak" borderWidth={1}>
+                    <Text variant="label-strong-m">{day}</Text>
                   </Flex>
+                ))}
+              </Grid>
+              
+              {/* Calendar grid */}
+              <Grid columns={7} gap="0" fillWidth paddingX="24" paddingBottom="24" aria-label="Calendar">
+                {calendarDays.map(dayInfo => {
+                  const dayKey = `${dayInfo.date.getFullYear()}-${dayInfo.date.getMonth()}-${dayInfo.date.getDate()}`;
+                  const dayEvents = getEventsForDay(dayInfo.date);
+                  const currentDay = isToday(dayInfo.date);
+                  const isoDateString = dayInfo.date.toISOString().split('T')[0];
                   
-                  {/* Events */}
-                  <Column gap="4">
-                    {sortedEvents.map(event => (
-                      <Flex 
-                        key={event.id} 
-                        horizontal="space-between"
-                        vertical="center"
-                        gap="4"
-                      >
+                  // Add accessibility attributes
+                  const dayLabel = dayInfo.date.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  });
+                  
+                  // Sort events by priority
+                  const sortedEvents = [...dayEvents].sort((a, b) => {
+                    const priorityOrder = { "urgent": 0, "high": 1, "medium": 2, "low": 3 };
+                    const aPriority = a.priority ? priorityOrder[a.priority] : 4;
+                    const bPriority = b.priority ? priorityOrder[b.priority] : 4;
+                    return aPriority - bPriority;
+                  });
+                  
+                  return (
+                    <Flex 
+                      key={dayKey}
+                      direction="column"
+                      padding="8"
+                      border="neutral-alpha-weak"
+                      borderWidth={1}
+                      style={{ minHeight: "100px" }}
+                      background={dayInfo.isCurrentMonth ? "surface" : "neutral-alpha-weak"}
+                      aria-label={dayLabel}
+                      data-date={isoDateString}
+                    >
+                      {/* Day number */}
+                      <Flex horizontal="space-between" vertical="center" paddingBottom="8">
                         <Chip
-                          label={event.title}
-                          selected={true}
-                          className={`background-${event.color}-solid-weak color-${event.color}-on-background-strong ${event.isDeadline ? 'border-danger-solid-strong border-width-2' : ''}`}
-                          onClick={() => {
-                            setSelectedEvent(event);
-                            setIsDetailsOpen(true);
-                          }}
+                          label={dayInfo.day.toString()}
+                          selected={currentDay}
+                          className={
+                            currentDay 
+                              ? "radius-full background-brand-solid-medium color-static-white"
+                              : !dayInfo.isCurrentMonth ? "color-neutral-medium" : ""
+                          }
                         />
-                        {event.sourceType === "ai" && (
-                          <Icon name="sparkles" size="xs" color={event.color} />
-                        )}
-                        {event.isDeadline && (
-                          <Icon name="alert" size="xs" color="danger" />
-                        )}
                       </Flex>
-                    ))}
-                  </Column>
-                </Flex>
-              );
-            })}
-          </Grid>
-        </>
-      )}
-      
-      {/* List View */}
-      {viewMode === 'list' && (
-        <Column fillWidth padding="24" gap="24">
-          {Object.keys(groupedEvents).length > 0 ? (
-            Object.keys(groupedEvents).map(dateKey => (
-              <Column key={dateKey} fillWidth gap="12" border="neutral-alpha-weak" borderWidth={1} padding="16" radius="m">
-                <Row horizontal="space-between" vertical="center" paddingBottom="8" borderBottom="neutral-alpha-weak">
-                  <Row gap="8" vertical="center">
-                    <Icon name="calendar" size="s" />
-                    <Text variant="heading-strong-m">
-                      {new Date(dateKey).toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        month: 'long', 
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </Text>
-                    {isToday(new Date(dateKey)) && (
-                      <Tag label="Today" variant="brand" />
-                    )}
-                  </Row>
-                  <Tag label={`${groupedEvents[dateKey].length} events`} variant="neutral" />
-                </Row>
-                
-                <Column gap="8" fillWidth>
-                  {groupedEvents[dateKey].map(event => {
-                    // Determine background and border colors based on event color
-                    const bgColor = 
-                      event.color === "brand" ? "brand-weak" :
-                      event.color === "success" ? "success-weak" :
-                      event.color === "danger" ? "danger-weak" :
-                      event.color === "warning" ? "warning-weak" : 
-                      "neutral-alpha-weak";
                       
-                    const borderColor = 
-                      event.color === "brand" ? "brand-medium" :
-                      event.color === "success" ? "success-medium" :
-                      event.color === "danger" ? "danger-medium" :
-                      event.color === "warning" ? "warning-medium" : 
-                      "neutral-alpha-medium";
-                      
-                    return (
-                      <Row 
-                        key={event.id} 
-                        fillWidth 
-                        padding="12" 
-                        radius="m" 
-                        gap="16" 
-                        vertical="center"
-                        horizontal="space-between"
-                        background={bgColor}
-                        borderLeft={borderColor}
-                        borderWidth={2}
-                        onClick={() => {
-                          setSelectedEvent(event);
-                          setIsDetailsOpen(true);
-                        }}
-                        cursor="pointer"
-                      >
-                        <Column gap="4">
-                          <Row gap="8" vertical="center">
-                            <Text variant="body-strong-m">{event.title}</Text>
-                            {event.isDeadline && (
-                              <Icon name="alert" size="s" color="danger" />
-                            )}
+                      {/* Events */}
+                      <Column gap="4">
+                        {sortedEvents.map(event => (
+                          <Flex 
+                            key={event.id} 
+                            horizontal="space-between"
+                            vertical="center"
+                            gap="4"
+                          >
+                            <Chip
+                              label={event.title}
+                              selected={true}
+                              className={`background-${event.color}-solid-weak color-${event.color}-on-background-strong ${event.isDeadline ? 'border-danger-solid-strong border-width-2' : ''}`}
+                              onClick={() => {
+                                setSelectedEvent(event);
+                                setIsDetailsOpen(true);
+                              }}
+                            />
                             {event.sourceType === "ai" && (
                               <Icon name="sparkles" size="xs" color={event.color} />
                             )}
-                          </Row>
-                          
-                          {event.description && (
-                            <Text 
-                              variant="body-default-s" 
-                              style={{ 
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical'
-                              }}
-                            >
-                              {event.description}
-                            </Text>
-                          )}
-                        </Column>
-                        
-                        <Row gap="8">
-                          {event.priority && getPriorityBadge(event.priority)}
-                          <Tag 
-                            label={event.date.toLocaleTimeString('en-US', { 
-                              hour: 'numeric', 
-                              minute: '2-digit'
-                            })} 
-                            variant="neutral" 
-                          />
-                        </Row>
+                            {event.isDeadline && (
+                              <Icon name="alert" size="xs" color="danger" />
+                            )}
+                          </Flex>
+                        ))}
+                      </Column>
+                    </Flex>
+                  );
+                })}
+              </Grid>
+            </>
+          )}
+          
+          {/* List View */}
+          {viewMode === 'list' && (
+            <Column fillWidth padding="24" gap="24">
+              {Object.keys(groupedEvents).length > 0 ? (
+                Object.keys(groupedEvents).map(dateKey => (
+                  <Column key={dateKey} fillWidth gap="12" border="neutral-alpha-weak" borderWidth={1} padding="16" radius="m">
+                    <Row horizontal="space-between" vertical="center" paddingBottom="8" borderBottom="neutral-alpha-weak">
+                      <Row gap="8" vertical="center">
+                        <Icon name="calendar" size="s" />
+                        <Text variant="heading-strong-m">
+                          {new Date(dateKey).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            month: 'long', 
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </Text>
+                        {isToday(new Date(dateKey)) && (
+                          <Tag label="Today" variant="brand" />
+                        )}
                       </Row>
-                    );
-                  })}
+                      <Tag label={`${groupedEvents[dateKey].length} events`} variant="neutral" />
+                    </Row>
+                    
+                    <Column gap="8" fillWidth>
+                      {groupedEvents[dateKey].map(event => {
+                        // Determine background and border colors based on event color
+                        const bgColor = 
+                          event.color === "brand" ? "brand-weak" :
+                          event.color === "success" ? "success-weak" :
+                          event.color === "danger" ? "danger-weak" :
+                          event.color === "warning" ? "warning-weak" : 
+                          "neutral-alpha-weak";
+                          
+                        const borderColor = 
+                          event.color === "brand" ? "brand-medium" :
+                          event.color === "success" ? "success-medium" :
+                          event.color === "danger" ? "danger-medium" :
+                          event.color === "warning" ? "warning-medium" : 
+                          "neutral-alpha-medium";
+                          
+                        return (
+                          <Row 
+                            key={event.id} 
+                            fillWidth 
+                            padding="12" 
+                            radius="m" 
+                            gap="16" 
+                            vertical="center"
+                            horizontal="space-between"
+                            background={bgColor}
+                            borderLeft={borderColor}
+                            borderWidth={2}
+                            onClick={() => {
+                              setSelectedEvent(event);
+                              setIsDetailsOpen(true);
+                            }}
+                            cursor="pointer"
+                          >
+                            <Column gap="4">
+                              <Row gap="8" vertical="center">
+                                <Text variant="body-strong-m">{event.title}</Text>
+                                {event.isDeadline && (
+                                  <Icon name="alert" size="s" color="danger" />
+                                )}
+                                {event.sourceType === "ai" && (
+                                  <Icon name="sparkles" size="xs" color={event.color} />
+                                )}
+                              </Row>
+                              
+                              {event.description && (
+                                <Text 
+                                  variant="body-default-s" 
+                                  style={{ 
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical'
+                                  }}
+                                >
+                                  {event.description}
+                                </Text>
+                              )}
+                            </Column>
+                            
+                            <Row gap="8">
+                              {event.priority && getPriorityBadge(event.priority)}
+                              <Tag 
+                                label={event.date.toLocaleTimeString('en-US', { 
+                                  hour: 'numeric', 
+                                  minute: '2-digit'
+                                })} 
+                                variant="neutral" 
+                              />
+                            </Row>
+                          </Row>
+                        );
+                      })}
+                    </Column>
+                  </Column>
+                ))
+              ) : (
+                <Column fillWidth horizontal="center" vertical="center" padding="64" gap="16">
+                  <Icon name="calendar" size="xl" onBackground="neutral-weak" />
+                  <Text variant="body-default-m" onBackground="neutral-weak">No upcoming events</Text>
                 </Column>
-              </Column>
-            ))
-          ) : (
-            <Column fillWidth horizontal="center" vertical="center" padding="64" gap="16">
-              <Icon name="calendar" size="xl" onBackground="neutral-weak" />
-              <Text variant="body-default-m" onBackground="neutral-weak">No upcoming events</Text>
-              {/* <Button variant="primary" label="Add Event" onClick={() => setIsCreateOpen(true)}>
-                <Icon name="plus" size="s" />
-              </Button> */}
+              )}
             </Column>
           )}
-        </Column>
+        </>
       )}
       
       {/* Create Event Dialog */}
@@ -730,7 +806,7 @@ export default function CalendarPage() {
       {selectedEvent && (
         <Dialog
           isOpen={isDetailsOpen}
-          onClose={() => setIsDetailsOpen(false)}
+          onClose={handleCloseDetails}
           title={selectedEvent.title}
         >
           <Column gap="16" paddingY="16">
@@ -788,7 +864,7 @@ export default function CalendarPage() {
             <Button
               variant="primary"
               label="Close"
-              onClick={() => setIsDetailsOpen(false)}
+              onClick={handleCloseDetails}
             />
           </Row>
         </Dialog>

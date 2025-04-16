@@ -6,11 +6,8 @@ import { headers } from "next/headers";
 
 export async function GET(req: NextRequest) {
   try {
-    // Get the email ID from the URL
-    const { searchParams } = new URL(req.url);
-    const emailId = searchParams.get('id');
-    
-    if (!emailId) {
+    const id = new URL(req.url).pathname.split('/').pop();
+    if (!id) {
       return NextResponse.json(
         { error: "Email ID is required" },
         { status: 400 }
@@ -30,7 +27,7 @@ export async function GET(req: NextRequest) {
     // Fetch email with AI metadata
     const email = await prisma.email.findUnique({
       where: {
-        id: emailId,
+        id: id,
         userId: session.user.id, // Ensure user owns this email
       },
       include: {
