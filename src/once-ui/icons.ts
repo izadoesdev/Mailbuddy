@@ -189,6 +189,7 @@ export const iconLibrary: Record<string, IconType> = {
     home: HiOutlineHome,
     mailWarning: HiOutlineExclamationTriangle,
     menu: HiOutlineBars3,
+    danger: HiOutlineExclamationTriangle,
 };
 
 export type IconLibrary = typeof iconLibrary;

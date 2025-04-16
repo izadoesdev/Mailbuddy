@@ -499,6 +499,13 @@ function LoginPage() {
                         <Text variant="body-default-m" onBackground="neutral-medium">
                             AI-powered email organization and analysis
                         </Text>
+                        <Row gap="8" horizontal="center" vertical="center" paddingX="16">
+                            <Icon name="danger" size="l" />
+                            <Text variant="body-default-m" size="s" onBackground="neutral-medium">
+                                If you're a vercel tester, *Please* add my discord for demo instructions, otherwise you won't get the full experience.
+                                Discord: .hyteq
+                            </Text>
+                        </Row>
                     </Column>
                 );
         }
