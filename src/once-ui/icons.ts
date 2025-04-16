@@ -19,7 +19,9 @@ import {
     HiOutlineArrowPath,
     HiOutlineArrowRight,
     HiOutlineBars3,
+    HiOutlineBell,
     HiOutlineBolt,
+    HiOutlineBriefcase,
     HiOutlineClipboard,
     HiOutlineCloud,
     HiOutlineComputerDesktop,
@@ -35,10 +37,13 @@ import {
     HiOutlineMoon,
     HiOutlinePaperAirplane,
     HiOutlineShieldCheck,
+    HiOutlineShoppingBag,
     HiOutlineSparkles,
     HiOutlineStar,
     HiOutlineSun,
+    HiOutlineTag,
     HiOutlineArrowRightOnRectangle, // Logout icon
+    HiOutlineUserGroup,
     HiPaperAirplane,
     HiCheck,
     HiEyeDropper,
@@ -53,6 +58,10 @@ import {
     HiOutlineHome,
     HiOutlineExclamationTriangle,
     HiOutlinePencil,
+    HiOutlineAcademicCap, // For educational/book
+    HiOutlineBanknotes, // For money/financial
+    HiOutlineMusicalNote, // For music/entertainment
+    HiOutlineCurrencyDollar, // Alternative for money
 } from "react-icons/hi2";
 
 // Font Awesome 6
@@ -63,11 +72,14 @@ import {
     FaGoogle, 
     FaLinkedin, 
     FaMicrosoft, 
-    FaTwitter 
+    FaPlane,
+    FaTruck,
+    FaTwitter,
+    FaUtensils,
 } from "react-icons/fa6";
 
 // Remix Icons
-import { RiReplyAllFill, RiVisaLine } from "react-icons/ri";
+import { RiBillLine, RiMegaphoneLine, RiReplyAllFill, RiVisaLine } from "react-icons/ri";
 
 // Lucide Icons
 import { LuChevronsLeftRight } from "react-icons/lu";
@@ -106,6 +118,7 @@ export const iconLibrary: Record<string, IconType> = {
     
     // Common Icons
     person: HiOutlineUser,
+    group: HiOutlineUserGroup,
     calendar: HiCalendar,
     clock: HiOutlineClock,
     eyeDropper: HiEyeDropper,
@@ -125,6 +138,27 @@ export const iconLibrary: Record<string, IconType> = {
     edit: HiOutlinePencil,
     folder: HiOutlineFolder,
     flag: HiOutlineFlag,
+    
+    // Business & Commerce
+    briefcase: HiOutlineBriefcase,
+    money: HiOutlineBanknotes,
+    currencyDollar: HiOutlineCurrencyDollar,
+    bag: HiOutlineShoppingBag,
+    tag: HiOutlineTag,
+    bill: RiBillLine,
+    
+    // Travel & Transport
+    plane: FaPlane,
+    truck: FaTruck,
+    
+    // Notifications & Alerts
+    bell: HiOutlineBell,
+    bullhorn: RiMegaphoneLine,
+    
+    // Education & Entertainment
+    book: HiOutlineAcademicCap,
+    music: HiOutlineMusicalNote,
+    utensils: FaUtensils,
     
     // Services & Brands
     discord: FaDiscord,

@@ -99,7 +99,6 @@ async function fetchEmailsFromDb(
     // Add AI Category filter to database query if present
     if (aiCategory) {
         const categorySynonyms = getCategorySynonyms(aiCategory);
-        console.log(`Looking for AI category: ${aiCategory} with synonyms:`, categorySynonyms);
         
         // Create an array to hold all the OR conditions for the category search
         const orConditions = [];
@@ -123,7 +122,6 @@ async function fetchEmailsFromDb(
             baseFilters.OR = orConditions;
         }
         
-        console.log('Query filter for AI category:', JSON.stringify(baseFilters.OR, null, 2));
     }
 
     // First get message IDs from the messages table to ensure complete pagination
