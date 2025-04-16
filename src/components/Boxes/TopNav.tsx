@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Row, Logo, Button, IconButton, Column, Flex, Background, Text } from "@/once-ui/components";
 
 export default function TopNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(prev => !prev);
@@ -14,19 +15,39 @@ export default function TopNav() {
     setMobileMenuOpen(false);
   };
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 20;
+      if (isScrolled !== scrolled) {
+        setScrolled(isScrolled);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [scrolled]);
+
   return (
-    <Row position="fixed" top="0" fillWidth horizontal="center" zIndex={10} paddingY="16">
+    <Row position="fixed" top="0" fillWidth horizontal="center" zIndex={10} paddingY={scrolled ? "0" : "16"}>
       <Row
         horizontal="space-between"
         maxWidth="xl"
         paddingX="24"
-        background="overlay"
         paddingY="16"
         fillWidth
         shadow="s"
-        border="neutral-alpha-weak"
-        radius="xl"
-        style={{ backdropFilter: "blur(8px)" }}
+        radius={scrolled ? undefined : "xl"}
+        bottomLeftRadius={"xl"}
+        bottomRightRadius={ "xl"}
+        style={{ 
+          background: scrolled ? "rgba(0, 0, 0, 0.55)" : "var(--overlay-background)",
+          border: scrolled ? "1px solid rgba(0, 0, 0, 0.55)" : "1px solid var(--neutral-alpha-medium-border)",
+          backdropFilter: scrolled ? "none" : "blur(8px)",
+          transition: "all 0.3s ease"
+        }}
       >
         <Row vertical="center" gap="12">
           <Logo size="s" href="/" />
@@ -82,8 +103,8 @@ export default function TopNav() {
       {mobileMenuOpen && (
         <Column
           position="fixed"
-          left="16"
           top="104"
+          left="16"
           right="16"
           zIndex={9}
           background="overlay"
