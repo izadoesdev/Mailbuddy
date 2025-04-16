@@ -572,15 +572,11 @@ export default function CalendarPage() {
                             <Chip
                               label={event.title}
                               selected={true}
-                              className={`background-${event.color}-solid-weak color-${event.color}-on-background-strong ${event.isDeadline ? 'border-danger-solid-strong border-width-2' : ''}`}
                               onClick={() => {
                                 setSelectedEvent(event);
                                 setIsDetailsOpen(true);
                               }}
                             />
-                            {event.sourceType === "ai" && (
-                              <Icon name="sparkles" size="xs" color={event.color} />
-                            )}
                             {event.isDeadline && (
                               <Icon name="alert" size="xs" color="danger" />
                             )}
