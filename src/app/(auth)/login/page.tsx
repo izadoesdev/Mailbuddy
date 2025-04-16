@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 
 import {
     Heading,
@@ -16,8 +15,8 @@ import {
     PasswordInput,
     useToast,
     Spinner,
-    Badge,
     Icon,
+    Feedback,
 } from "@/once-ui/components";
 import { authClient, signIn } from "@/libs/auth/client";
 import { effects } from "@/app/resources/config";
@@ -263,22 +262,24 @@ function LoginPage() {
         switch (view) {
             case "magic-sent":
                 return (
-                    <Column gap="24" fillWidth>
+                    <Column gap="24" fillWidth horizontal="center">
+                    <Button
+                        variant="tertiary"
+                        weight="default"
+                        prefixIcon="chevronLeft"
+                        data-border="rounded"
+                        label="Back to login"
+                        onClick={() => {
+                            setView("password");
+                            setIsLoading(false);
+                        }}
+                    />
                         <Button
                             variant="secondary"
                             label="Resend magic link"
                             fillWidth
                             disabled={isLoading}
                             onClick={(e: React.MouseEvent) => handleMagicLinkLogin(e as any)}
-                        />
-                        <Button
-                            variant="tertiary"
-                            label="Back to login"
-                            fillWidth
-                            onClick={() => {
-                                setView("password");
-                                setIsLoading(false);
-                            }}
                         />
                     </Column>
                 );
@@ -294,8 +295,9 @@ function LoginPage() {
                         />
                         <Button
                             variant="tertiary"
-                            label="Back to login"
-                            fillWidth
+                            weight="default"
+                            prefixIcon="chevronLeft"
+                            data-border="rounded"
                             onClick={() => {
                                 setView("password");
                                 setIsLoading(false);
@@ -306,7 +308,15 @@ function LoginPage() {
             case "forgot":
                 return (
                     <form onSubmit={handleForgotPassword}>
-                        <Column gap="24" fillWidth>
+                        <Column gap="24" fillWidth horizontal="center">
+                        <Button
+                                variant="tertiary"
+                                weight="default"
+                                label="Back to login"
+                                prefixIcon="chevronLeft"
+                                data-border="rounded"
+                                onClick={() => setView("password")}
+                            />
                             <Input
                                 id="forgot-email"
                                 label="Email address"
@@ -324,19 +334,21 @@ function LoginPage() {
                                 fillWidth
                                 disabled={isLoading}
                             />
-                            <Button
-                                variant="tertiary"
-                                label="Back to login"
-                                fillWidth
-                                onClick={() => setView("password")}
-                            />
                         </Column>
                     </form>
                 );
             case "magic":
                 return (
                     <form onSubmit={handleMagicLinkLogin}>
-                        <Column gap="24" fillWidth>
+                        <Column gap="24" fillWidth horizontal="center">
+                            <Button
+                                variant="tertiary"
+                                weight="default"
+                                label="Back to login"
+                                prefixIcon="chevronLeft"
+                                data-border="rounded"
+                                onClick={() => setView("password")}
+                            />
                             <Input
                                 id="magic-email"
                                 label="Email address"
@@ -354,22 +366,18 @@ function LoginPage() {
                                 fillWidth
                                 disabled={isLoading}
                             />
-                            <Button
-                                variant="tertiary"
-                                label="Back to login"
-                                fillWidth
-                                onClick={() => setView("password")}
-                            />
                         </Column>
                     </form>
                 );
             default:
                 return (
                     <form onSubmit={handleEmailPasswordLogin}>
-                        <Column gap="24" fillWidth>
+                        <Column fillWidth gap="32">
+                            <Column gap="-1" fillWidth>
                             <Input
                                 id="login-email"
                                 label="Email address"
+                                radius="top"
                                 type="email"
                                 name="email"
                                 autoComplete="email"
@@ -379,6 +387,7 @@ function LoginPage() {
                             />
                             <PasswordInput
                                 id="login-password"
+                                radius="bottom"
                                 label="Password"
                                 name="password"
                                 autoComplete="current-password"
@@ -386,6 +395,7 @@ function LoginPage() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                             />
+                            </Column>
 
                             <Button
                                 type="submit"
@@ -492,27 +502,20 @@ function LoginPage() {
                 );
             default:
                 return (
-                    <Column gap="8" padding="16" center>
-                        <Heading as="h1" variant="heading-strong-xl">
-                            Sign in to Mailbuddy
+                    <Column gap="8" paddingX="32" paddingTop="16" center>
+                        <Heading variant="display-strong-xs" marginBottom="24">
+                            Access your account
                         </Heading>
-                        <Text variant="body-default-m" onBackground="neutral-medium">
-                            AI-powered email organization and analysis
-                        </Text>
-                        <Row gap="8" horizontal="center" vertical="center" paddingX="16">
-                            <Icon name="danger" size="l" />
-                            <Text variant="body-default-m" size="s" onBackground="neutral-medium">
-                                If you're a vercel tester, *Please* add my discord for demo instructions, otherwise you won't get the full experience.
-                                Discord: .hyteq
-                            </Text>
-                        </Row>
+                        <Feedback icon gap="8" vertical="center">
+                            If you're part of the hackathon testing crew, please DM me on Discord (@.hyteq) for demo instructions to get the full experience!
+                        </Feedback>
                     </Column>
                 );
         }
     };
 
     return (
-        <Column fillWidth horizontal="center" vertical="center" fillHeight>
+        <Column fillWidth center fillHeight padding="8">
             <Background
                 pointerEvents="none"
                 position="fixed"
@@ -571,7 +574,7 @@ function LoginPage() {
                         overflow="hidden"
                     >
                         <Column fillWidth>
-                            <Row horizontal="center" paddingTop="32" paddingBottom="8">
+                            <Row horizontal="center" paddingTop="48" paddingBottom="8">
                                 <Logo size="l" href="/" />
                             </Row>
                             {getHeaderContent()}
@@ -580,18 +583,24 @@ function LoginPage() {
                             </Column>
                             <Row horizontal="center" padding="16" gap="8">
                                 <Button 
+                                    data-border="rounded"
+                                    weight="default"
                                     variant="tertiary" 
                                     size="s"
                                     label="Terms" 
                                     href="/terms"
                                 />
                                 <Button 
+                                    data-border="rounded"
+                                    weight="default"
                                     variant="tertiary" 
                                     size="s"
                                     label="Privacy" 
                                     href="/privacy"
                                 />
                                 <Button
+                                    data-border="rounded"
+                                    weight="default"
                                     variant="tertiary"
                                     size="s"
                                     label="Forgot password?"
