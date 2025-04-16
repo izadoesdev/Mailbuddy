@@ -46,7 +46,7 @@ export function SyncOverlay({
           message: "Your Gmail account needs to be reconnected to continue syncing emails.",
           buttonText: "Update Account",
           buttonAction: () => {
-            window.location.href = "/profile?tab='accounts'";
+            window.location.href = "/profile?tab=accounts";
           }
         };
       default:
