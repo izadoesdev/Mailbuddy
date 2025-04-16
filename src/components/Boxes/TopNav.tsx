@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useEffect } from "react";
-import { Row, Logo, Button, IconButton, Column, Flex, Background, Text } from "@/once-ui/components";
+import { Row, Logo, Button, IconButton, Column, Flex, Background, ToggleButton } from "@/once-ui/components";
+import { usePathname } from "next/navigation";
 
 export default function TopNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const pathname = usePathname();
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(prev => !prev);
@@ -38,41 +41,40 @@ export default function TopNav() {
         paddingX="24"
         paddingY="16"
         fillWidth
-        shadow="s"
+        shadow={scrolled ? "l" : undefined}
         radius={scrolled ? undefined : "xl"}
         bottomLeftRadius={"xl"}
         bottomRightRadius={ "xl"}
         style={{ 
-          background: scrolled ? "rgba(0, 0, 0, 0.55)" : "var(--overlay-background)",
-          border: scrolled ? "1px solid rgba(0, 0, 0, 0.55)" : "1px solid var(--neutral-alpha-medium-border)",
-          backdropFilter: scrolled ? "none" : "blur(8px)",
+          background: scrolled ? "var(--overlay-background)" : undefined,
+          backdropFilter: scrolled ? "blur(8px)" : undefined,
           transition: "all 0.3s ease"
         }}
       >
         <Row vertical="center" gap="12">
           <Logo size="s" href="/" />
+
+        <Row gap="4" hide="s" vertical="center" paddingLeft="24">
+          <ToggleButton
+            selected={pathname === "/pricing"}
+            href="/pricing"
+            label="Pricing"
+          />
+          <ToggleButton
+            selected={pathname === "/security"}
+            href="/security"
+            label="Security"
+          />
+          <ToggleButton
+            selected={pathname === "/features"}
+            href="/features"
+            label="Features"
+          />
+          </Row>
         </Row>
         
         {/* Desktop Navigation */}
         <Row gap="8" hide="s" vertical="center">
-          <Button
-            href="/pricing"
-            size="s"
-            label="Pricing"
-            variant="tertiary"
-          />
-          <Button
-            href="/security"
-            size="s"
-            label="Security"
-            variant="tertiary"
-          />
-          <Button
-            href="/features"
-            size="s"
-            label="Features"
-            variant="tertiary"
-          />
           <Button
             href="/login"
             size="s"
