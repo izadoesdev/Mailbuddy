@@ -63,12 +63,12 @@ const meta = {
 const og = {
     title: meta.title,
     description: meta.description,
-    image: "/images/og-image.png",
+    image: "/og-image.png",
 };
 
 // default schema data
 const schema = {
-    logo: "/images/og-image.png",
+    logo: "/og-image.png",
     type: "Organization",
     name: "Mailbuddy",
     description: meta.description,
