@@ -309,7 +309,7 @@ function LoginPage() {
                 return (
                     <form onSubmit={handleForgotPassword}>
                         <Column gap="24" fillWidth horizontal="center">
-                        <Button
+                            <Button
                                 variant="tertiary"
                                 weight="default"
                                 label="Back to login"

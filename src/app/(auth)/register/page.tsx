@@ -220,12 +220,9 @@ export default function RegisterPage() {
             default:
                 return (
                     <Column gap="8" padding="16" horizontal="center">
-                        <Heading as="h1" variant="heading-strong-xl">
+                        <Heading as="h1" variant="display-strong-xs">
                             Create your account
                         </Heading>
-                        <Text variant="body-default-m" onBackground="neutral-medium">
-                            Start organizing your emails with AI assistance
-                        </Text>
                     </Column>
                 );
         }
@@ -326,7 +323,9 @@ export default function RegisterPage() {
                 return (
                     <form onSubmit={handleEmailPasswordSignup}>
                         <Column gap="24" fillWidth>
+                        <Column fillWidth gap="-1">
                             <Input
+                                radius="top"
                                 id="signup-email"
                                 label="Email address"
                                 type="email"
@@ -337,8 +336,9 @@ export default function RegisterPage() {
                                 required
                             />
                             <PasswordInput
+                                radius="none"
                                 id="signup-password"
-                                label="Create password"
+                                label="Password"
                                 name="password"
                                 autoComplete="new-password"
                                 value={password}
@@ -346,6 +346,7 @@ export default function RegisterPage() {
                                 required
                             />
                             <PasswordInput
+                                radius="bottom"
                                 id="signup-confirm-password"
                                 label="Confirm password"
                                 name="confirmPassword"
@@ -354,6 +355,7 @@ export default function RegisterPage() {
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 required
                             />
+                            </Column>
                             <Button
                                 type="submit"
                                 variant="primary"
@@ -549,7 +551,7 @@ export default function RegisterPage() {
                     overflow="hidden"
                 >
                     <Column fillWidth>
-                        <Row horizontal="center" paddingTop="32" paddingBottom="8">
+                        <Row horizontal="center" paddingTop="48" paddingBottom="8">
                             <Logo size="l" href="/" />
                         </Row>
                         {getHeaderContent()}
@@ -558,12 +560,16 @@ export default function RegisterPage() {
                         </Column>
                         <Row horizontal="center" padding="16" gap="8">
                             <Button 
+                                data-border="rounded"
+                                weight="default"
                                 variant="tertiary" 
                                 size="s"
                                 label="Terms" 
                                 href="/terms"
                             />
                             <Button 
+                                data-border="rounded"
+                                weight="default"
                                 variant="tertiary" 
                                 size="s"
                                 label="Privacy" 
