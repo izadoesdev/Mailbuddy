@@ -279,8 +279,12 @@ function InboxPage() {
             trashEmail.mutate(email.id);
             setSelectedEmail(null);
             setSelectedThread(null);
+            addToast({
+                message: "Email moved to trash",
+                variant: "success",
+            });
         },
-        [trashEmail],
+        [trashEmail, addToast],
     );
 
     // Handle search
