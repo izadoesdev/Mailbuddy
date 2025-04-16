@@ -118,7 +118,6 @@ export function EmailDetail({
     email, 
     thread,
     onClose, 
-    onToggleStar,
     onReply,
     onForward,
     onTrash,
@@ -147,7 +146,6 @@ export function EmailDetail({
             }
         }, 0);
         
-        // Reset document state on unmount
         return () => {
             document.body.style.overflow = "";
             const elements = document.querySelectorAll('*');
@@ -159,10 +157,8 @@ export function EmailDetail({
         };
     }, []);
     
-    // Monitor dialog state and fix potential stuck states
     useEffect(() => {
         if (!isTrashDialogOpen) {
-            // When dialog closes, ensure the document is returned to normal
             setTimeout(() => {
                 document.body.style.overflow = "";
                 const elements = document.querySelectorAll('*');
@@ -175,7 +171,6 @@ export function EmailDetail({
         }
     }, [isTrashDialogOpen]);
     
-    // Check if the email has styling
     const emailHasStyling = useMemo(() => {
         return hasEmailStyling(email.body || "");
     }, [email.body]);
@@ -187,13 +182,6 @@ export function EmailDetail({
         }
         return formatPlainTextEmail(email.body || decodeHtmlEntities(email.snippet || ""));
     }, [email.body, email.snippet, emailHasStyling]);
-    
-    const handleStarClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.stopPropagation();
-        if (onToggleStar) {
-            onToggleStar(email, e);
-        }
-    };
 
     const handleReplyClick = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
@@ -308,14 +296,6 @@ export function EmailDetail({
                     >
                         <Row gap="12" vertical="center">
                             <Heading variant="heading-strong-m">{email.subject}</Heading>
-                            <IconButton
-                                variant="ghost"
-                                size="s"
-                                icon={email.isStarred ? "starFill" : "star"}
-                                color={email.isStarred ? "warning" : "neutral"}
-                                aria-label={email.isStarred ? "Unstar email" : "Star email"}
-                                onClick={handleStarClick}
-                            />
                             {hasMultipleEmails && (
                                 <Row vertical="center" gap="4">
                                     <Icon name="chat" size="s" onBackground="brand-medium" />
