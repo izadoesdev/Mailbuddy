@@ -17,6 +17,7 @@ import {
     Spinner,
     Icon,
     Feedback,
+    SmartLink,
 } from "@/once-ui/components";
 import { authClient, signIn } from "@/libs/auth/client";
 import { effects } from "@/app/resources/config";
@@ -395,6 +396,13 @@ function LoginPage() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                             />
+                            <Row fillWidth horizontal="end" paddingTop="12" paddingRight="12">
+                            <SmartLink
+                                onClick={() => setView("forgot")}
+                            >
+                                <Text onBackground="brand-medium">Forgot password?</Text>
+                            </SmartLink>
+                            </Row>
                             </Column>
 
                             <Button
@@ -597,14 +605,6 @@ function LoginPage() {
                                     size="s"
                                     label="Privacy" 
                                     href="/privacy"
-                                />
-                                <Button
-                                    data-border="rounded"
-                                    weight="default"
-                                    variant="tertiary"
-                                    size="s"
-                                    label="Forgot password?"
-                                    onClick={() => setView("forgot")}
                                 />
                             </Row>
                         </Column>
