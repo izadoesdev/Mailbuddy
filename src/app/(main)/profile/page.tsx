@@ -87,13 +87,12 @@ function ProfileContent() {
           </Column>
         </Column>
         
-        <Column gap="4" fill>
+        <Column gap="8" fill>
           {PROFILE_CATEGORIES.map((category) => (
             <Button
               key={category.value}
               label={category.label}
               variant={tab === category.value ? "primary" : "tertiary"}
-              weight={tab === category.value ? "strong" : "default"}
               prefixIcon={category.icon}
               fillWidth
               onClick={() => setTab(category.value)}
