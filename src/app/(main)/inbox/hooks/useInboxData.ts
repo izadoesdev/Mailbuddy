@@ -37,20 +37,22 @@ const fetchEmails = async ({
         params.append("pageSize", pageSize.toString());
         
         if (searchQuery) params.append("search", searchQuery);
-        if (category) params.append("category", category);
-        if (isStarred !== undefined) params.append("isStarred", isStarred.toString());
-        if (isUnread !== undefined) params.append("isUnread", isUnread.toString());
-        
-        // Determine if we need to parse category into aiCategory or aiPriority params
         if (category) {
             if (category.startsWith('category-')) {
                 const aiCategory = category.replace('category-', '');
                 params.append("aiCategory", aiCategory);
+                console.log(`Using AI category: ${aiCategory}`);
             } else if (category.startsWith('priority-')) {
                 const aiPriority = category.replace('priority-', '');
                 params.append("aiPriority", aiPriority);
+                console.log(`Using AI priority: ${aiPriority}`);
+            } else {
+                params.append("category", category);
+                console.log(`Using standard category: ${category}`);
             }
         }
+        if (isStarred !== undefined) params.append("isStarred", isStarred.toString());
+        if (isUnread !== undefined) params.append("isUnread", isUnread.toString());
         
         const response = await fetch(`/api/inbox?${params.toString()}`, { signal });
 

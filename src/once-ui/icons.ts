@@ -26,6 +26,8 @@ import {
     HiOutlineClock,
     HiOutlineEye,
     HiOutlineEyeSlash,
+    HiOutlineFlag,
+    HiOutlineFolder,
     HiOutlineInboxStack,
     HiOutlineLink,
     HiOutlineListBullet,
@@ -50,6 +52,7 @@ import {
     HiOutlineLightBulb,
     HiOutlineHome,
     HiOutlineExclamationTriangle,
+    HiOutlinePencil,
 } from "react-icons/hi2";
 
 // Font Awesome 6
@@ -119,6 +122,9 @@ export const iconLibrary: Record<string, IconType> = {
     trash: HiOutlineTrash,
     star: HiOutlineStar,
     starFill: HiStar,
+    edit: HiOutlinePencil,
+    folder: HiOutlineFolder,
+    flag: HiOutlineFlag,
     
     // Services & Brands
     discord: FaDiscord,

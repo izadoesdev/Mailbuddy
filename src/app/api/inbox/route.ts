@@ -86,12 +86,12 @@ async function fetchEmailsFromDb(
             case 'low':
                 priorityValue = PRIORITY_LEVELS.LOW;
                 break;
-        }
+        }   
+
         
         if (priorityValue) {
             baseFilters.aiMetadata = {
-                path: ['priority'],
-                equals: priorityValue
+                priority: priorityValue
             };
         }
     }
@@ -99,20 +99,31 @@ async function fetchEmailsFromDb(
     // Add AI Category filter to database query if present
     if (aiCategory) {
         const categorySynonyms = getCategorySynonyms(aiCategory);
-        // Create OR conditions for category synonyms
-        const categoryConditions = categorySynonyms.map(synonym => ({
-            aiMetadata: {
-                path: ['category'],
-                string_contains: synonym.toLowerCase()
-            }
-        }));
+        console.log(`Looking for AI category: ${aiCategory} with synonyms:`, categorySynonyms);
         
-        // Combine with existing OR conditions if any
-        if (baseFilters.OR) {
-            baseFilters.OR = [...baseFilters.OR, ...categoryConditions];
-        } else {
-            baseFilters.OR = categoryConditions;
+        // Create an array to hold all the OR conditions for the category search
+        const orConditions = [];
+        
+        // For each synonym, create a condition checking if category field matches
+        for (const synonym of categorySynonyms) {
+            orConditions.push({
+                aiMetadata: {
+                    category: {
+                        contains: synonym.toLowerCase(),
+                        mode: 'insensitive'
+                    }
+                }
+            });
         }
+        
+        // Add the conditions to the baseFilters
+        if (baseFilters.OR) {
+            baseFilters.OR = [...baseFilters.OR, ...orConditions];
+        } else {
+            baseFilters.OR = orConditions;
+        }
+        
+        console.log('Query filter for AI category:', JSON.stringify(baseFilters.OR, null, 2));
     }
 
     // First get message IDs from the messages table to ensure complete pagination

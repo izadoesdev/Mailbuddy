@@ -12,6 +12,9 @@ import {
     UserMenu,
     User,
     Flex,
+    Dropdown,
+    DropdownWrapper,
+    Tag,
 } from "@/once-ui/components";
 
 interface CategoryOption {
@@ -73,16 +76,42 @@ export function InboxControls({
     const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
 
     // Organize categories by type
-    const { aiCategories } = useMemo(() => {
-        const ai: CategoryOption[] = [];
+    const { 
+        mainCategories, 
+        folderCategories, 
+        aiPriorityCategories, 
+        aiTopicCategories,
+    } = useMemo(() => {
+        const main: CategoryOption[] = [];
+        const folder: CategoryOption[] = [];
+        const aiPriority: CategoryOption[] = [];
+        const aiTopic: CategoryOption[] = [];
 
         for (const option of categoryOptions) {
-            if (option.value.startsWith('priority-')) {
-                ai.push(option);
+            // System folders
+            if (['inbox', 'all', 'sent', 'drafts', 'trash', 'starred'].some(key => option.value.includes(key))) {
+                main.push(option);
+            } 
+            // AI Priority Categories
+            else if (option.value.startsWith('priority-')) {
+                aiPriority.push(option);
+            }
+            // AI Topic Categories
+            else if (option.value.startsWith('topic-')) {
+                aiTopic.push(option);
+            }
+            // User created folders
+            else {
+                folder.push(option);
             }
         }
 
-        return { aiCategories: ai };
+        return { 
+            mainCategories: main, 
+            folderCategories: folder, 
+            aiPriorityCategories: aiPriority, 
+            aiTopicCategories: aiTopic,
+        };
     }, [categoryOptions]);
 
     // Handle local search change without triggering parent search
@@ -131,33 +160,43 @@ export function InboxControls({
         }
     };
 
-    // Group AI categories into sections
-    const groupedAiCategories = useMemo(() => {
-        const workBusiness = aiCategories.filter(c => 
+    // Group AI priority categories (by urgency)
+    const groupedPriorities = useMemo(() => {
+        const urgent = aiPriorityCategories.filter(c => c.value.includes('urgent'));
+        const high = aiPriorityCategories.filter(c => c.value.includes('high'));
+        const medium = aiPriorityCategories.filter(c => c.value.includes('medium'));
+        const low = aiPriorityCategories.filter(c => c.value.includes('low'));
+        
+        return { urgent, high, medium, low };
+    }, [aiPriorityCategories]);
+
+    // Group AI topic categories by type
+    const groupedTopics = useMemo(() => {
+        const workBusiness = aiTopicCategories.filter(c => 
             ['work', 'job', 'financial', 'legal', 'invoices', 'receipts'].some(
                 key => c.value.includes(key)
             )
         );
         
-        const personalSocial = aiCategories.filter(c => 
+        const personalSocial = aiTopicCategories.filter(c => 
             ['personal', 'social', 'healthcare'].some(
                 key => c.value.includes(key)
             )
         );
         
-        const updatesMarketing = aiCategories.filter(c => 
+        const updatesMarketing = aiTopicCategories.filter(c => 
             ['updates', 'newsletters', 'promotions', 'marketing'].some(
                 key => c.value.includes(key)
             )
         );
         
-        const eventsTravel = aiCategories.filter(c => 
+        const eventsTravel = aiTopicCategories.filter(c => 
             ['events', 'scheduling', 'travel', 'shipping'].some(
                 key => c.value.includes(key)
             )
         );
         
-        const other = aiCategories.filter(c => 
+        const other = aiTopicCategories.filter(c => 
             !workBusiness.includes(c) && 
             !personalSocial.includes(c) && 
             !updatesMarketing.includes(c) && 
@@ -171,17 +210,117 @@ export function InboxControls({
             eventsTravel,
             other
         };
-    }, [aiCategories]);
+    }, [aiTopicCategories]);
 
     // Get badge color based on the category option or default to neutral
-    const getBadgeColor = (category: CategoryOption): string => {
-        if (category.color) return category.color;
+    const getBadgeColor = (category: CategoryOption): "danger" | "warning" | "info" | "success" | "neutral" => {
+        if (category.color === 'red') return 'danger';
+        if (category.color === 'orange' || category.color === 'yellow') return 'warning';
+        if (category.color === 'blue') return 'info';
+        if (category.color === 'green') return 'success';
         if (category.value.includes('urgent')) return 'danger';
         if (category.value.includes('high')) return 'warning';
         if (category.value.includes('medium')) return 'info';
         if (category.value.includes('low')) return 'success';
         return 'neutral';
     };
+
+    // Get current category label
+    const getCurrentCategoryLabel = () => {
+        const found = categoryOptions.find(cat => cat.value === currentCategory);
+        return found ? found.label : "Inbox";
+    };
+
+    // Choose dropdown icon based on category type
+    const getCategoryIcon = (category: CategoryOption) => {
+        if (category.icon) return category.icon;
+        
+        if (category.value.includes('inbox') || category.value.includes('all')) return 'inbox';
+        if (category.value.includes('sent')) return 'send';
+        if (category.value.includes('draft')) return 'edit';
+        if (category.value.includes('trash')) return 'trash';
+        if (category.value.includes('starred')) return 'star';
+        
+        return 'folder';
+    };
+
+    // Render dropdown item for a category
+    const renderCategoryItem = (category: CategoryOption) => (
+        <Flex 
+            key={category.value}
+            data-value={category.value}
+            padding="8"
+            radius="m"
+            gap="8"
+            horizontal="space-between"
+            fillWidth
+            background={currentCategory === category.value ? "neutral-alpha-weak" : undefined}
+            cursor="pointer"
+            className="hover-background-neutral-alpha-weak"
+            aria-selected={currentCategory === category.value}
+            tabIndex={0}
+            onClick={() => handleCategoryChange(category.value)}
+        >
+            <Row gap="8" vertical="center">
+                <Icon name={getCategoryIcon(category)} size="s" />
+                <Text variant="body-default-s">{category.label}</Text>
+            </Row>
+            {category.badge && (
+                <Tag 
+                    variant={getBadgeColor(category)}
+                    size="s"
+                    label={category.badge}
+                />
+            )}
+        </Flex>
+    );
+
+    // Render category group
+    const renderCategoryGroup = (title: string, categories: CategoryOption[]) => {
+        if (categories.length === 0) return null;
+        
+        return (
+            <Flex direction="column" gap="4" paddingTop="8">
+                <Text variant="body-strong-xs" paddingX="8" paddingBottom="4" onBackground="neutral-weak">{categories[0].label}</Text>
+                {categories.map(renderCategoryItem)}
+            </Flex>
+        );
+    };
+
+    // Main folders dropdown content
+    const mainFoldersDropdown = (
+        <Flex direction="column" padding="8" gap="4" minWidth={16}>
+            {mainCategories.map(renderCategoryItem)}
+        </Flex>
+    );
+
+    // User folders dropdown content
+    const userFoldersDropdown = folderCategories.length > 0 ? (
+        <Flex direction="column" padding="8" gap="4" minWidth={16}>
+            {folderCategories.map(renderCategoryItem)}
+        </Flex>
+    ) : null;
+
+    // AI priorities dropdown content
+    const prioritiesDropdown = (
+        <Flex direction="column" padding="8" gap="4" minWidth={16}>
+            {renderCategoryGroup("Urgent", groupedPriorities.urgent)}
+            {renderCategoryGroup("High", groupedPriorities.high)}
+            {renderCategoryGroup("Medium", groupedPriorities.medium)}
+            {renderCategoryGroup("Low", groupedPriorities.low)}
+        </Flex>
+    );
+
+    // AI topics dropdown content
+    const topicsDropdown = (
+        <Flex direction="column" padding="8" gap="4" minWidth={16}>
+            {renderCategoryGroup("Work & Business", groupedTopics.workBusiness)}
+            {renderCategoryGroup("Personal & Social", groupedTopics.personalSocial)}
+            {renderCategoryGroup("Updates & Marketing", groupedTopics.updatesMarketing)}
+            {renderCategoryGroup("Events & Travel", groupedTopics.eventsTravel)}
+            {renderCategoryGroup("Other", groupedTopics.other)}
+        </Flex>
+    );
 
     // User dropdown menu content
     const userDropdownContent = (
@@ -321,44 +460,109 @@ export function InboxControls({
                             />
                         )}
 
-                        {/* Simple category buttons row */}
-                        {categoryOptions.length > 0 && onCategoryChange && (
-                            <Row fillWidth horizontal="center">
-                            <Row maxWidth={40} horizontal="center" radius="full" overflow="hidden">
-                                <Scroller fitWidth>
-                                    <Row gap="4">
-                                        {categoryOptions.map((option) => (
+                        {/* Email Folders */}
+                        <Flex fillWidth horizontal="center" gap="8">
+                            <Row gap="8">
+                                {/* Main folders dropdown */}
+                                <DropdownWrapper
+                                    trigger={
+                                        <Button
+                                            size="s"
+                                            weight="default"
+                                            label="Folders"
+                                            prefixIcon="inbox"
+                                            variant="secondary"
+                                            suffixIcon="chevronDown"
+                                        />
+                                    }
+                                    dropdown={mainFoldersDropdown}
+                                    onSelect={handleCategoryChange}
+                                    selectedOption={currentCategory}
+                                    minWidth={18}
+                                />
+                                
+                                {/* User folders dropdown - only show if there are user folders */}
+                                {userFoldersDropdown && folderCategories.length > 0 && (
+                                    <DropdownWrapper
+                                        trigger={
                                             <Button
-                                                key={option.value}
-                                                weight="default"
-                                                onClick={() => handleCategoryChange(option.value)}
-                                                variant={currentCategory === option.value ? "primary" : "secondary"}
-                                                label={option.label}
                                                 size="s"
+                                                weight="default"
+                                                label="My Folders" 
+                                                prefixIcon="folder"
+                                                variant="secondary"
+                                                suffixIcon="chevronDown"
                                             />
-                                        ))}
-                                    </Row>
-                                </Scroller>
+                                        }
+                                        dropdown={userFoldersDropdown}
+                                        onSelect={handleCategoryChange}
+                                        selectedOption={currentCategory}
+                                        minWidth={18}
+                                    />
+                                )}
                             </Row>
-                            </Row>
-                        )}
 
+                            {/* AI Categories */}
+                            {(aiPriorityCategories.length > 0 || aiTopicCategories.length > 0) && (
+                                <Row gap="8">
+                                    {/* AI Priority dropdown */}
+                                    {aiPriorityCategories.length > 0 && (
+                                        <DropdownWrapper
+                                            trigger={
+                                                <Button
+                                                    size="s"
+                                                    weight="default"
+                                                    label="Priority"
+                                                    prefixIcon="flag"
+                                                    variant="secondary"
+                                                    suffixIcon="chevronDown"
+                                                />
+                                            }
+                                            dropdown={prioritiesDropdown}
+                                            onSelect={handleCategoryChange}
+                                            selectedOption={currentCategory}
+                                            minWidth={18}
+                                        />
+                                    )}
+                                    
+                                    {/* AI Topics dropdown */}
+                                    {aiTopicCategories.length > 0 && (
+                                        <DropdownWrapper
+                                            trigger={
+                                                <Button
+                                                    size="s"
+                                                    weight="default"
+                                                    label="Topics"
+                                                    prefixIcon="sparkles"
+                                                    variant="secondary"
+                                                    suffixIcon="chevronDown"
+                                                />
+                                            }
+                                            dropdown={topicsDropdown}
+                                            onSelect={handleCategoryChange}
+                                            selectedOption={currentCategory}
+                                            minWidth={18}
+                                        />
+                                    )}
+                                </Row>
+                            )}
+                        </Flex>
                         
                         {onSync && (
-                                <Button
-                                    size="s"
-                                    weight="default"
-                                    label="Sync"
-                                    prefixIcon="refresh"
-                                    variant="secondary"
-                                    onClick={() => {
-                                        onSync();
-                                        onRefresh();
-                                    }}
-                                    disabled={isLoading || isFetching || isSyncing}
-                                    loading={isSyncing}
-                                />
-                            )}
+                            <Button
+                                size="s"
+                                weight="default"
+                                label="Sync"
+                                prefixIcon="refresh"
+                                variant="secondary"
+                                onClick={() => {
+                                    onSync();
+                                    onRefresh();
+                                }}
+                                disabled={isLoading || isFetching || isSyncing}
+                                loading={isSyncing}
+                            />
+                        )}
                     </>
                 )}
             </Row>
