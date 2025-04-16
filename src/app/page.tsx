@@ -213,7 +213,7 @@ export default function Home() {
         <Column maxWidth="l">
           <Column height={4} hide="m"/>
           <Background mask={{x: 50, y: 25, radius: 250}} style={{transform: "skewX(24deg) skewY(-7deg) scaleY(0.85) translateX(0)"}} minWidth={56}>
-            <SmartImage alt="Email organization demo" sizes="(max-width: 1024px) 100vw, 1200px" aspectRatio="1920/1200" src="/images/landing/docs-1.jpg" radius="l" border="neutral-alpha-medium" />
+            <SmartImage alt="Email organization demo" sizes="(max-width: 1024px) 100vw, 1200px" aspectRatio="1920/1200" src="/images/landing/prod-1.png" radius="l"/>
           </Background>
           <Grid
             style={{
@@ -350,13 +350,18 @@ export default function Home() {
               </Column>
             </Column>
             <Column fillWidth gap="8">
+                <Background position="absolute" top="0" mask={{x: 25, y: 0, radius: 100}}>
+                    <SmartImage opacity={30} alt="Email app background" sizes="(max-width: 1024px) 100vw, 90vw" aspectRatio="16/9" radius="xl" src="/images/landing/fantasy-background-1.jpg" />
+                </Background>
               <SmartImage
                 radius="xl"
                 fillWidth
                 sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 720px"
-                aspectRatio="1/1"
+                aspectRatio="1.2/1"
                 alt="Priority inbox"
-                src="/images/landing/roadmap.jpg"
+                draggable={false}
+                src="/images/landing/prod-4.png"
+                background="overlay"
                 border="neutral-alpha-medium"/>
               <Column gap="8" padding="24">
                 <Heading as="h3" variant="heading-strong-xl" marginBottom="8">
