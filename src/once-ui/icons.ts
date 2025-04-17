@@ -69,12 +69,17 @@ import {
     HiOutlineDocument,
     HiPaperClip,
     HiWifi,
-    HiOutlineChatBubbleBottomCenterText, // Alternative for money
+    HiOutlineChatBubbleBottomCenterText,
+    HiOutlineUserPlus,
+    HiOutlineExclamationCircle,
+    HiOutlineXMark, // Alternative for money
 } from "react-icons/hi2";
 
 // Font Awesome 6
 import { 
     FaApple,
+    FaBots,
+    FaCode,
     FaDiscord, 
     FaGithub, 
     FaGoogle, 
@@ -91,7 +96,7 @@ import {
 import { RiBillLine, RiMegaphoneLine, RiReplyAllFill, RiStackedView, RiVisaLine } from "react-icons/ri";
 
 // Lucide Icons
-import { LuChevronsLeftRight, LuSave } from "react-icons/lu";
+import { LuActivity, LuBookOpen, LuBot, LuChevronsLeftRight, LuSave, LuZap } from "react-icons/lu";
 
 export const iconLibrary: Record<string, IconType> = {
     // Navigation
@@ -208,6 +213,16 @@ export const iconLibrary: Record<string, IconType> = {
     network: HiWifi,
     document: HiOutlineDocument,
     chat: HiOutlineChatBubbleBottomCenterText,
+    userPlus: HiOutlineUserPlus,
+    alertCircle: HiOutlineExclamationCircle,
+    shieldCheck: HiOutlineShieldCheck,
+    cross: HiOutlineXMark,
+    code: FaCode,
+    activity: LuActivity,
+    bot: LuBot,
+    zap: LuZap,
+    megaphone: RiMegaphoneLine,
+    bookOpen: LuBookOpen,
 };
 
 export type IconLibrary = typeof iconLibrary;
