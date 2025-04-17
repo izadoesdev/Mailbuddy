@@ -89,6 +89,7 @@ export default function Security() {
               <Column gap="16" position="relative">
                 <Heading as="h2" variant="heading-strong-l">Authentication & Access Control</Heading>
                 <Column gap="8" paddingLeft="24">
+
                   <Row gap="12" vertical="start">
                     <Icon name="chevronRight" size="s" />
                     <Text variant="body-default-m">
