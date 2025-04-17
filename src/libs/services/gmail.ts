@@ -33,7 +33,18 @@ export async function refreshAccessToken(userId: string): Promise<string | null>
         // Get the current session which includes the refresh token
         const session = await auth.api.getSession({ headers: await headers() });
 
-        if (!session || !session.user.refreshToken) {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                accounts: {
+                    where: {
+                        providerId: "google",
+                    },
+                },
+            },
+        });
+
+        if (!user || !user.accounts.length) {
             console.error(`[Gmail Service] No refresh token found for user ${userId}`);
             return null;
         }
@@ -43,7 +54,7 @@ export async function refreshAccessToken(userId: string): Promise<string | null>
 
         // Set refresh token
         oauth2Client.setCredentials({
-            refresh_token: session.user.refreshToken,
+            refresh_token: user.accounts[0].refreshToken,
         });
 
         // Get new access token
