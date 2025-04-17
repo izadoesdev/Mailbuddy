@@ -84,6 +84,7 @@ model Account {
   updatedAt             DateTime
 
   @@map("account")
+  @@index([userId, providerId])
 }
 
 model Verification {
@@ -136,8 +137,6 @@ model Message {
 
   @@index([userId])
   @@index([threadId])
-  @@index([userId, threadId])
-  @@index([userId, createdAt])
   @@map("messages")
 }
 
@@ -150,6 +149,7 @@ model SyncState {
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sync_states")
+  @@index([userId])
 }
 
 model EmailAIMetadata {
@@ -177,14 +177,8 @@ model EmailAIMetadata {
   updatedAt           DateTime  @updatedAt
   email               Email     @relation(fields: [emailId], references: [id], onDelete: Cascade)
 
-  @@index([emailId])
   @@index([category])
   @@index([priority])
-  @@index([sentiment])
-  @@index([importance])
-  @@index([requiresResponse])
-  @@index([hasDeadline])
-  @@index([nextDeadline])
   @@map("email_ai_metadata")
 }
 

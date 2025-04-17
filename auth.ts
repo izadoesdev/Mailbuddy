@@ -82,26 +82,6 @@ export const auth = betterAuth({
         }
     },
     plugins: [
-        
-        customSession(async ({ user, session }) => {
-            const dbUser = await prisma.user.findUnique({
-                where: { id: user.id },
-                select: { emailVerified: true, accounts: true },
-            });
-
-            if (!dbUser) {
-                throw new Error("User not found");
-            }
-
-            return {
-                user: {
-                    ...user,
-                    accessToken: dbUser.accounts[0].accessToken,
-                    refreshToken: dbUser.accounts[0].refreshToken,
-                },
-                session,
-            };
-        }),
         multiSession(),
         nextCookies(),
         twoFactor(),

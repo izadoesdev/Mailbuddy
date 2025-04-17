@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/libs/db";
+import { prisma, redis } from "@/libs/db";
 import { auth } from "@/libs/auth";
 import { headers } from "next/headers";
 import {
@@ -19,6 +19,18 @@ const CATEGORY_PREFIXED_LABELS = ["SOCIAL", "UPDATES", "FORUMS", "PROMOTIONS", "
 interface EmailQueryResult {
     emails: any[];
     totalCount: number;
+}
+
+async function getTotalCount(userId: string): Promise<number> {
+    const total = await redis.get(`total_count_${userId}`);
+    if (total) {
+        return Number.parseInt(total);
+    }
+    const totalCount = await prisma.message.count({
+        where: { userId },
+    });
+    redis.set(`total_count_${userId}`, totalCount);
+    return totalCount ;
 }
 
 /**
@@ -137,19 +149,12 @@ async function fetchEmailsFromDb(
 
     const messageIds = await prisma.message.findMany(messageQuery);
 
-    // Extract IDs to use in email query
     const messageIdValues = messageIds.map(m => m.id);
 
-    // Get total count based on message threads
-    const totalCount = await prisma.message.groupBy({
-        by: ['threadId'],
-        where: { userId },
-        _count: true
-    });
+    const totalCount = await getTotalCount(userId);
 
-    // If there are no messages, return empty result
     if (messageIdValues.length === 0) {
-        return { emails: [], totalCount: totalCount.length };
+        return { emails: [], totalCount };
     }
 
     // Now fetch emails with these IDs, applying all filters
@@ -179,7 +184,7 @@ async function fetchEmailsFromDb(
     const emails = await prisma.email.findMany(emailsQueryOptions);
 
     console.log(`Found ${emails.length} emails out of ${messageIdValues.length} messages`);
-    return { emails, totalCount: totalCount.length };
+    return { emails, totalCount };
 }
 
 /**
@@ -340,11 +345,11 @@ function processThreadView(emails: any[]): any[] {
     }
     
     // Sort emails within each thread by date
-    threadMap.forEach((emailsInThread, threadId) => {
+    for (const emailsInThread of threadMap.values()) {
         emailsInThread.sort((a, b) => 
             new Date(b.internalDate || 0).getTime() - new Date(a.internalDate || 0).getTime()
         );
-    });
+    }
     
     // Create array of thread objects, each containing all its emails
     // Sort threads by the date of their newest email
@@ -435,9 +440,7 @@ export async function GET(request: NextRequest) {
     // }
 
     // Check if user has any messages synced
-    const messageCount = await prisma.message.count({
-        where: { userId }
-    });
+    const messageCount = await getTotalCount(userId);
 
     if (messageCount === 0) {
         // Check if sync is in progress
