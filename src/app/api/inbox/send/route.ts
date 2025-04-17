@@ -15,9 +15,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = session.user.id;
-  const accessToken = session.user.accessToken ?? null;
-  const refreshToken = session.user.refreshToken ?? null;
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      email: true,
+      accounts: {
+        where: {
+          providerId: "google",
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  const userId = user.id;
+  const accessToken = user.accounts[0].accessToken ?? null;
+  const refreshToken = user.accounts[0].refreshToken ?? null;
 
   try {
     // Parse request body

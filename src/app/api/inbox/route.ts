@@ -389,9 +389,22 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = session.user.id;
-    const accessToken = session.user.accessToken ?? null;
-    const refreshToken = session.user.refreshToken ?? null;
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+            id: true,
+            email: true,
+            accounts: {
+                where: {
+                    providerId: "google",
+                },
+            },
+        },
+    });
+
+    if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -406,15 +419,8 @@ export async function GET(request: NextRequest) {
     const aiCategory = searchParams.get('aiCategory');
     const aiPriority = searchParams.get('aiPriority');
     
-    // Check if user has a connected Google account
-    const googleAccount = await prisma.account.findFirst({
-        where: {
-            userId,
-            providerId: "google",
-        },
-    });
 
-    if (!googleAccount) {
+    if (!user.accounts.length) {
         return NextResponse.json({
             threads: [],
             totalCount: 0,
@@ -440,12 +446,12 @@ export async function GET(request: NextRequest) {
     // }
 
     // Check if user has any messages synced
-    const messageCount = await getTotalCount(userId);
+    const messageCount = await getTotalCount(user.id);
 
     if (messageCount === 0) {
         // Check if sync is in progress
         const syncState = await prisma.syncState.findUnique({
-            where: { userId }
+            where: { userId: user.id }
         });
 
         if (syncState?.syncInProgress) {
@@ -479,7 +485,7 @@ export async function GET(request: NextRequest) {
 
         // 1. Fetch from database first
         const { emails: dbEmails, totalCount } = await fetchEmailsFromDb(
-            userId, 
+            user.id, 
             pageSize, 
             category,
             skip, 
@@ -497,22 +503,22 @@ export async function GET(request: NextRequest) {
         if (missingEmailsCount > 0 && !searchQuery && !aiCategory && !aiPriority) {
             try {
                 // Find message IDs that exist but don't have emails
-                const missingEmailIds = await findMissingEmails(userId, page, pageSize);
+                const missingEmailIds = await findMissingEmails(user.id, page, pageSize);
 
                 if (missingEmailIds.length > 0) {
                     console.log(`Found ${missingEmailIds.length} emails missing from DB, fetching them`);
                     // Fetch and store missing emails
                     await fetchMissingEmails(
                         missingEmailIds,
-                        userId,
-                        accessToken,
-                        refreshToken,
-                        userId
+                        user.id,
+                        user.accounts[0].accessToken,
+                        user.accounts[0].refreshToken,
+                        user.id
                     );
                     
                     // Try DB fetch again to get newly synced emails
                     const retry = await fetchEmailsFromDb(
-                        userId, 
+                        user.id, 
                         pageSize, 
                         category, 
                         skip,
@@ -552,7 +558,7 @@ export async function GET(request: NextRequest) {
                     // Make sure email has userId field required by enhanceEmail
                     const emailWithUserId = {
                         ...email,
-                        userId: userId // Ensure userId is set from the session
+                        userId: user.id // Ensure userId is set from the session
                     };
                     
                     const enhanced = await enhanceEmail(emailWithUserId);
