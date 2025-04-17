@@ -1,8 +1,74 @@
 import { prisma } from "@/libs/db";
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/libs/auth";
-import { decryptEmails } from "@/libs/services";
+import { decodeEncryptedData, decryptText } from "@/libs/utils";
 import { headers } from "next/headers";
+
+function decryptField(encryptedValue: string): string {
+  try {
+      const { encryptedData, iv, authTag } = decodeEncryptedData(encryptedValue);
+      return decryptText(encryptedData, iv, authTag);
+  } catch (error) {
+      console.error("Decryption failed:", error);
+      return "[Decryption failed]";
+  }
+}
+
+/**
+* Decrypt email content
+*/
+function decryptEmails(email: any): any {
+  const decryptedEmail = { ...email };
+  
+  if (email.subject) {
+      decryptedEmail.subject = decryptField(email.subject);
+  }
+  
+  if (email.body) {
+      decryptedEmail.body = decryptField(email.body);
+  }
+  
+  if (email.snippet) {
+      decryptedEmail.snippet = decryptField(email.snippet);
+  }
+  
+  if (email.from) {
+      // Extract both name and email parts from the from field if it contains angle brackets
+      // Format: "Some Name" <email@example.com> or Name <email@example.com> or just email@example.com
+      const emailRegex = /(.*?)\s*<([^>]+)>/;
+      const matches = email.from.match(emailRegex);
+      
+      if (matches) {
+          // If we have both name and email parts
+          let fromName = matches[1].trim();
+          const fromEmail = matches[2];
+          
+          // If name is in quotes, remove them
+          if (fromName.startsWith('"') && fromName.endsWith('"')) {
+              fromName = fromName.substring(1, fromName.length - 1);
+          }
+          
+          // Add new properties for name and email parts
+          decryptedEmail.fromName = fromName;
+          decryptedEmail.fromEmail = fromEmail;
+          
+          // Keep the original from value
+          decryptedEmail.from = email.from;
+      } else {
+          // If there's no match, it's likely just an email address
+          decryptedEmail.fromName = "";
+          decryptedEmail.fromEmail = email.from;
+          decryptedEmail.from = email.from;
+      }
+  }
+  
+  // Make sure isRead flag is consistent with UNREAD label
+  if (email.labels?.includes("UNREAD") ?? false) {
+      decryptedEmail.isRead = false;
+  }
+  
+  return decryptedEmail;
+}
 
 export async function GET(req: NextRequest) {
   try {

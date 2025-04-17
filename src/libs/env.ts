@@ -9,7 +9,6 @@ const envSchema = z.object({
     UPSTASH_VECTOR_REST_URL: z.string(),
     UPSTASH_VECTOR_REST_TOKEN: z.string(),
     OPENAI_API_KEY: z.string().optional(),
-    OPTIMIZE_API_KEY: z.string(),
 });
 
 const env = envSchema.parse(process.env);
