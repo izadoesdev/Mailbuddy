@@ -1,0 +1,10 @@
+# Mailbuddy Robots.txt
+User-agent: *
+Allow: /
+
+# Disallow admin and API routes
+Disallow: /admin/
+Disallow: /api/v1/
+
+# Sitemap
+Sitemap: https://mailbuddy.dev/sitemap.xml 
