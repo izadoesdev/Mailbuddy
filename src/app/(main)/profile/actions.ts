@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/libs/db";
 import { auth } from "@/libs/auth";
+import index from "@/app/(dev)/ai/new/index";
 interface MetadataStats {
   totalEmails: number;
   emailsWithMetadata: number;
@@ -329,6 +330,9 @@ export async function clearAIMetadata(userId: string): Promise<{ success: boolea
       
       return result.count;
     });
+
+    await index.index.deleteNamespace(`user_${userId}`);
+    
     
     // Revalidate the profile page to refresh the data
     revalidatePath("/profile");
