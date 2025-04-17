@@ -68,7 +68,8 @@ import {
     HiOutlineChartBar,
     HiOutlineDocument,
     HiPaperClip,
-    HiWifi, // Alternative for money
+    HiWifi,
+    HiOutlineChatBubbleBottomCenterText, // Alternative for money
 } from "react-icons/hi2";
 
 // Font Awesome 6
@@ -206,6 +207,7 @@ export const iconLibrary: Record<string, IconType> = {
     chart: HiOutlineChartBar,
     network: HiWifi,
     document: HiOutlineDocument,
+    chat: HiOutlineChatBubbleBottomCenterText,
 };
 
 export type IconLibrary = typeof iconLibrary;
