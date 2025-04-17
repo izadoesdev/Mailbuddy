@@ -62,7 +62,13 @@ import {
     HiOutlineBanknotes, // For money/financial
     HiOutlineMusicalNote, // For music/entertainment
     HiOutlineCurrencyDollar,
-    HiOutlineInformationCircle, // Alternative for money
+    HiOutlineInformationCircle,
+    HiOutlineFire,
+    HiOutlineUserCircle,
+    HiOutlineChartBar,
+    HiOutlineDocument,
+    HiPaperClip,
+    HiWifi, // Alternative for money
 } from "react-icons/hi2";
 
 // Font Awesome 6
@@ -73,6 +79,7 @@ import {
     FaGoogle, 
     FaLinkedin, 
     FaMicrosoft, 
+    FaPage4, 
     FaPlane,
     FaTruck,
     FaTwitter,
@@ -80,10 +87,10 @@ import {
 } from "react-icons/fa6";
 
 // Remix Icons
-import { RiBillLine, RiMegaphoneLine, RiReplyAllFill, RiVisaLine } from "react-icons/ri";
+import { RiBillLine, RiMegaphoneLine, RiReplyAllFill, RiStackedView, RiVisaLine } from "react-icons/ri";
 
 // Lucide Icons
-import { LuChevronsLeftRight } from "react-icons/lu";
+import { LuChevronsLeftRight, LuSave } from "react-icons/lu";
 
 export const iconLibrary: Record<string, IconType> = {
     // Navigation
@@ -191,6 +198,14 @@ export const iconLibrary: Record<string, IconType> = {
     mailWarning: HiOutlineExclamationTriangle,
     menu: HiOutlineBars3,
     danger: HiOutlineExclamationTriangle,
+    stack: RiStackedView,
+    fire: HiOutlineFire,
+    template: LuSave,
+    userCircle: HiOutlineUserCircle,
+    paperclip: HiPaperClip,
+    chart: HiOutlineChartBar,
+    network: HiWifi,
+    document: HiOutlineDocument,
 };
 
 export type IconLibrary = typeof iconLibrary;
