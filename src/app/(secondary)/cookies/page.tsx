@@ -140,7 +140,7 @@ export default function CookiePolicy() {
               <Column gap="16">
                 <Heading as="h2" variant="heading-strong-l">8. Contact Us</Heading>
                 <Text variant="body-default-m">
-                  If you have any questions about our use of cookies or other technologies, please email us at privacy@mailbuddy.com.
+                  If you have any questions about our use of cookies or other technologies, please email us at privacy@mailbuddy.dev.
                 </Text>
               </Column>
             </Column>
