@@ -60,6 +60,29 @@ export default function Footer() {
             <Text variant="body-default-s" onBackground="neutral-medium">
               Secure, private, AI-powered email companion
             </Text>
+            <Row gap="12" paddingTop="16">
+            <IconButton
+              variant="tertiary"
+              size="s"
+              icon="twitter"
+              href="/"
+              aria-label="Twitter"
+            />
+            <IconButton
+              variant="tertiary"
+              size="s"
+              icon="linkedin"
+              href="/"
+              aria-label="LinkedIn"
+            />
+            <IconButton
+              variant="tertiary"
+              size="s"
+              icon="github"
+              href="https://github.com/izadoesdev/mailer"
+              aria-label="GitHub"
+            />
+            </Row>
           </Column>
 
           {/* Links section */}
@@ -108,27 +131,6 @@ export default function Footer() {
           </Text>
           
           <Row gap="16" vertical="center">
-            <IconButton
-              variant="tertiary"
-              size="s"
-              icon="twitter"
-              href="/"
-              aria-label="Twitter"
-            />
-            <IconButton
-              variant="tertiary"
-              size="s"
-              icon="linkedin"
-              href="/"
-              aria-label="LinkedIn"
-            />
-            <IconButton
-              variant="tertiary"
-              size="s"
-              icon="github"
-              href="https://github.com/izadoesdev/mailer"
-              aria-label="GitHub"
-            />
             <ThemeSwitcher />
           </Row>
         </Row>

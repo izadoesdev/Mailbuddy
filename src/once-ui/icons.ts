@@ -4,7 +4,7 @@ import type { IconType } from "react-icons";
 import {
     HiArrowUpRight,
     HiCalendar,
-    HiCheckCircle,
+    HiOutlineCheckCircle,
     HiChevronDown,
     HiChevronLeft,
     HiChevronRight,
@@ -61,7 +61,8 @@ import {
     HiOutlineAcademicCap, // For educational/book
     HiOutlineBanknotes, // For money/financial
     HiOutlineMusicalNote, // For music/entertainment
-    HiOutlineCurrencyDollar, // Alternative for money
+    HiOutlineCurrencyDollar,
+    HiOutlineInformationCircle, // Alternative for money
 } from "react-icons/hi2";
 
 // Font Awesome 6
@@ -97,8 +98,8 @@ export const iconLibrary: Record<string, IconType> = {
     
     // Status & Feedback
     check: HiCheck,
-    checkCircle: HiCheckCircle,
-    infoCircle: HiInformationCircle,
+    checkCircle: HiOutlineCheckCircle,
+    infoCircle: HiOutlineInformationCircle,
     warningTriangle: HiExclamationTriangle,
     errorCircle: HiExclamationCircle,
     helpCircle: HiOutlineQuestionMarkCircle,

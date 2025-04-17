@@ -1,10 +1,9 @@
 import "@/once-ui/styles/index.scss";
 import "@/once-ui/tokens/index.scss";
 
-import classNames from "classnames";
-import { baseURL, meta, og, schema, style } from "@/app/resources/config";
-import { Background, Column, Flex, ThemeProvider, ToastProvider, Row } from "@/once-ui/components";
-import { Meta, Schema } from "@/once-ui/modules";
+import { baseURL, meta, og} from "@/app/resources/config";
+import { Column } from "@/once-ui/components";
+import { Meta } from "@/once-ui/modules";
 import TopNav from "@/components/Boxes/TopNav";
 import Footer from "@/components/Boxes/Footer";
 
@@ -56,7 +55,7 @@ export default function SecondaryLayout({
 }>) {
   return (
 
-          <Column fillWidth margin="0" padding="0" background="overlay">
+          <Column fillWidth margin="0" padding="0">
             <TopNav />
                 <Column fillWidth paddingTop="128" center vertical="center">
                 {children}
