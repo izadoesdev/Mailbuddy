@@ -81,20 +81,20 @@ Our architecture is designed to help maintain compliance with:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/Mailbuddy.git
+git clone https://github.com/izadoesdev/mailer
 
 # Navigate to project directory
 cd Mailbuddy
 
 # Install dependencies
-npm install
+bun install
 
 # Set up environment variables
 cp .env.example .env.local
 # Fill in required environment variables
 
 # Start development server
-npm run dev
+bun run dev
 ```
 
 ### Environment Setup
