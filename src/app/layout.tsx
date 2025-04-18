@@ -11,6 +11,7 @@ import { QueryProvider } from "@/libs/query/QueryProvider";
 
 import { Geist } from "next/font/google";
 import { Geist_Mono } from "next/font/google";
+import Script from "next/script";
 
 const primary = Geist({
     variable: "--font-primary",
@@ -84,6 +85,9 @@ export default function RootLayout({
                 image={schema.logo}
             />
             <head>
+                <Script
+                    defer src="https://cloud.umami.is/script.js" data-website-id="daf3c389-edda-4092-aed1-bd93cd7b2761"
+                />
                 <script
                     dangerouslySetInnerHTML={{
                         __html: `
