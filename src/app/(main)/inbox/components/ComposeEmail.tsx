@@ -242,7 +242,7 @@ export function ComposeEmail({
       maxWidth={40}
       maxHeight={48}
       overflow="hidden"
-      background="overlay"
+      background="surface"
       border="neutral-alpha-medium"
       radius="m"
       position="fixed"
