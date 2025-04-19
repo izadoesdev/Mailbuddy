@@ -125,6 +125,46 @@ REDIS_URL="redis://localhost:6379"
 # Other variables as specified in .env.example
 ```
 
+## 🔐 Gmail API Setup
+
+### Required Scopes
+The following Gmail API scopes are required for full functionality:
+
+```plaintext
+https://www.googleapis.com/auth/gmail.readonly
+https://www.googleapis.com/auth/gmail.modify
+```
+
+### Setting up Google Credentials
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create or select a project
+3. Go to OAuth Consent Screen:
+   - Set user type to "External"
+   - Fill in basic app info (for testing)
+4. Go to APIs & Services → Credentials
+5. Create OAuth 2.0 Client ID:
+   - App type: Web
+   - Add authorized redirect URIs:
+     ```
+     http://localhost:3000/api/auth/callback/google
+     ```
+6. Download the credentials JSON file
+7. Add the following to your `.env.local`:
+   ```env
+   GOOGLE_CLIENT_ID=your_client_id
+   GOOGLE_CLIENT_SECRET=your_client_secret
+   ```
+
+### Environment Variables
+Add these to your `.env.local`:
+
+```env
+# Gmail API
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
+```
+
 ## 🛠️ Tech Stack
 
 <div align="center">
