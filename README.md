@@ -128,7 +128,7 @@ ENCRYPTION_KEY=your_fallback_encryption_key
       <td>
         • Next.js API Routes<br/>
         • Prisma ORM<br/>
-        • NextAuth.js<br/>
+        • BetterAuth<br/>
         • Gmail API
       </td>
       <td>
