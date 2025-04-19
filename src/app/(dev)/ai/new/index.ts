@@ -15,10 +15,10 @@ const openrouter = new OpenAI({
     maxRetries: 3,
 });
 
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY,
-    timeout: 30000,
-    maxRetries: 3,
-});
+// const groq = new Groq({
+//     apiKey: process.env.GROQ_API_KEY,
+//     timeout: 30000,
+//     maxRetries: 3,
+// });
 
-export default { index, groq, openrouter };
+export default { index, openrouter };

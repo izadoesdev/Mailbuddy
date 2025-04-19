@@ -32,20 +32,18 @@ export { categorizeEmail } from "./utils/categorize";
 export { cleanEmail, cleanMetadata } from "./utils/clean";
 
 // Groq LLM functions
-export {
-    categorizeEmail as groqCategorizeEmail,
-    prioritizeEmail,
-    summarizeEmail,
-    extractActionItems,
-    extractContactInfo,
-    processEmail,
-} from "./utils/groq";
+// export {
+//     categorizeEmail as groqCategorizeEmail,
+//     prioritizeEmail,
+//     summarizeEmail,
+//     extractActionItems,
+//     extractContactInfo,
+//     processEmail,
+// } from "./utils/groq";
 
 // Batch processing
 export {
-    processBatchEmails,
     storeBatchEmails,
-    analyzeBatchEmails,
 } from "./utils/batch";
 
 // Database operations

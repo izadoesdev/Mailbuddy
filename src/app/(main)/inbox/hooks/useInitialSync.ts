@@ -165,12 +165,16 @@ export function useInitialSync({
       }));
 
       // Set up event source for progress updates
-      const eventSource = new EventSource("/api/sync/messages");
+      const response = await fetch("/api/sync/messages", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to start sync");
+      }
       
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          
+      const data = await response.json();
+      
           switch (data.type) {
             case "init":
               updateSyncState((prev) => ({
@@ -212,8 +216,6 @@ export function useInitialSync({
                 localStorage.removeItem(ERROR_STORAGE_KEY);
               }
               
-              // Close the event source
-              eventSource.close();
               
               // Add success toast
               addToast({
@@ -234,54 +236,17 @@ export function useInitialSync({
                 error: data.message || "An error occurred during sync",
               }));
               
-              // Close the event source
-              eventSource.close();
-              
-              // Add error toast
+              //  Add error toast
               addToast({
                 variant: "danger",
                 message: data.message || "Failed to sync emails",
               });
               break;
+            }
+          } catch (parseError) {
+            console.error("Error parsing event data:", parseError);
           }
-        } catch (parseError) {
-          console.error("Error parsing event data:", parseError);
-        }
-      };
-      
-      eventSource.onerror = () => {
-        updateSyncState((prev) => ({
-          ...prev,
-          syncStatus: "error",
-          error: "Connection to sync service was lost",
-        }));
-        
-        eventSource.close();
-        
-        addToast({
-          variant: "danger",
-          message: "Connection to sync service was lost",
-        });
-      };
-      
-      // Return cleanup function
-      return () => {
-        eventSource.close();
-      };
-      
-    } catch (error) {
-      updateSyncState((prev) => ({
-        ...prev,
-        syncStatus: "error",
-        error: error instanceof Error ? error.message : "Failed to start sync",
-      }));
-      
-      addToast({
-        variant: "danger",
-        message: error instanceof Error ? error.message : "Failed to start sync",
-      });
-    }
-  }, [addToast, queryClient, redirectAfterSync, redirectPath, router, updateSyncState]);
+      }, [updateSyncState, queryClient, addToast, router, redirectAfterSync, redirectPath]);
 
   // Handle error reset button click
   const resetSyncError = useCallback(() => {

@@ -79,6 +79,20 @@ Our architecture is designed to help maintain compliance with:
 
 ## 🚀 Getting Started
 
+### Using Docker Compose (Recommended)
+
+```bash
+# Start the required services
+docker compose up -d
+
+# The following services will be available:
+# - PostgreSQL: localhost:5432
+# - Redis: localhost:6379
+# - Qdrant Vector DB: localhost:6333
+```
+
+### Manual Setup
+
 ```bash
 # Clone the repository
 git clone https://github.com/izadoesdev/mailer
@@ -101,11 +115,14 @@ bun run dev
 
 Create a `.env.local` file with the following variables:
 
-```
-DATABASE_URL=your_database_connection_string
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-ENCRYPTION_KEY=your_fallback_encryption_key
+```env
+# Database
+DATABASE_URL="postgresql://mailbuddy:mailbuddy@localhost:5432/mailbuddy"
+
+# Redis
+REDIS_URL="redis://localhost:6379"
+
+# Other variables as specified in .env.example
 ```
 
 ## 🛠️ Tech Stack
@@ -164,7 +181,7 @@ ENCRYPTION_KEY=your_fallback_encryption_key
 │   └── public/               # Static assets
 ```
 
-## �� Documentation
+## 📄 Documentation
 
 <!-- Comprehensive documentation is available at [docs.example.com](https://docs.example.com) covering: -->
 

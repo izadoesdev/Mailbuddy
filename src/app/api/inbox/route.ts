@@ -22,10 +22,12 @@ interface EmailQueryResult {
 }
 
 async function getTotalCount(userId: string): Promise<number> {
-    const total = await redis.get(`total_count_${userId}`);
-    if (total) {
-        return Number.parseInt(total);
-    }
+    // const total = await redis.get(`total_count_${userId}`);
+    // if (total) {
+    //     return Number.parseInt(total);
+    // }
+
+    // TODO: Add invalidation after syncing is complete to avoid stale counts
     const totalCount = await prisma.message.count({
         where: { userId },
     });
@@ -449,22 +451,6 @@ export async function GET(request: NextRequest) {
     const messageCount = await getTotalCount(user.id);
 
     if (messageCount === 0) {
-        // Check if sync is in progress
-        const syncState = await prisma.syncState.findUnique({
-            where: { userId: user.id }
-        });
-
-        if (syncState?.syncInProgress) {
-            return NextResponse.json({
-                threads: [],
-                totalCount: 0,
-                page,
-                pageSize,
-                hasMore: false,
-                error: "Email sync in progress",
-                errorType: "sync_in_progress"
-            });
-        }
         
         return NextResponse.json({
             threads: [],
