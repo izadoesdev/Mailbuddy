@@ -1,7 +1,8 @@
 "use client";
 
-import React, { forwardRef } from "react";
-import { Row, useTheme, IconButton } from "@/once-ui/components";
+import { IconButton, Row, useTheme } from "@/once-ui/components";
+import type React from "react";
+import { forwardRef } from "react";
 
 type ThemeType = "system" | "dark" | "light";
 

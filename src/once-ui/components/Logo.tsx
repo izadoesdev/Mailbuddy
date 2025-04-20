@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect } from "react";
-import Link from "next/link";
 import classNames from "classnames";
-import styles from "./Logo.module.scss";
-import { SpacingToken } from "../types";
+import Link from "next/link";
+import type React from "react";
+import { useEffect } from "react";
 import { Flex } from ".";
+import type { SpacingToken } from "../types";
+import styles from "./Logo.module.scss";
 
 const sizeMap: Record<string, SpacingToken> = {
     xs: "20",

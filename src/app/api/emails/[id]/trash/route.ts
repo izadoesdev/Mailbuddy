@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/libs/db";
-import { auth } from "@/libs/auth";
-import { headers } from "next/headers";
 import { withGmailApi } from "@/app/api/utils/withGmail";
+import { auth } from "@/libs/auth";
+import { prisma } from "@/libs/db";
+import { headers } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
 
 // Helper function to log messages
 const log = (message: string, ...args: any[]) => {
@@ -61,7 +61,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             select: {
                 labels: true,
                 id: true,
-                threadId: true
+                threadId: true,
             },
         });
 
@@ -82,41 +82,44 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         // Sync with Gmail - Move to TRASH using withGmailApi helper
-        const gmailResult = await withGmailApi(
-            userId,
-            accessToken,
-            refreshToken,
-            async (gmail) => {
-                // Add TRASH label to the message
-                const response = await gmail.users.messages.modify({
-                    userId: GMAIL_USER_ID,
-                    id,
-                    requestBody: {
-                        addLabelIds: ["TRASH"],
-                    },
-                });
+        const gmailResult = await withGmailApi(userId, accessToken, refreshToken, async (gmail) => {
+            // Add TRASH label to the message
+            const response = await gmail.users.messages.modify({
+                userId: GMAIL_USER_ID,
+                id,
+                requestBody: {
+                    addLabelIds: ["TRASH"],
+                },
+            });
 
-                log(`Successfully added TRASH label in Gmail for message ${id}`);
-                
-                return response.data;
-            }
-        );
+            log(`Successfully added TRASH label in Gmail for message ${id}`);
+
+            return response.data;
+        });
 
         if (!gmailResult) {
             log("Gmail API operation failed, but continuing with database update");
         }
 
         // Update the labels in database to add TRASH and remove inbox-related labels
-        const inboxLabels = ["INBOX", "UNREAD", "IMPORTANT", "CATEGORY_PERSONAL", "CATEGORY_SOCIAL", 
-                            "CATEGORY_PROMOTIONS", "CATEGORY_UPDATES", "CATEGORY_FORUMS"];
-        
+        const inboxLabels = [
+            "INBOX",
+            "UNREAD",
+            "IMPORTANT",
+            "CATEGORY_PERSONAL",
+            "CATEGORY_SOCIAL",
+            "CATEGORY_PROMOTIONS",
+            "CATEGORY_UPDATES",
+            "CATEGORY_FORUMS",
+        ];
+
         const updatedEmail = await prisma.email.update({
             where: {
                 id,
             },
             data: {
                 labels: {
-                    set: [...email.labels.filter(label => !inboxLabels.includes(label)), "TRASH"],
+                    set: [...email.labels.filter((label) => !inboxLabels.includes(label)), "TRASH"],
                 },
             },
         });
@@ -132,15 +135,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         });
     } catch (error) {
         log("Error moving email to trash:", error);
-        
+
         // Handle specific auth errors
         if (error instanceof Error && error.message === "AUTH_REFRESH_FAILED") {
             return NextResponse.json(
                 { error: "Authentication failed. Please sign in again." },
-                { status: 401 }
+                { status: 401 },
             );
         }
-        
+
         return NextResponse.json(
             {
                 error: error instanceof Error ? error.message : "An unexpected error occurred",
@@ -148,4 +151,4 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             { status: 500 },
         );
     }
-} 
+}

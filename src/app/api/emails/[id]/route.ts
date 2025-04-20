@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/libs/db";
 import { auth } from "@/libs/auth";
-import { headers } from "next/headers";
+import { prisma } from "@/libs/db";
 import { decodeEncryptedData, decryptText } from "@/libs/utils/encryption";
+import { headers } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
 
 // Helper function to log messages
 const log = (message: string, ...args: any[]) => {
@@ -56,7 +56,7 @@ function decryptEmail(email: any) {
  */
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
+    const id = searchParams.get("id");
 
     if (!id) {
         return NextResponse.json({ error: "Email ID is required" }, { status: 400 });

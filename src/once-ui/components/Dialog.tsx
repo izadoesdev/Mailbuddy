@@ -1,7 +1,8 @@
 "use client";
 
+import classNames from "classnames";
 import React, {
-    ReactNode,
+    type ReactNode,
     useEffect,
     useCallback,
     useRef,
@@ -10,7 +11,6 @@ import React, {
     useContext,
 } from "react";
 import ReactDOM from "react-dom";
-import classNames from "classnames";
 import { Flex, Heading, IconButton, Text } from ".";
 import styles from "./Dialog.module.scss";
 

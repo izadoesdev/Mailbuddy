@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, useMemo, ReactNode } from "react";
-import { Flex, Text, Icon, Column, Input, Option, Row } from ".";
+import { usePathname, useRouter } from "next/navigation";
+import React, { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useRouter, usePathname } from "next/navigation";
+import { Column, Flex, Icon, Input, Option, Row, Text } from ".";
 import styles from "./Kbar.module.scss";
 
 export interface KbarItem {

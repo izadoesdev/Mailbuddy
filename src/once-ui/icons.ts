@@ -4,88 +4,88 @@ import type { IconType } from "react-icons";
 import {
     HiArrowUpRight,
     HiCalendar,
-    HiOutlineCheckCircle,
+    HiCheck,
     HiChevronDown,
     HiChevronLeft,
     HiChevronRight,
     HiChevronUp,
     HiExclamationCircle,
     HiExclamationTriangle,
+    HiEyeDropper,
     HiInformationCircle,
     HiMiniMinus,
     HiMiniPlus,
     HiMiniXMark,
+    HiOutlineAcademicCap, // For educational/book
     HiOutlineArrowLeft,
     HiOutlineArrowPath,
     HiOutlineArrowRight,
+    HiOutlineArrowRightOnRectangle, // Logout icon
+    HiOutlineBanknotes, // For money/financial
     HiOutlineBars3,
     HiOutlineBell,
     HiOutlineBolt,
     HiOutlineBriefcase,
+    HiOutlineChartBar,
+    HiOutlineChatBubbleBottomCenterText,
+    HiOutlineCheckCircle,
     HiOutlineClipboard,
-    HiOutlineCloud,
-    HiOutlineComputerDesktop,
     HiOutlineClock,
+    HiOutlineCloud,
+    HiOutlineCog6Tooth,
+    HiOutlineComputerDesktop,
+    HiOutlineCurrencyDollar,
+    HiOutlineDocument,
+    HiOutlineEnvelope,
+    HiOutlineExclamationCircle,
+    HiOutlineExclamationTriangle,
     HiOutlineEye,
     HiOutlineEyeSlash,
+    HiOutlineFire,
     HiOutlineFlag,
     HiOutlineFolder,
+    HiOutlineHome,
     HiOutlineInboxStack,
+    HiOutlineInformationCircle,
+    HiOutlineLightBulb,
     HiOutlineLink,
     HiOutlineListBullet,
     HiOutlineMagnifyingGlass,
     HiOutlineMoon,
+    HiOutlineMusicalNote, // For music/entertainment
     HiOutlinePaperAirplane,
+    HiOutlinePencil,
+    HiOutlineQuestionMarkCircle,
     HiOutlineShieldCheck,
     HiOutlineShoppingBag,
     HiOutlineSparkles,
     HiOutlineStar,
     HiOutlineSun,
     HiOutlineTag,
-    HiOutlineArrowRightOnRectangle, // Logout icon
-    HiOutlineUserGroup,
-    HiPaperAirplane,
-    HiCheck,
-    HiEyeDropper,
-    HiStar,
-    HiOutlineCog6Tooth,
-    HiOutlineQuestionMarkCircle,
-    HiOutlineEnvelope,
-    HiOutlineUser,
     HiOutlineTrash,
-    HiPaintBrush,
-    HiOutlineLightBulb,
-    HiOutlineHome,
-    HiOutlineExclamationTriangle,
-    HiOutlinePencil,
-    HiOutlineAcademicCap, // For educational/book
-    HiOutlineBanknotes, // For money/financial
-    HiOutlineMusicalNote, // For music/entertainment
-    HiOutlineCurrencyDollar,
-    HiOutlineInformationCircle,
-    HiOutlineFire,
+    HiOutlineUser,
     HiOutlineUserCircle,
-    HiOutlineChartBar,
-    HiOutlineDocument,
-    HiPaperClip,
-    HiWifi,
-    HiOutlineChatBubbleBottomCenterText,
+    HiOutlineUserGroup,
     HiOutlineUserPlus,
-    HiOutlineExclamationCircle,
     HiOutlineXMark, // Alternative for money
+    HiPaintBrush,
+    HiPaperAirplane,
+    HiPaperClip,
+    HiStar,
+    HiWifi,
 } from "react-icons/hi2";
 
 // Font Awesome 6
-import { 
+import {
     FaApple,
     FaBots,
     FaCode,
-    FaDiscord, 
-    FaGithub, 
-    FaGoogle, 
-    FaLinkedin, 
-    FaMicrosoft, 
-    FaPage4, 
+    FaDiscord,
+    FaGithub,
+    FaGoogle,
+    FaLinkedin,
+    FaMicrosoft,
+    FaPage4,
     FaPlane,
     FaTruck,
     FaTwitter,
@@ -93,7 +93,13 @@ import {
 } from "react-icons/fa6";
 
 // Remix Icons
-import { RiBillLine, RiMegaphoneLine, RiReplyAllFill, RiStackedView, RiVisaLine } from "react-icons/ri";
+import {
+    RiBillLine,
+    RiMegaphoneLine,
+    RiReplyAllFill,
+    RiStackedView,
+    RiVisaLine,
+} from "react-icons/ri";
 
 // Lucide Icons
 import { LuActivity, LuBookOpen, LuBot, LuChevronsLeftRight, LuSave, LuZap } from "react-icons/lu";
@@ -108,7 +114,7 @@ export const iconLibrary: Record<string, IconType> = {
     arrowLeft: HiOutlineArrowLeft,
     arrowRight: HiOutlineArrowRight,
     arrowUpRight: HiArrowUpRight,
-    
+
     // Status & Feedback
     check: HiCheck,
     checkCircle: HiOutlineCheckCircle,
@@ -116,7 +122,7 @@ export const iconLibrary: Record<string, IconType> = {
     warningTriangle: HiExclamationTriangle,
     errorCircle: HiExclamationCircle,
     helpCircle: HiOutlineQuestionMarkCircle,
-    
+
     // UI Controls
     refresh: HiOutlineArrowPath,
     light: HiOutlineSun,
@@ -129,7 +135,7 @@ export const iconLibrary: Record<string, IconType> = {
     eyeOff: HiOutlineEyeSlash,
     settings: HiOutlineCog6Tooth,
     logout: HiOutlineArrowRightOnRectangle,
-    
+
     // Common Icons
     person: HiOutlineUser,
     group: HiOutlineUserGroup,
@@ -140,7 +146,7 @@ export const iconLibrary: Record<string, IconType> = {
     list: HiOutlineListBullet,
     link: HiOutlineLink,
     openLink: HiOutlineLink,
-    
+
     // Email & Communication
     mail: HiOutlineEnvelope,
     inbox: HiOutlineInboxStack,
@@ -152,7 +158,7 @@ export const iconLibrary: Record<string, IconType> = {
     edit: HiOutlinePencil,
     folder: HiOutlineFolder,
     flag: HiOutlineFlag,
-    
+
     // Business & Commerce
     briefcase: HiOutlineBriefcase,
     money: HiOutlineBanknotes,
@@ -160,20 +166,20 @@ export const iconLibrary: Record<string, IconType> = {
     bag: HiOutlineShoppingBag,
     tag: HiOutlineTag,
     bill: RiBillLine,
-    
+
     // Travel & Transport
     plane: FaPlane,
     truck: FaTruck,
-    
+
     // Notifications & Alerts
     bell: HiOutlineBell,
     bullhorn: RiMegaphoneLine,
-    
+
     // Education & Entertainment
     book: HiOutlineAcademicCap,
     music: HiOutlineMusicalNote,
     utensils: FaUtensils,
-    
+
     // Services & Brands
     discord: FaDiscord,
     apple: FaApple,
@@ -183,7 +189,7 @@ export const iconLibrary: Record<string, IconType> = {
     twitter: FaTwitter,
     linkedin: FaLinkedin,
     visa: RiVisaLine,
-    
+
     // Miscellaneous
     security: HiOutlineShieldCheck,
     shield: HiOutlineShieldCheck,

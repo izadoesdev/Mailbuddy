@@ -1,7 +1,8 @@
 "use client";
 
-import React, { CSSProperties, useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import type React from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 
 import { Flex, Skeleton } from ".";
 

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Flex, Row, Column, Text, Icon, ToggleButton } from ".";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
+import { Column, Flex, Icon, Row, Text, ToggleButton } from ".";
 import styles from "./MegaMenu.module.scss";
 
 export interface MenuLink {

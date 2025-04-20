@@ -64,7 +64,7 @@
 //         }
 
 //         const prompt = `${AI_PROMPTS.CATEGORIZE}
-    
+
 //     EMAIL:
 //     ${emailText.substring(0, 3000)}`;
 
@@ -87,7 +87,7 @@
 //         }
 
 //         const prompt = `${AI_PROMPTS.PRIORITIZE}
-    
+
 //     EMAIL:
 //     ${emailText.substring(0, 3000)}`;
 
@@ -118,7 +118,7 @@
 //         }
 
 //         const prompt = `${AI_PROMPTS.SUMMARIZE}
-    
+
 //     EMAIL:
 //     ${emailText.substring(0, 3000)}`;
 
@@ -141,10 +141,10 @@
 //         }
 
 //         const prompt = `${AI_PROMPTS.EXTRACT_ACTION_ITEMS}
-    
+
 //     EMAIL:
 //     ${emailText.substring(0, 3000)}
-    
+
 //     Format your response as a JSON array, with each item as a string. If no action items, return an empty array [].`;
 
 //         const result = await callGroq(prompt, { temperature: 0.2, maxTokens: 400 });
@@ -185,10 +185,10 @@
 //         }
 
 //         const prompt = `${AI_PROMPTS.EXTRACT_CONTACT_INFO}
-    
+
 //     EMAIL:
 //     ${emailText.substring(0, 3000)}
-    
+
 //     Format your response as a JSON object with contact details as key-value pairs. If no contact info, return an empty object {}.`;
 
 //         const result = await callGroq(prompt, { temperature: 0.1, maxTokens: 300 });
@@ -238,17 +238,17 @@
 
 //         // Create a comprehensive prompt that extracts all information at once
 //         const prompt = `Analyze this email and provide the following information in JSON format:
-    
+
 //     1. category: Choose one from [${AI_PROMPTS.CATEGORIZE}]
 //     2. priority: Choose one from [${Object.values(PRIORITY_LEVELS).join(", ")}]
 //     3. priorityExplanation: Briefly explain why you assigned this priority level
 //     4. summary: ${AI_PROMPTS.SUMMARIZE}
 //     5. actionItems: ${AI_PROMPTS.EXTRACT_ACTION_ITEMS}
 //     6. contactInfo: ${AI_PROMPTS.EXTRACT_CONTACT_INFO}
-    
+
 //     EMAIL:
 //     ${emailText.substring(0, 3000)}
-    
+
 //     Format your response as a single valid JSON object with these 6 fields.`;
 
 //         const result = await callGroq(prompt, { temperature: 0.2, maxTokens: 800 });
@@ -313,11 +313,11 @@
 //             };
 //         }
 
-//         const prompt = `Based on the content, urgency, and importance of this email, assign a priority level from these options: 
-//     ${Object.values(PRIORITY_LEVELS).join(", ")}. 
-    
+//         const prompt = `Based on the content, urgency, and importance of this email, assign a priority level from these options:
+//     ${Object.values(PRIORITY_LEVELS).join(", ")}.
+
 //     First provide the priority level, then explain why you assigned this priority in a separate paragraph.
-    
+
 //     EMAIL:
 //     ${emailText.substring(0, 3000)}`;
 

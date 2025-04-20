@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, forwardRef, useImperativeHandle, useEffect, useCallback } from "react";
-import { Flex, Icon, Text, Column, Grid } from ".";
+import type React from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from "react";
+import { Column, Flex, Grid, Icon, Text } from ".";
 import styles from "./Accordion.module.scss";
 
 export interface AccordionHandle extends HTMLDivElement {

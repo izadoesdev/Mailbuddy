@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
-import env from "./env";
 import { Redis } from "ioredis";
+import env from "./env";
 
 export * from "@prisma/client";
 

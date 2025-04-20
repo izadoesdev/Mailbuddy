@@ -20,13 +20,13 @@ export const EXCLUDED_CONTACT_PATTERNS = [
     /^donotreply@/i,
     /^do-not-reply@/i,
     /^do\.not\.reply@/i,
-    
+
     // Notification services
     /^notifications?@/i,
     /^notify@/i,
     /^alerts?@/i,
     /^updates?@/i,
-    
+
     // System accounts
     /^system@/i,
     /^admin@/i,
@@ -34,14 +34,14 @@ export const EXCLUDED_CONTACT_PATTERNS = [
     /^support@/i,
     /^help@/i,
     /^info@/i,
-    
+
     // Marketing and promotional
     /^newsletter@/i,
     /^marketing@/i,
     /^promotions?@/i,
     /^offers?@/i,
     /^news@/i,
-    
+
     // Common service accounts
     /^service@/i,
     /^services@/i,
@@ -52,7 +52,7 @@ export const EXCLUDED_CONTACT_PATTERNS = [
     /^orders?@/i,
     /^bookings?@/i,
     /^reservations?@/i,
-    
+
     // Security related
     /^security@/i,
     /^verification@/i,
@@ -61,29 +61,29 @@ export const EXCLUDED_CONTACT_PATTERNS = [
     /^authentication@/i,
     /^auth@/i,
     /^mfa@/i,
-    
+
     // Common customer service patterns
     /^feedback@/i,
     /^survey@/i,
-    
+
     // Bot and automated emails
     /^bot@/i,
     /^automat(ed|ic)@/i,
     /^mailer-daemon@/i,
     /^mailbot@/i,
     /^robot@/i,
-    
+
     // Generic mail addresses
     /^mail@/i,
     /^email@/i,
     /^postmaster@/i,
-    
+
     // Common domains for automated emails
     /@donotreply\./i,
     /@no-reply\./i,
     /@noreply\./i,
     /@automated\./i,
-    
+
     // Invalid or test addresses
     /^test@/i,
     /^example@/i,
@@ -97,10 +97,10 @@ export const EXCLUDED_CONTACT_PATTERNS = [
  */
 export function shouldExcludeFromContacts(email: string): boolean {
     if (!email) return true;
-    
+
     // Convert to lowercase for case-insensitive matching
     const lowerEmail = email.toLowerCase();
-    
+
     // Check against all patterns
-    return EXCLUDED_CONTACT_PATTERNS.some(pattern => pattern.test(lowerEmail));
+    return EXCLUDED_CONTACT_PATTERNS.some((pattern) => pattern.test(lowerEmail));
 }

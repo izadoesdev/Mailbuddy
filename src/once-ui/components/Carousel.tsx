@@ -1,7 +1,7 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { Flex, RevealFx, Scroller, SmartImage } from ".";
-import { useEffect, useState, useRef } from "react";
 
 interface Image {
     src: string;

@@ -4,10 +4,10 @@ import "@/once-ui/tokens/index.scss";
 import classNames from "classnames";
 
 import { baseURL, effects, meta, og, schema, style } from "@/app/resources/config";
+import { QueryProvider } from "@/libs/query/QueryProvider";
 import { Background, Column, Flex, ThemeProvider, ToastProvider } from "@/once-ui/components";
 import { Meta, Schema } from "@/once-ui/modules";
-import { NuqsAdapter } from 'nuqs/adapters/next/app'
-import { QueryProvider } from "@/libs/query/QueryProvider";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 import { Geist } from "next/font/google";
 import { Geist_Mono } from "next/font/google";
@@ -86,7 +86,9 @@ export default function RootLayout({
             />
             <head>
                 <Script
-                    defer src="https://cloud.umami.is/script.js" data-website-id="daf3c389-edda-4092-aed1-bd93cd7b2761"
+                    defer
+                    src="https://cloud.umami.is/script.js"
+                    data-website-id="daf3c389-edda-4092-aed1-bd93cd7b2761"
                 />
                 <script
                     dangerouslySetInnerHTML={{
@@ -111,60 +113,60 @@ export default function RootLayout({
             </head>
             <ThemeProvider>
                 <ToastProvider>
-                  <NuqsAdapter>
-                    <Column as="body" fillWidth margin="0" padding="0" marginTop="8">
-                    <Background
-                        pointerEvents="none"
-                            position="fixed"
-                            mask={{
-                            cursor: effects.mask.cursor,
-                            x: effects.mask.x,
-                            y: effects.mask.y,
-                            radius: effects.mask.radius,
-                            }}
-                            gradient={{
-                            display: effects.gradient.display,
-                            x: effects.gradient.x,
-                            y: effects.gradient.y,
-                            width: effects.gradient.width,
-                            height: effects.gradient.height,
-                            tilt: effects.gradient.tilt,
-                            colorStart: effects.gradient.colorStart,
-                            colorEnd: effects.gradient.colorEnd,
-                            opacity: effects.gradient.opacity as
-                                | 0
-                                | 10
-                                | 20
-                                | 30
-                                | 40
-                                | 50
-                                | 60
-                                | 70
-                                | 80
-                                | 90
-                                | 100,
-                            }}
-                            dots={{
-                            display: effects.dots.display,
-                            color: effects.dots.color,
-                            size: effects.dots.size as any,
-                            opacity: effects.dots.opacity as any,
-                            }}
-                            grid={{
-                            display: effects.grid.display,
-                            color: effects.grid.color,
-                            width: effects.grid.width as any,
-                            height: effects.grid.height as any,
-                            opacity: effects.grid.opacity as any,
-                            }}
-                            lines={{
-                            display: effects.lines.display,
-                            opacity: effects.lines.opacity as any,
-                            }}
-                        />
-                        <QueryProvider>{children}</QueryProvider>
-                    </Column>
-                  </NuqsAdapter>
+                    <NuqsAdapter>
+                        <Column as="body" fillWidth margin="0" padding="0" marginTop="8">
+                            <Background
+                                pointerEvents="none"
+                                position="fixed"
+                                mask={{
+                                    cursor: effects.mask.cursor,
+                                    x: effects.mask.x,
+                                    y: effects.mask.y,
+                                    radius: effects.mask.radius,
+                                }}
+                                gradient={{
+                                    display: effects.gradient.display,
+                                    x: effects.gradient.x,
+                                    y: effects.gradient.y,
+                                    width: effects.gradient.width,
+                                    height: effects.gradient.height,
+                                    tilt: effects.gradient.tilt,
+                                    colorStart: effects.gradient.colorStart,
+                                    colorEnd: effects.gradient.colorEnd,
+                                    opacity: effects.gradient.opacity as
+                                        | 0
+                                        | 10
+                                        | 20
+                                        | 30
+                                        | 40
+                                        | 50
+                                        | 60
+                                        | 70
+                                        | 80
+                                        | 90
+                                        | 100,
+                                }}
+                                dots={{
+                                    display: effects.dots.display,
+                                    color: effects.dots.color,
+                                    size: effects.dots.size as any,
+                                    opacity: effects.dots.opacity as any,
+                                }}
+                                grid={{
+                                    display: effects.grid.display,
+                                    color: effects.grid.color,
+                                    width: effects.grid.width as any,
+                                    height: effects.grid.height as any,
+                                    opacity: effects.grid.opacity as any,
+                                }}
+                                lines={{
+                                    display: effects.lines.display,
+                                    opacity: effects.lines.opacity as any,
+                                }}
+                            />
+                            <QueryProvider>{children}</QueryProvider>
+                        </Column>
+                    </NuqsAdapter>
                 </ToastProvider>
             </ThemeProvider>
         </Flex>

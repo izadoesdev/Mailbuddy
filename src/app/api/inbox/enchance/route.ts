@@ -1,7 +1,7 @@
-import { type NextRequest, NextResponse } from "next/server";
+import index from "@/app/(dev)/ai/new";
 import { auth } from "@/libs/auth";
 import { headers } from "next/headers";
-import index from "@/app/(dev)/ai/new";
+import { type NextRequest, NextResponse } from "next/server";
 
 const openRouter = index.openrouter;
 
@@ -20,7 +20,10 @@ export async function POST(request: NextRequest) {
         const { emailContent, streaming = false, action = "improve" } = await request.json();
 
         if (!emailContent) {
-            return NextResponse.json({ error: "Missing required field: emailContent" }, { status: 400 });
+            return NextResponse.json(
+                { error: "Missing required field: emailContent" },
+                { status: 400 },
+            );
         }
 
         // Build prompt based on the requested action
@@ -29,54 +32,54 @@ export async function POST(request: NextRequest) {
             case "improve":
                 prompt = `Improve the following email draft to make it more professional, clear, and effective. 
                 Maintain the same tone and intent but enhance clarity, structure, and impact.
-                Consider the context that this is from ${session.user.email || 'the sender'} to ${emailContent.match(/To: ([^\n]+)/)?.[1] || 'the recipient'}.
+                Consider the context that this is from ${session.user.email || "the sender"} to ${emailContent.match(/To: ([^\n]+)/)?.[1] || "the recipient"}.
                 Keep in mind the relationship dynamic between sender and recipient when improving:
 
                 ${emailContent}`;
                 break;
             case "shorten":
                 prompt = `Make this email draft more concise while preserving all key information.
-                Consider the context that this is from ${session.user.email || 'the sender'} to ${emailContent.match(/To: ([^\n]+)/)?.[1] || 'the recipient'}.
+                Consider the context that this is from ${session.user.email || "the sender"} to ${emailContent.match(/To: ([^\n]+)/)?.[1] || "the recipient"}.
                 Maintain appropriate formality for this sender-recipient relationship:
 
                 ${emailContent}`;
                 break;
             case "formal":
                 prompt = `Rewrite this email draft in a more formal and professional tone.
-                Consider the context that this is from ${session.user.email || 'the sender'} to ${emailContent.match(/To: ([^\n]+)/)?.[1] || 'the recipient'}.
+                Consider the context that this is from ${session.user.email || "the sender"} to ${emailContent.match(/To: ([^\n]+)/)?.[1] || "the recipient"}.
                 Ensure language is appropriate for a professional business relationship:
 
                 ${emailContent}`;
                 break;
             case "friendly":
                 prompt = `Rewrite this email draft to sound warmer and more personable.
-                Consider the context that this is from ${session.user.email || 'the sender'} to ${emailContent.match(/To: ([^\n]+)/)?.[1] || 'the recipient'}.
+                Consider the context that this is from ${session.user.email || "the sender"} to ${emailContent.match(/To: ([^\n]+)/)?.[1] || "the recipient"}.
                 Make it conversational while maintaining appropriate professionalism for this relationship:
 
                 ${emailContent}`;
                 break;
             default:
                 prompt = `Improve the following email draft to make it more professional, clear, and effective.
-                Consider the context that this is from ${session.user.email || 'the sender'} to ${emailContent.match(/To: ([^\n]+)/)?.[1] || 'the recipient'}:
+                Consider the context that this is from ${session.user.email || "the sender"} to ${emailContent.match(/To: ([^\n]+)/)?.[1] || "the recipient"}:
 
                 ${emailContent}`;
         }
-        
+
         if (streaming) {
             // Set up streaming response
             const encoder = new TextEncoder();
             const stream = new TransformStream();
             const writer = stream.writable.getWriter();
-            
+
             // Create a streaming response
             const response = new Response(stream.readable, {
                 headers: {
                     "Content-Type": "text/event-stream",
                     "Cache-Control": "no-cache",
-                    "Connection": "keep-alive",
+                    Connection: "keep-alive",
                 },
             });
-            
+
             // Process in background
             (async () => {
                 try {
@@ -90,24 +93,26 @@ export async function POST(request: NextRequest) {
                         const content = chunk.choices[0]?.delta?.content || "";
                         if (content) {
                             await writer.write(
-                                encoder.encode(`data: ${JSON.stringify({ content })}\n\n`)
+                                encoder.encode(`data: ${JSON.stringify({ content })}\n\n`),
                             );
                         }
                     }
-                    
+
                     await writer.write(
-                        encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`)
+                        encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`),
                     );
                 } catch (error) {
                     console.error("Error streaming AI response:", error);
                     await writer.write(
-                        encoder.encode(`data: ${JSON.stringify({ error: "Enhancement failed" })}\n\n`)
+                        encoder.encode(
+                            `data: ${JSON.stringify({ error: "Enhancement failed" })}\n\n`,
+                        ),
                     );
                 } finally {
                     await writer.close();
                 }
             })();
-            
+
             return response;
         }
 
@@ -116,19 +121,19 @@ export async function POST(request: NextRequest) {
             model: "google/gemini-flash-1.5-8b",
             messages: [{ role: "user", content: prompt }],
         });
-        
+
         const enhancedContent = completion.choices[0]?.message?.content || "";
-        
+
         return NextResponse.json({
             success: true,
             enhancedContent,
-            originalContent: emailContent
+            originalContent: emailContent,
         });
     } catch (error) {
         console.error("Error enhancing email draft:", error);
         return NextResponse.json(
             { error: error instanceof Error ? error.message : "An unexpected error occurred" },
-            { status: 500 }
+            { status: 500 },
         );
     }
 }

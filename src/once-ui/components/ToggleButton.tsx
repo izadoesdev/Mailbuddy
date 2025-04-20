@@ -1,11 +1,12 @@
 "use client";
 
-import React, { forwardRef, ReactNode } from "react";
 import classNames from "classnames";
-import { ElementType } from "./ElementType";
+import type React from "react";
+import { type ReactNode, forwardRef } from "react";
 import { Flex, Icon } from ".";
+import type { IconName } from "../icons";
+import { ElementType } from "./ElementType";
 import styles from "./ToggleButton.module.scss";
-import { IconName } from "../icons";
 
 interface CommonProps {
     label?: ReactNode;

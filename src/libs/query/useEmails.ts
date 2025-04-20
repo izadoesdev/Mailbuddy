@@ -1,12 +1,12 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { signOut } from "@/libs/auth/client";
-import { useToast } from "@/once-ui/components";
-import { useCallback, useEffect, useRef, useState } from "react";
 import type { EmailResponse } from "@/libs/types/email";
 import type { Email } from "@/libs/types/email";
+import { useToast } from "@/once-ui/components";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useEmails(pageSize = 50) {
     const router = useRouter();

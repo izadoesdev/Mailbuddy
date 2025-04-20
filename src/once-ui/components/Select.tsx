@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useEffect, forwardRef, ReactNode } from "react";
+import type { Placement } from "@floating-ui/react-dom";
 import classNames from "classnames";
-import { DropdownWrapper, Flex, Icon, IconButton, Input, InputProps, Option } from ".";
+import type React from "react";
+import { type ReactNode, forwardRef, useEffect, useRef, useState } from "react";
+import { DropdownWrapper, Flex, Icon, IconButton, Input, type InputProps, Option } from ".";
+import type { DropdownWrapperProps } from "./DropdownWrapper";
 import inputStyles from "./Input.module.scss";
 import type { OptionProps } from "./Option";
-import type { DropdownWrapperProps } from "./DropdownWrapper";
-import { Placement } from "@floating-ui/react-dom";
 
 type SelectOptionType = Omit<OptionProps, "selected">;
 

@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/libs/auth";
-import { headers } from "next/headers";
 import { prisma } from "@/libs/db";
 import { Prisma } from "@prisma/client";
+import { headers } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
 import { shouldExcludeFromContacts } from "../utils/constants";
 
 /**
@@ -28,16 +28,16 @@ function decryptFrom(encryptedFrom: string): { name: string; email: string } {
         // Extract name and email from format like "Name <email@example.com>"
         const emailRegex = /(.*?)\s*<([^>]+)>/;
         const matches = encryptedFrom.match(emailRegex);
-        
+
         if (matches) {
             let fromName = matches[1].trim();
             const fromEmail = matches[2];
-            
+
             // If name is in quotes, remove them
             if (fromName.startsWith('"') && fromName.endsWith('"')) {
                 fromName = fromName.substring(1, fromName.length - 1);
             }
-            
+
             return { name: fromName, email: fromEmail };
         }
         // If no match, the whole string is an email address
@@ -62,14 +62,14 @@ export async function GET(request: NextRequest) {
 
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams;
-    const page = Number.parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = Number.parseInt(searchParams.get('pageSize') || '20', 10);
-    const sortBy = searchParams.get('sortBy') || 'emailCount';
-    const sortOrder = searchParams.get('sortOrder') || 'desc';
-    const category = searchParams.get('category');
-    const priority = searchParams.get('priority');
-    const searchQuery = searchParams.get('query');
-    const includeAutomated = searchParams.get('includeAutomated') === 'true';
+    const page = Number.parseInt(searchParams.get("page") || "1", 10);
+    const pageSize = Number.parseInt(searchParams.get("pageSize") || "20", 10);
+    const sortBy = searchParams.get("sortBy") || "emailCount";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
+    const category = searchParams.get("category");
+    const priority = searchParams.get("priority");
+    const searchQuery = searchParams.get("query");
+    const includeAutomated = searchParams.get("includeAutomated") === "true";
 
     try {
         // Calculate pagination
@@ -95,21 +95,19 @@ export async function GET(request: NextRequest) {
                 totalCount: 0,
                 page,
                 pageSize,
-                hasMore: false
+                hasMore: false,
             });
         }
 
         // Create sort order for SQL query
         let orderBySql: Prisma.Sql;
-        if (sortBy === 'emailCount') {
-            orderBySql = sortOrder === 'asc' 
-                ? Prisma.sql`email_count ASC`
-                : Prisma.sql`email_count DESC`;
-        } else if (sortBy === 'latestEmailDate') {
-            orderBySql = sortOrder === 'asc' 
-                ? Prisma.sql`latest_date ASC`
-                : Prisma.sql`latest_date DESC`;
-        } else if (sortBy === 'name') {
+        if (sortBy === "emailCount") {
+            orderBySql =
+                sortOrder === "asc" ? Prisma.sql`email_count ASC` : Prisma.sql`email_count DESC`;
+        } else if (sortBy === "latestEmailDate") {
+            orderBySql =
+                sortOrder === "asc" ? Prisma.sql`latest_date ASC` : Prisma.sql`latest_date DESC`;
+        } else if (sortBy === "name") {
             // Name sorting will happen in JS after decryption
             orderBySql = Prisma.sql`email_count DESC`; // Default sorting
         } else {
@@ -140,12 +138,12 @@ export async function GET(request: NextRequest) {
         // Process the raw results to match the Contact interface
         const contactPromises = contactsRaw.map(async (rawContact) => {
             const { name, email } = decryptFrom(rawContact.from);
-            
+
             // Skip automated senders unless explicitly included
             if (!includeAutomated && shouldExcludeFromContacts(email)) {
                 return null;
             }
-            
+
             // Get categories and priorities for this contact in a separate query
             const metadataCounts = await prisma.$queryRaw<any[]>`
                 SELECT 
@@ -159,11 +157,11 @@ export async function GET(request: NextRequest) {
                 AND e."from" = ${rawContact.from}
                 GROUP BY m."category", m."priority"
             `;
-            
+
             // Process metadata counts
             const categories: { [key: string]: number } = {};
             const priorities: { [key: string]: number } = {};
-            
+
             for (const row of metadataCounts) {
                 if (row.category) {
                     categories[row.category] = Number(row.category_count);
@@ -172,47 +170,49 @@ export async function GET(request: NextRequest) {
                     priorities[row.priority] = Number(row.priority_count);
                 }
             }
-            
+
             // Build the contact object
             return {
                 email,
                 name: name || email,
                 emailCount: Number(rawContact.email_count),
-                latestEmailDate: rawContact.latest_date 
+                latestEmailDate: rawContact.latest_date
                     ? new Date(Number(rawContact.latest_date))
                     : new Date(0),
                 threadCount: Number(rawContact.thread_count),
                 categories,
                 priorities,
                 isStarred: rawContact.is_starred,
-                unreadCount: Number(rawContact.unread_count)
+                unreadCount: Number(rawContact.unread_count),
             };
         });
-        
+
         // Process all contacts and filter out null values (automated senders)
-        let contacts = (await Promise.all(contactPromises)).filter(contact => contact !== null) as Contact[];
-        
+        let contacts = (await Promise.all(contactPromises)).filter(
+            (contact) => contact !== null,
+        ) as Contact[];
+
         // We fetch more items than needed to account for filtered automated senders
         // Now trim to the actual page size
         contacts = contacts.slice(0, pageSize);
-        
+
         // Sort by name if requested (after decryption)
-        if (sortBy === 'name') {
+        if (sortBy === "name") {
             contacts.sort((a, b) => {
-                return sortOrder === 'asc'
+                return sortOrder === "asc"
                     ? a.name.localeCompare(b.name)
                     : b.name.localeCompare(a.name);
             });
-        } else if (sortBy === 'priority') {
+        } else if (sortBy === "priority") {
             // Sort by contact with highest priority emails
             contacts.sort((a, b) => {
-                const priorityOrder = { "Urgent": 4, "High": 3, "Medium": 2, "Low": 1 };
-                
+                const priorityOrder = { Urgent: 4, High: 3, Medium: 2, Low: 1 };
+
                 // Calculate weighted priority score
                 const getScore = (contact: Contact) => {
                     let score = 0;
                     let total = 0;
-                    
+
                     for (const [priority, count] of Object.entries(contact.priorities)) {
                         if (priority in priorityOrder) {
                             const prioValue = priorityOrder[priority as keyof typeof priorityOrder];
@@ -220,20 +220,20 @@ export async function GET(request: NextRequest) {
                             total += count;
                         }
                     }
-                    
+
                     return total > 0 ? score / total : 0;
                 };
-                
+
                 const scoreA = getScore(a);
                 const scoreB = getScore(b);
-                
-                return sortOrder === 'asc' ? scoreA - scoreB : scoreB - scoreA;
+
+                return sortOrder === "asc" ? scoreA - scoreB : scoreB - scoreA;
             });
         }
 
         // Recalculate hasMore since we've filtered out some contacts
         const actualTotalCount = totalCount - (contactsRaw.length - contacts.length);
-        const hasMore = (skip + contacts.length) < actualTotalCount;
+        const hasMore = skip + contacts.length < actualTotalCount;
 
         // Return the response
         return NextResponse.json({
@@ -241,13 +241,13 @@ export async function GET(request: NextRequest) {
             totalCount: actualTotalCount,
             page,
             pageSize,
-            hasMore
+            hasMore,
         });
     } catch (error) {
         console.error("Error fetching contacts:", error);
         return NextResponse.json(
             { error: "Error fetching contacts", details: String(error) },
-            { status: 500 }
+            { status: 500 },
         );
     }
-} 
+}

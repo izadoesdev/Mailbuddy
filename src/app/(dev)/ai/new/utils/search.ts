@@ -1,9 +1,9 @@
 "use server";
 
-import index from "../index";
-import { VECTOR_CONFIG } from "../constants";
-import { cleanEmail } from "./clean";
 import type { Email } from "@/app/(main)/inbox/types";
+import { VECTOR_CONFIG } from "../constants";
+import index from "../index";
+import { cleanEmail } from "./clean";
 import { queryVector } from "./vectors";
 
 // Define the search result type for better type safety

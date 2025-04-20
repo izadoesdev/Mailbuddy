@@ -21,9 +21,9 @@ export interface ContactsResponse {
 export interface ContactsQueryParams {
     page?: number;
     pageSize?: number;
-    sortBy?: 'name' | 'emailCount' | 'latestEmailDate' | 'priority';
-    sortOrder?: 'asc' | 'desc';
+    sortBy?: "name" | "emailCount" | "latestEmailDate" | "priority";
+    sortOrder?: "asc" | "desc";
     category?: string;
     priority?: string;
     query?: string;
-} 
+}

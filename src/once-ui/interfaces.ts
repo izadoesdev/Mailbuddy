@@ -2,8 +2,6 @@ import type { CSSProperties, ElementType, HTMLAttributes, ReactNode } from "reac
 import type {
     ColorScheme,
     ColorWeight,
-    flex,
-    gridColumns,
     RadiusNest,
     RadiusSize,
     ShadowSize,
@@ -12,6 +10,8 @@ import type {
     TextType,
     TextVariant,
     TextWeight,
+    flex,
+    gridColumns,
 } from "./types";
 
 export interface GridProps extends HTMLAttributes<HTMLDivElement> {

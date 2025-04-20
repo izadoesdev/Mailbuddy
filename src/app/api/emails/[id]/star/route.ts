@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/libs/db";
-import { auth } from "@/libs/auth";
-import { headers } from "next/headers";
 import { withGmailApi } from "@/app/api/utils/withGmail";
+import { auth } from "@/libs/auth";
+import { prisma } from "@/libs/db";
+import { headers } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
 
 // Helper function to log messages
 const log = (message: string, ...args: any[]) => {
@@ -29,7 +29,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({ 
+    const user = await prisma.user.findUnique({
         where: { id: session.user.id },
         select: {
             id: true,
@@ -81,28 +81,23 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         // Sync with Gmail - Add or remove STARRED label using withGmailApi helper
-        const gmailResult = await withGmailApi(
-            userId,
-            accessToken,
-            refreshToken,
-            async (gmail) => {
-                // Add or remove 'STARRED' label based on isStarred value
-                const response = await gmail.users.messages.modify({
-                    userId: GMAIL_USER_ID,
-                    id,
-                    requestBody: {
-                        addLabelIds: isStarred ? ["STARRED"] : [],
-                        removeLabelIds: isStarred ? [] : ["STARRED"],
-                    },
-                });
+        const gmailResult = await withGmailApi(userId, accessToken, refreshToken, async (gmail) => {
+            // Add or remove 'STARRED' label based on isStarred value
+            const response = await gmail.users.messages.modify({
+                userId: GMAIL_USER_ID,
+                id,
+                requestBody: {
+                    addLabelIds: isStarred ? ["STARRED"] : [],
+                    removeLabelIds: isStarred ? [] : ["STARRED"],
+                },
+            });
 
-                log(
-                    `Successfully ${isStarred ? "added" : "removed"} STARRED label in Gmail for message ${id}`,
-                );
-                
-                return response.data;
-            }
-        );
+            log(
+                `Successfully ${isStarred ? "added" : "removed"} STARRED label in Gmail for message ${id}`,
+            );
+
+            return response.data;
+        });
 
         if (!gmailResult) {
             log("Gmail API operation failed, but continuing with database update");
@@ -129,15 +124,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         });
     } catch (error) {
         log("Error updating star status:", error);
-        
+
         // Handle specific auth errors
         if (error instanceof Error && error.message === "AUTH_REFRESH_FAILED") {
             return NextResponse.json(
                 { error: "Authentication failed. Please sign in again." },
-                { status: 401 }
+                { status: 401 },
             );
         }
-        
+
         return NextResponse.json(
             {
                 error: error instanceof Error ? error.message : "An unexpected error occurred",

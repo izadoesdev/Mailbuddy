@@ -1,5 +1,5 @@
-import { Index } from "@upstash/vector";
 import env from "@/libs/env";
+import { Index } from "@upstash/vector";
 import Groq from "groq-sdk";
 import { OpenAI } from "openai";
 

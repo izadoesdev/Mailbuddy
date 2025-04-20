@@ -1,5 +1,5 @@
-import React from "react";
 import Script from "next/script";
+import React from "react";
 
 export interface SchemaProps {
     as: "website" | "article" | "blogPosting" | "techArticle" | "webPage" | "organization";

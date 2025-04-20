@@ -1,26 +1,26 @@
 "use client";
 
-import type { Email, Thread } from "./types";
-import { Row, Column, useToast, Text, Spinner } from "@/once-ui/components";
-import { EmailList } from "./components/EmailList";
-import { EmailDetail } from "./components/EmailDetail";
-import { InboxControls } from "./components/InboxControls";
-import { Pagination } from "./components/Pagination";
-import { useQueryClient } from "@tanstack/react-query";
-import { useDebounce } from "./hooks/useDebounce";
-import { useInboxData } from "./hooks/useInboxData";
-import { useEmailMutations } from "./hooks/useEmailMutations";
-import { useBackgroundSync } from "./hooks/useBackgroundSync";
-// import { useInitialSync } from "./hooks/useInitialSync";
-import { useAISearch } from "./hooks/useAISearch";
-import { useState, useCallback, useEffect, useRef, Suspense, useMemo } from "react";
+import { EMAIL_CATEGORIES, PRIORITY_LEVELS } from "@/app/(dev)/ai/new/constants";
 import { authClient, signOut, useUser } from "@/libs/auth/client";
+import { Column, Row, Spinner, Text, useToast } from "@/once-ui/components";
+import { useQueryClient } from "@tanstack/react-query";
 import { redirect, useRouter } from "next/navigation";
 import { createParser, useQueryState } from "nuqs";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ComposeEmail } from "./components/ComposeEmail";
+import { EmailDetail } from "./components/EmailDetail";
+import { EmailList } from "./components/EmailList";
+import { InboxControls } from "./components/InboxControls";
+import { Pagination } from "./components/Pagination";
 import { SyncOverlay } from "./components/SyncOverlay";
-import { EMAIL_CATEGORIES, PRIORITY_LEVELS } from "@/app/(dev)/ai/new/constants";
+// import { useInitialSync } from "./hooks/useInitialSync";
+import { useAISearch } from "./hooks/useAISearch";
+import { useBackgroundSync } from "./hooks/useBackgroundSync";
+import { useDebounce } from "./hooks/useDebounce";
+import { useEmailMutations } from "./hooks/useEmailMutations";
+import { useInboxData } from "./hooks/useInboxData";
 import { useInitialSync } from "./hooks/useInitialSync";
+import type { Email, Thread } from "./types";
 
 type CategoryOption = {
     value: string;
@@ -35,15 +35,39 @@ const STANDARD_CATEGORIES: CategoryOption[] = [
     { value: "inbox", label: "Inbox", icon: "inbox" },
     { value: "important", label: "Important", icon: "star" },
     { value: "starred", label: "Starred", icon: "starFill" },
-    { value: "sent", label: "Sent", icon: "arrowUpRight" }
+    { value: "sent", label: "Sent", icon: "arrowUpRight" },
 ];
 
 // Create Priority-based categories
 const PRIORITY_CATEGORIES: CategoryOption[] = [
-    { value: "priority-urgent", label: "Urgent", color: "danger", badge: PRIORITY_LEVELS.URGENT, icon: "errorCircle" },
-    { value: "priority-high", label: "High Priority", color: "warning", badge: PRIORITY_LEVELS.HIGH, icon: "warningTriangle" },
-    { value: "priority-medium", label: "Medium Priority", color: "info", badge: PRIORITY_LEVELS.MEDIUM, icon: "infoCircle" },
-    { value: "priority-low", label: "Low Priority", color: "success", badge: PRIORITY_LEVELS.LOW, icon: "checkCircle" }
+    {
+        value: "priority-urgent",
+        label: "Urgent",
+        color: "danger",
+        badge: PRIORITY_LEVELS.URGENT,
+        icon: "errorCircle",
+    },
+    {
+        value: "priority-high",
+        label: "High Priority",
+        color: "warning",
+        badge: PRIORITY_LEVELS.HIGH,
+        icon: "warningTriangle",
+    },
+    {
+        value: "priority-medium",
+        label: "Medium Priority",
+        color: "info",
+        badge: PRIORITY_LEVELS.MEDIUM,
+        icon: "infoCircle",
+    },
+    {
+        value: "priority-low",
+        label: "Low Priority",
+        color: "success",
+        badge: PRIORITY_LEVELS.LOW,
+        icon: "checkCircle",
+    },
 ];
 
 // Create AI categories from EMAIL_CATEGORIES constant
@@ -55,24 +79,24 @@ const AI_CATEGORIES: CategoryOption[] = [
     { value: "category-legal", label: "Legal", icon: "shield" },
     { value: "category-invoices", label: "Invoices", icon: "clipboard" },
     { value: "category-receipts", label: "Receipts", icon: "clipboard" },
-    
+
     // Personal & Social
     { value: "category-personal", label: "Personal", icon: "person" },
     { value: "category-social", label: "Social", icon: "group" },
     { value: "category-healthcare", label: "Healthcare", icon: "shield" },
-    
+
     // Updates & Marketing
     { value: "category-updates", label: "Updates", icon: "refresh" },
     { value: "category-newsletters", label: "Newsletters", icon: "mail" },
     { value: "category-promotions", label: "Promotions", icon: "tag" },
     { value: "category-marketing", label: "Marketing", icon: "bullhorn" },
-    
+
     // Events & Travel
     { value: "category-events", label: "Events", icon: "calendar" },
     { value: "category-scheduling", label: "Scheduling", icon: "calendar" },
     { value: "category-travel", label: "Travel", icon: "plane" },
     { value: "category-shipping", label: "Shipping", icon: "truck" },
-    
+
     // Other Categories
     { value: "category-support", label: "Support", icon: "helpCircle" },
     { value: "category-alerts", label: "Alerts", icon: "bell" },
@@ -81,7 +105,7 @@ const AI_CATEGORIES: CategoryOption[] = [
     { value: "category-shopping", label: "Shopping", icon: "bag" },
     { value: "category-food", label: "Food", icon: "utensils" },
     { value: "category-entertainment", label: "Entertainment", icon: "music" },
-    { value: "category-security", label: "Security", icon: "security" }
+    { value: "category-security", label: "Security", icon: "security" },
 ];
 
 // Create parsers for the URL query parameters
@@ -111,11 +135,11 @@ function InboxPage() {
     }
 
     // URL state with nuqs
-    const [page, setPage] = useQueryState('page', numberParser);
-    const [pageSize, setPageSize] = useQueryState('pageSize', pageSizeParser);
-    const [currentCategory, setCurrentCategory] = useQueryState('category', { 
-        defaultValue: 'inbox',
-        history: 'replace'
+    const [page, setPage] = useQueryState("page", numberParser);
+    const [pageSize, setPageSize] = useQueryState("pageSize", pageSizeParser);
+    const [currentCategory, setCurrentCategory] = useQueryState("category", {
+        defaultValue: "inbox",
+        history: "replace",
     });
     // Local state
     const [searchQuery, setSearchQuery] = useState("");
@@ -142,34 +166,31 @@ function InboxPage() {
     }, [user, isAuthLoading, router]);
 
     // Only fetch emails if user is authenticated
-    const { threads, emails, totalCount, isLoading, isFetching, hasMore, error, errorType } = useInboxData({
-        page,
-        pageSize,
-        searchQuery: debouncedSearchQuery,
-        category: currentCategory,
-        enabled: isAuthenticated,
-    });
-    
+    const { threads, emails, totalCount, isLoading, isFetching, hasMore, error, errorType } =
+        useInboxData({
+            page,
+            pageSize,
+            searchQuery: debouncedSearchQuery,
+            category: currentCategory,
+            enabled: isAuthenticated,
+        });
+
     // Track if a request has been initiated to avoid "empty inbox" flash
     const [hasInitiatedRequest, setHasInitiatedRequest] = useState(false);
-    
+
     // Set hasInitiatedRequest when any request starts
     useEffect(() => {
         if (isLoading || isFetching) {
             setHasInitiatedRequest(true);
         }
     }, [isLoading, isFetching]);
-    
+
     // Calculate total pages based on totalCount and pageSize
     const totalPages = totalCount ? Math.ceil(totalCount / pageSize) : 1;
 
     // Combine all category options
     const allCategoryOptions = useMemo(() => {
-        return [
-            ...STANDARD_CATEGORIES,
-            ...PRIORITY_CATEGORIES,
-            ...AI_CATEGORIES
-        ];
+        return [...STANDARD_CATEGORIES, ...PRIORITY_CATEGORIES, ...AI_CATEGORIES];
     }, []);
 
     // Use AI search hook
@@ -179,8 +200,8 @@ function InboxPage() {
     // Pass authentication state to hooks
     const { markAsRead, toggleStar, trashEmail } = useEmailMutations({ enabled: isAuthenticated });
     const { triggerSync, isSyncing } = useBackgroundSync({ enabled: isAuthenticated });
-    
-    const { 
+
+    const {
         syncStatus,
         progress,
         message,
@@ -188,8 +209,8 @@ function InboxPage() {
         performInitialSync,
         error: syncError,
         errorType: syncErrorType,
-        resetSyncError
-    } = useInitialSync({ 
+        resetSyncError,
+    } = useInitialSync({
         enabled: isAuthenticated,
         redirectAfterSync: false,
     });
@@ -201,17 +222,25 @@ function InboxPage() {
 
     useEffect(() => {
         // Prevent multiple syncs - only sync if not in error state and not already syncing
-        if (isAuthenticated && 
-            !hasSyncedRef.current && 
-            !isLoading && 
-            !isFetching && 
-            !isInitialSyncInProgress && 
-            syncStatus !== "error") {
-            
+        if (
+            isAuthenticated &&
+            !hasSyncedRef.current &&
+            !isLoading &&
+            !isFetching &&
+            !isInitialSyncInProgress &&
+            syncStatus !== "error"
+        ) {
             hasSyncedRef.current = true; // Mark as synced to prevent future attempts
             memoizedTriggerSync();
         }
-    }, [isAuthenticated, isLoading, isFetching, memoizedTriggerSync, isInitialSyncInProgress, syncStatus]);
+    }, [
+        isAuthenticated,
+        isLoading,
+        isFetching,
+        memoizedTriggerSync,
+        isInitialSyncInProgress,
+        syncStatus,
+    ]);
 
     // Handle thread selection
     const handleThreadSelect = useCallback(
@@ -222,10 +251,10 @@ function InboxPage() {
                 setSelectedEmail(null);
                 return;
             }
-            
+
             // Set the selected thread
             setSelectedThread(thread);
-            
+
             // If thread has multiple emails, select the newest one
             if (thread.emails && thread.emails.length > 0) {
                 setSelectedEmail(thread.emails[0]);
@@ -255,14 +284,14 @@ function InboxPage() {
     const handleToggleStar = useCallback(
         (item: Thread | Email, e?: React.MouseEvent<HTMLButtonElement>) => {
             if (e) e.stopPropagation();
-            
+
             // If it's a thread, toggle star on the newest email in the thread
-            if ('emails' in item && item.emails.length > 0) {
+            if ("emails" in item && item.emails.length > 0) {
                 toggleStar.mutate({
                     emailId: item.emails[0].id,
                     isStarred: !item.isStarred,
                 });
-            } else if ('id' in item) {
+            } else if ("id" in item) {
                 // It's a single email
                 toggleStar.mutate({
                     emailId: item.id,
@@ -288,10 +317,13 @@ function InboxPage() {
     );
 
     // Handle search
-    const handleSearchChange = useCallback((query: string) => {
-        setSearchQuery(query);
-        setPage(1); // Reset to first page on new search
-    }, [setPage]);
+    const handleSearchChange = useCallback(
+        (query: string) => {
+            setSearchQuery(query);
+            setPage(1); // Reset to first page on new search
+        },
+        [setPage],
+    );
 
     // Handle AI search
     const handleAISearch = useCallback(
@@ -308,31 +340,37 @@ function InboxPage() {
     }, [clearAISearch]);
 
     // Handle page change
-    const handlePageChange = useCallback((newPage: number) => {
-        // If we're moving forward and have a nextPageToken, use it
-        if (newPage > page && hasMore) {
-        } else if (newPage < page) {
-            // If going back, reset token and use offset-based pagination
-            // If skipping back multiple pages, just go back to page 1 and re-fetch
-            if (newPage < page - 1) {
-                setPage(1);
-                setTimeout(() => setPage(newPage), 100);
+    const handlePageChange = useCallback(
+        (newPage: number) => {
+            // If we're moving forward and have a nextPageToken, use it
+            if (newPage > page && hasMore) {
+            } else if (newPage < page) {
+                // If going back, reset token and use offset-based pagination
+                // If skipping back multiple pages, just go back to page 1 and re-fetch
+                if (newPage < page - 1) {
+                    setPage(1);
+                    setTimeout(() => setPage(newPage), 100);
+                    return;
+                }
+            } else if (newPage > page + 1) {
+                // Skipping ahead multiple pages not supported with token-based pagination
+                // Just go to the next page
+                setPage(page + 1);
                 return;
             }
-        } else if (newPage > page + 1) {
-            // Skipping ahead multiple pages not supported with token-based pagination
-            // Just go to the next page
-            setPage(page + 1);
-            return;
-        }
-        setPage(newPage);
-    }, [setPage, page, hasMore]);
+            setPage(newPage);
+        },
+        [setPage, page, hasMore],
+    );
 
     // Handle page size change
-    const handlePageSizeChange = useCallback((newSize: number) => {
-        // Update both URL state and user preferences
-        setPageSize(newSize);
-    }, [setPageSize]);
+    const handlePageSizeChange = useCallback(
+        (newSize: number) => {
+            // Update both URL state and user preferences
+            setPageSize(newSize);
+        },
+        [setPageSize],
+    );
 
     // Handle refresh
     const handleRefresh = useCallback(() => {
@@ -349,11 +387,11 @@ function InboxPage() {
         // There is no direct cancel function in the hook, but we can add a message
         addToast({
             variant: "success",
-            message: "Sync has been canceled"
+            message: "Sync has been canceled",
         });
         // We can't actually cancel it, but we can hide the overlay
         hasSyncedRef.current = true;
-        
+
         // Reset any error state
         if (syncStatus === "error") {
             // Force a query invalidation to refresh the inbox state
@@ -362,25 +400,28 @@ function InboxPage() {
     }, [addToast, syncStatus, queryClient]);
 
     // Handle category change
-    const handleCategoryChange = useCallback(async (newCategory: string) => {
-        // Close any open emails/threads when changing categories
-        setSelectedEmail(null);
-        setSelectedThread(null);
-        
-        // Clear any active AI search when changing categories
-        if (isAISearchActive) {
-            clearAISearch();
-        }
-        
-        // Reset to first page when changing categories
-        setPage(1);
-        
-        // Update the category
-        await setCurrentCategory(newCategory);
-        
-        // Invalidate the query to ensure fresh data
-        queryClient.invalidateQueries({ queryKey: ["inbox"] });
-    }, [setCurrentCategory, setPage, queryClient, isAISearchActive, clearAISearch]);
+    const handleCategoryChange = useCallback(
+        async (newCategory: string) => {
+            // Close any open emails/threads when changing categories
+            setSelectedEmail(null);
+            setSelectedThread(null);
+
+            // Clear any active AI search when changing categories
+            if (isAISearchActive) {
+                clearAISearch();
+            }
+
+            // Reset to first page when changing categories
+            setPage(1);
+
+            // Update the category
+            await setCurrentCategory(newCategory);
+
+            // Invalidate the query to ensure fresh data
+            queryClient.invalidateQueries({ queryKey: ["inbox"] });
+        },
+        [setCurrentCategory, setPage, queryClient, isAISearchActive, clearAISearch],
+    );
 
     // When mounting the component, ensure the category is set from URL params
     useEffect(() => {
@@ -439,20 +480,22 @@ function InboxPage() {
         if (replyTo) {
             // For reply, set recipient to the sender, add Re: to subject, quote the original message
             props.initialTo = replyTo.from ? extractEmailAddress(replyTo.from) : "";
-            props.initialSubject = replyTo.subject && !replyTo.subject.startsWith("Re:") 
-                ? `Re: ${replyTo.subject}` 
-                : replyTo.subject || "";
-            props.initialBody = replyTo.body 
+            props.initialSubject =
+                replyTo.subject && !replyTo.subject.startsWith("Re:")
+                    ? `Re: ${replyTo.subject}`
+                    : replyTo.subject || "";
+            props.initialBody = replyTo.body
                 ? `<br/><br/>On ${new Date(replyTo.createdAt).toLocaleString()}, ${replyTo.from} wrote:<br/>${replyTo.body}`
                 : "";
             props.threadId = replyTo.threadId;
         } else if (forwardFrom) {
             // For forward, keep recipient empty, add Fwd: to subject, quote the original message
             props.initialTo = "";
-            props.initialSubject = forwardFrom.subject && !forwardFrom.subject.startsWith("Fwd:") 
-                ? `Fwd: ${forwardFrom.subject}` 
-                : forwardFrom.subject || "";
-                
+            props.initialSubject =
+                forwardFrom.subject && !forwardFrom.subject.startsWith("Fwd:")
+                    ? `Fwd: ${forwardFrom.subject}`
+                    : forwardFrom.subject || "";
+
             const forwardHeader = `
                 <br/><br/>---------- Forwarded message ---------<br/>
                 From: ${forwardFrom.from}<br/>
@@ -460,8 +503,8 @@ function InboxPage() {
                 Subject: ${forwardFrom.subject}<br/>
                 To: ${forwardFrom.to ? extractEmailAddress(forwardFrom.to) : ""}<br/><br/>
             `;
-            
-            props.initialBody = forwardFrom.body 
+
+            props.initialBody = forwardFrom.body
                 ? `${forwardHeader}${forwardFrom.body}`
                 : forwardHeader;
         }
@@ -472,30 +515,30 @@ function InboxPage() {
     // Format user data for the user menu
     const formattedUser = useMemo(() => {
         if (!user) return undefined;
-        
+
         return {
-            name: user.name || (user.email ? user.email.split('@')[0] : 'User'),
+            name: user.name || (user.email ? user.email.split("@")[0] : "User"),
             email: user.email,
-            image: user.image || undefined
+            image: user.image || undefined,
         };
     }, [user]);
 
     // Display emails based on AI search or normal inbox
-    const displayedThreads = isAISearchActive 
-        ? similarEmails.map(email => ({
-            threadId: email.threadId,
-            emails: [email],
-            subject: email.subject || "",
-            from: email.from || "",
-            to: email.to || "",
-            snippet: email.snippet || "",
-            isRead: email.isRead,
-            isStarred: email.isStarred,
-            labels: email.labels || [],
-            internalDate: email.internalDate || "",
-            aiMetadata: email.aiMetadata,
-            emailCount: 1
-        }))
+    const displayedThreads = isAISearchActive
+        ? similarEmails.map((email) => ({
+              threadId: email.threadId,
+              emails: [email],
+              subject: email.subject || "",
+              from: email.from || "",
+              to: email.to || "",
+              snippet: email.snippet || "",
+              isRead: email.isRead,
+              isStarred: email.isStarred,
+              labels: email.labels || [],
+              internalDate: email.internalDate || "",
+              aiMetadata: email.aiMetadata,
+              emailCount: 1,
+          }))
         : threads;
 
     // Determine whether to show the sync overlay
@@ -514,14 +557,14 @@ function InboxPage() {
     // Add keyboard shortcut for Escape key
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && (selectedEmail || selectedThread)) {
+            if (e.key === "Escape" && (selectedEmail || selectedThread)) {
                 handleClose();
             }
         };
-        
-        window.addEventListener('keydown', handleKeyDown);
+
+        window.addEventListener("keydown", handleKeyDown);
         return () => {
-            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener("keydown", handleKeyDown);
         };
     }, [selectedEmail, selectedThread, handleClose]);
 
@@ -588,9 +631,11 @@ function InboxPage() {
                     <Column fill overflow="hidden">
                         <EmailList
                             threads={displayedThreads}
-                            isLoading={isAISearchActive 
-                                ? isAISearchLoading 
-                                : (isLoading || isFetching || !hasInitiatedRequest)}
+                            isLoading={
+                                isAISearchActive
+                                    ? isAISearchLoading
+                                    : isLoading || isFetching || !hasInitiatedRequest
+                            }
                             selectedThreadId={selectedThread?.threadId || null}
                             selectedEmailId={selectedEmail?.id || null}
                             searchQuery={debouncedSearchQuery}
@@ -616,11 +661,11 @@ function InboxPage() {
                     {isAISearchActive && (
                         <Row paddingX="16" marginTop="16" horizontal="center">
                             <Text variant="body-default-m">
-                                {similarEmails.length > 0 
-                                    ? `Found ${similarEmails.length} similar emails` 
-                                    : isAISearchLoading 
-                                        ? "Searching..." 
-                                        : "No similar emails found"}
+                                {similarEmails.length > 0
+                                    ? `Found ${similarEmails.length} similar emails`
+                                    : isAISearchLoading
+                                      ? "Searching..."
+                                      : "No similar emails found"}
                             </Text>
                         </Row>
                     )}
@@ -628,13 +673,13 @@ function InboxPage() {
 
                 {/* Email detail view */}
                 {selectedEmail && (
-                    <Column 
+                    <Column
                         gap="-1"
                         fillWidth
-                        style={{ 
-                            width: detailWidth, 
+                        style={{
+                            width: detailWidth,
                             transition: "width 0.3s ease",
-                            overflow: "hidden"
+                            overflow: "hidden",
                         }}
                     >
                         <EmailDetail

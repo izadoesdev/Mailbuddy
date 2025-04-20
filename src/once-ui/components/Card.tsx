@@ -1,10 +1,11 @@
 "use client";
 
-import React, { forwardRef } from "react";
+import classNames from "classnames";
+import type React from "react";
+import { forwardRef } from "react";
 import { Flex } from ".";
 import styles from "./Card.module.scss";
 import { ElementType } from "./ElementType";
-import classNames from "classnames";
 
 interface CardProps extends React.ComponentProps<typeof Flex> {
     children?: React.ReactNode;

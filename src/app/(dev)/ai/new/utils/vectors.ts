@@ -1,9 +1,9 @@
 "use server";
 
+import type { Email } from "@/app/(main)/inbox/types";
+import { EMAIL_CLEANING, VECTOR_CONFIG } from "../constants";
 import index from "../index";
 import { cleanEmail, cleanMetadata } from "./clean";
-import { EMAIL_CLEANING, VECTOR_CONFIG } from "../constants";
-import type { Email } from "@/app/(main)/inbox/types";
 
 /**
  * Get a namespace for a user
@@ -35,7 +35,7 @@ export async function storeEmail(email: Email) {
         Body: ${body}
         From: ${email.from}
         Date: ${email.internalDate ? new Date(email.internalDate).toLocaleString() : "N/A"}
-        `
+        `;
 
         // Skip if content is too short to be meaningful
         if (!content || content.length < EMAIL_CLEANING.MIN_CONTENT_LENGTH) {

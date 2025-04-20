@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Text, Column } from "@/once-ui/components";
+import { Column, Text } from "@/once-ui/components";
+import { useEffect, useState } from "react";
 
 interface AtomProps {
     color?: string;
@@ -29,19 +29,21 @@ export const loadingMessages = [
     "Reading through your messages...",
     "Tagging and categorizing...",
     "Detecting sentiment in your emails...",
-    "Finding patterns in your correspondence..."
+    "Finding patterns in your correspondence...",
 ];
 
 // Custom Atom loading component
 export function Atom({ color = "#32cd32", size = "medium", text = "", textColor = "" }: AtomProps) {
     const sizeValue = size === "small" ? 30 : size === "medium" ? 50 : 70;
     const electronRadius = sizeValue / 10;
-    
+
     return (
-        <div style={{ position: "relative", width: sizeValue, height: sizeValue, margin: "0 auto" }}>
+        <div
+            style={{ position: "relative", width: sizeValue, height: sizeValue, margin: "0 auto" }}
+        >
             {/* Core of the atom */}
-            <div 
-                style={{ 
+            <div
+                style={{
                     position: "absolute",
                     top: "50%",
                     left: "50%",
@@ -50,84 +52,98 @@ export function Atom({ color = "#32cd32", size = "medium", text = "", textColor 
                     borderRadius: "50%",
                     backgroundColor: color,
                     transform: "translate(-50%, -50%)",
-                    boxShadow: `0 0 ${sizeValue/5}px ${color}`,
+                    boxShadow: `0 0 ${sizeValue / 5}px ${color}`,
                 }}
             />
-            
+
             {/* Electrons */}
-            <div style={{ 
-                position: "absolute", 
-                width: "100%", 
-                height: "100%", 
-                animation: "spin1 1.5s linear infinite",
-                transformOrigin: "center"
-            }}>
-                <div style={{ 
-                    position: "absolute", 
-                    top: 0, 
-                    left: "50%", 
-                    width: electronRadius, 
-                    height: electronRadius, 
-                    borderRadius: "50%", 
-                    backgroundColor: color,
-                    transform: "translateX(-50%)",
-                    boxShadow: `0 0 ${sizeValue/15}px ${color}`,
-                }} />
+            <div
+                style={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                    animation: "spin1 1.5s linear infinite",
+                    transformOrigin: "center",
+                }}
+            >
+                <div
+                    style={{
+                        position: "absolute",
+                        top: 0,
+                        left: "50%",
+                        width: electronRadius,
+                        height: electronRadius,
+                        borderRadius: "50%",
+                        backgroundColor: color,
+                        transform: "translateX(-50%)",
+                        boxShadow: `0 0 ${sizeValue / 15}px ${color}`,
+                    }}
+                />
             </div>
-            <div style={{ 
-                position: "absolute", 
-                width: "100%", 
-                height: "100%", 
-                animation: "spin2 2s linear infinite",
-                transformOrigin: "center"
-            }}>
-                <div style={{ 
-                    position: "absolute", 
-                    top: "50%", 
-                    left: 0, 
-                    width: electronRadius, 
-                    height: electronRadius, 
-                    borderRadius: "50%", 
-                    backgroundColor: color,
-                    transform: "translateY(-50%)",
-                    boxShadow: `0 0 ${sizeValue/15}px ${color}`,
-                }} />
+            <div
+                style={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                    animation: "spin2 2s linear infinite",
+                    transformOrigin: "center",
+                }}
+            >
+                <div
+                    style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: 0,
+                        width: electronRadius,
+                        height: electronRadius,
+                        borderRadius: "50%",
+                        backgroundColor: color,
+                        transform: "translateY(-50%)",
+                        boxShadow: `0 0 ${sizeValue / 15}px ${color}`,
+                    }}
+                />
             </div>
-            <div style={{ 
-                position: "absolute", 
-                width: "100%", 
-                height: "100%", 
-                animation: "spin3 2.5s linear infinite",
-                transformOrigin: "center"
-            }}>
-                <div style={{ 
-                    position: "absolute", 
-                    bottom: 0, 
-                    left: "50%", 
-                    width: electronRadius, 
-                    height: electronRadius, 
-                    borderRadius: "50%", 
-                    backgroundColor: color,
-                    transform: "translateX(-50%)",
-                    boxShadow: `0 0 ${sizeValue/15}px ${color}`,
-                }} />
+            <div
+                style={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                    animation: "spin3 2.5s linear infinite",
+                    transformOrigin: "center",
+                }}
+            >
+                <div
+                    style={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: "50%",
+                        width: electronRadius,
+                        height: electronRadius,
+                        borderRadius: "50%",
+                        backgroundColor: color,
+                        transform: "translateX(-50%)",
+                        boxShadow: `0 0 ${sizeValue / 15}px ${color}`,
+                    }}
+                />
             </div>
-            
+
             {/* Text underneath if provided */}
             {text && (
-                <div style={{ 
-                    position: "absolute", 
-                    width: "100%", 
-                    textAlign: "center", 
-                    top: "100%", 
-                    marginTop: 10,
-                    color: textColor || color,
-                    fontWeight: "bold" 
-                }}>
+                <div
+                    style={{
+                        position: "absolute",
+                        width: "100%",
+                        textAlign: "center",
+                        top: "100%",
+                        marginTop: 10,
+                        color: textColor || color,
+                        fontWeight: "bold",
+                    }}
+                >
                     {text}
                 </div>
             )}
-            
+
             {/* Style for animations */}
             <style jsx>{`
                 @keyframes spin1 {
@@ -154,11 +170,11 @@ interface LoadingAtomProps {
     messageInterval?: number;
 }
 
-export function LoadingAtom({ 
-    color = "#32cd32", 
-    size = "medium", 
-    messages = loadingMessages, 
-    messageInterval = 5000 
+export function LoadingAtom({
+    color = "#32cd32",
+    size = "medium",
+    messages = loadingMessages,
+    messageInterval = 5000,
 }: LoadingAtomProps) {
     // Start with the first message by default (server-side)
     const [messageIndex, setMessageIndex] = useState(0);
@@ -174,12 +190,12 @@ export function LoadingAtom({
     // Update message every interval
     useEffect(() => {
         const progressInterval = setInterval(() => {
-            setProgress(prev => {
+            setProgress((prev) => {
                 const increment = 100 / (messageInterval / 100); // Divide interval into 100ms chunks
                 return Math.min(prev + increment, 100);
             });
         }, 100);
-        
+
         const messageTimer = setInterval(() => {
             setFadeOut(true);
             setTimeout(() => {
@@ -199,29 +215,37 @@ export function LoadingAtom({
     return (
         <Column center gap="24" padding="64">
             <Atom color={color} size={size} />
-            <div style={{ 
-                minHeight: "2em", 
-                display: "flex", 
-                alignItems: "center", 
-                justifyContent: "center", 
-                transition: "opacity 0.5s ease",
-                opacity: fadeOut ? 0 : 1,
-            }}>
-                <Text variant="heading-strong-s">
-                    {messages[messageIndex]}
-                </Text>
+            <div
+                style={{
+                    minHeight: "2em",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "opacity 0.5s ease",
+                    opacity: fadeOut ? 0 : 1,
+                }}
+            >
+                <Text variant="heading-strong-s">{messages[messageIndex]}</Text>
             </div>
-            <div style={{ width: '200px', height: '8px', backgroundColor: '#f0f0f0', borderRadius: '4px', overflow: 'hidden' }}>
-                <div 
-                    style={{ 
-                        height: '100%', 
-                        width: `${progress}%`, 
+            <div
+                style={{
+                    width: "200px",
+                    height: "8px",
+                    backgroundColor: "#f0f0f0",
+                    borderRadius: "4px",
+                    overflow: "hidden",
+                }}
+            >
+                <div
+                    style={{
+                        height: "100%",
+                        width: `${progress}%`,
                         backgroundColor: color,
-                        borderRadius: '4px',
-                        transition: 'width 0.1s linear'
-                    }} 
+                        borderRadius: "4px",
+                        transition: "width 0.1s linear",
+                    }}
                 />
             </div>
         </Column>
     );
-} 
+}

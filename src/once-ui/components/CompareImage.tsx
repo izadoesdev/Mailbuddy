@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Flex, SmartImage, IconButton } from ".";
+import { useEffect, useRef, useState } from "react";
+import { Flex, IconButton, SmartImage } from ".";
 import styles from "./CompareImage.module.scss";
 
 interface SideContent {

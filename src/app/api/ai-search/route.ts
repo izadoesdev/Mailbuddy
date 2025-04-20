@@ -1,9 +1,9 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/libs/db";
-import { auth } from "@/libs/auth";
-import { headers } from "next/headers";
-import { decodeEncryptedData, decryptText } from "@/libs/utils/encryption";
 import { searchSimilarEmails } from "@/app/(dev)/ai/new/utils/search";
+import { auth } from "@/libs/auth";
+import { prisma } from "@/libs/db";
+import { decodeEncryptedData, decryptText } from "@/libs/utils/encryption";
+import { headers } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
 
 // Helper function to log messages
 const log = (message: string, ...args: any[]) => {
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const { query, topK = 10 } = body;
 
-        if (!query || typeof query !== 'string') {
+        if (!query || typeof query !== "string") {
             return NextResponse.json({ error: "Query is required" }, { status: 400 });
         }
 
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         if (!searchResponse.success) {
             return NextResponse.json(
                 { error: searchResponse.error || "Search failed" },
-                { status: 500 }
+                { status: 500 },
             );
         }
 
@@ -90,15 +90,15 @@ export async function POST(request: NextRequest) {
         log(`Vector search found ${results.length} matching emails`);
 
         if (results.length === 0) {
-            return NextResponse.json({ 
+            return NextResponse.json({
                 success: true,
                 emails: [],
-                vectorResults: [] 
+                vectorResults: [],
             });
         }
 
         // 2. Get email IDs from search results
-        const emailIds = results.map(result => result.id);
+        const emailIds = results.map((result) => result.id);
 
         // 3. Fetch full email details from database
         const emails = await prisma.email.findMany({
@@ -127,10 +127,10 @@ export async function POST(request: NextRequest) {
         log(`Retrieved ${emails.length} emails from database`);
 
         // 4. Decrypt and process emails
-        const processedEmails = emails.map(email => {
+        const processedEmails = emails.map((email) => {
             const decryptedEmail = decryptEmail(email);
-            const matchingResult = results.find(r => r.id === email.id);
-            
+            const matchingResult = results.find((r) => r.id === email.id);
+
             // Process the email to ensure dates are correctly formatted
             const processedEmail = {
                 ...decryptedEmail,
@@ -140,9 +140,9 @@ export async function POST(request: NextRequest) {
                     : new Date(decryptedEmail.createdAt),
                 labels: [...(decryptedEmail.labels || []), "AI_SEARCH"],
                 // Add AI score to the email
-                aiScore: matchingResult ? matchingResult.score : 0
+                aiScore: matchingResult ? matchingResult.score : 0,
             };
-            
+
             return processedEmail;
         });
 
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
             success: true,
             emails: processedEmails,
             // Include the original vector results for reference
-            vectorResults: results
+            vectorResults: results,
         });
     } catch (error) {
         log("Error processing AI search:", error);
@@ -161,4 +161,4 @@ export async function POST(request: NextRequest) {
             { status: 500 },
         );
     }
-} 
+}

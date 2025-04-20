@@ -1,25 +1,25 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 
-import {
-    Heading,
-    Text,
-    Button,
-    Logo,
-    Row,
-    Column,
-    Background,
-    Input,
-    PasswordInput,
-    OTPInput,
-    useToast,
-    Badge,
-    Icon,
-} from "@/once-ui/components";
-import { authClient, signIn, signUp } from "@/libs/auth/client";
 import { effects } from "@/app/resources/config";
+import { authClient, signIn, signUp } from "@/libs/auth/client";
+import {
+    Background,
+    Badge,
+    Button,
+    Column,
+    Heading,
+    Icon,
+    Input,
+    Logo,
+    OTPInput,
+    PasswordInput,
+    Row,
+    Text,
+    useToast,
+} from "@/once-ui/components";
 
 // Types for error handling
 interface ApiError {
@@ -31,15 +31,17 @@ export default function RegisterPage() {
     const router = useRouter();
     const { addToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    
+
     // Form states
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [otp, setOtp] = useState("");
-    
+
     // View state - default to password registration
-    const [view, setView] = useState<"password" | "magic" | "otp" | "magic-sent" | "verification-sent">("password");
+    const [view, setView] = useState<
+        "password" | "magic" | "otp" | "magic-sent" | "verification-sent"
+    >("password");
 
     /**
      * Handle Google sign up
@@ -90,12 +92,12 @@ export default function RegisterPage() {
         }
 
         setIsLoading(true);
-        
+
         try {
             await signUp.email({
                 email,
                 password,
-                name: email.split('@')[0], // Default name from email
+                name: email.split("@")[0], // Default name from email
                 fetchOptions: {
                     onSuccess: () => {
                         setIsLoading(false);
@@ -129,7 +131,7 @@ export default function RegisterPage() {
      */
     const handleMagicLinkSignup = async (e: FormEvent) => {
         e.preventDefault();
-        
+
         if (!email) {
             addToast({
                 variant: "danger",
@@ -139,7 +141,7 @@ export default function RegisterPage() {
         }
 
         setIsLoading(true);
-        
+
         try {
             await signIn.magicLink({
                 email,
@@ -156,7 +158,8 @@ export default function RegisterPage() {
                         setIsLoading(false);
                         addToast({
                             variant: "danger",
-                            message: error?.message || "Failed to send magic link. Please try again.",
+                            message:
+                                error?.message || "Failed to send magic link. Please try again.",
                         });
                     },
                 },
@@ -180,7 +183,8 @@ export default function RegisterPage() {
                             Check your email
                         </Heading>
                         <Text variant="body-default-m" onBackground="neutral-medium">
-                            We've sent a magic link to <strong>{email}</strong>. Click the link to sign in.
+                            We've sent a magic link to <strong>{email}</strong>. Click the link to
+                            sign in.
                         </Text>
                     </Column>
                 );
@@ -191,7 +195,8 @@ export default function RegisterPage() {
                             Verify your email
                         </Heading>
                         <Text variant="body-default-m" onBackground="neutral-medium">
-                            We've sent a verification email to <strong>{email}</strong>. Click the link to activate your account.
+                            We've sent a verification email to <strong>{email}</strong>. Click the
+                            link to activate your account.
                         </Text>
                     </Column>
                 );
@@ -323,38 +328,38 @@ export default function RegisterPage() {
                 return (
                     <form onSubmit={handleEmailPasswordSignup}>
                         <Column gap="24" fillWidth>
-                        <Column fillWidth gap="-1">
-                            <Input
-                                radius="top"
-                                id="signup-email"
-                                label="Email address"
-                                type="email"
-                                name="email"
-                                autoComplete="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                            <PasswordInput
-                                radius="none"
-                                id="signup-password"
-                                label="Password"
-                                name="password"
-                                autoComplete="new-password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                            <PasswordInput
-                                radius="bottom"
-                                id="signup-confirm-password"
-                                label="Confirm password"
-                                name="confirmPassword"
-                                autoComplete="new-password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                required
-                            />
+                            <Column fillWidth gap="-1">
+                                <Input
+                                    radius="top"
+                                    id="signup-email"
+                                    label="Email address"
+                                    type="email"
+                                    name="email"
+                                    autoComplete="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                                <PasswordInput
+                                    radius="none"
+                                    id="signup-password"
+                                    label="Password"
+                                    name="password"
+                                    autoComplete="new-password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                                <PasswordInput
+                                    radius="bottom"
+                                    id="signup-confirm-password"
+                                    label="Confirm password"
+                                    name="confirmPassword"
+                                    autoComplete="new-password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    required
+                                />
                             </Column>
                             <Button
                                 type="submit"
@@ -363,14 +368,28 @@ export default function RegisterPage() {
                                 fillWidth
                                 disabled={isLoading}
                             />
-                            
+
                             <Column gap="16" fillWidth>
                                 <Row horizontal="center" gap="16" vertical="center">
-                                    <div style={{ height: 1, background: "var(--neutral-alpha-medium)", flex: 1 }} />
-                                    <Text variant="label-default-s" onBackground="neutral-medium">OR</Text>
-                                    <div style={{ height: 1, background: "var(--neutral-alpha-medium)", flex: 1 }} />
+                                    <div
+                                        style={{
+                                            height: 1,
+                                            background: "var(--neutral-alpha-medium)",
+                                            flex: 1,
+                                        }}
+                                    />
+                                    <Text variant="label-default-s" onBackground="neutral-medium">
+                                        OR
+                                    </Text>
+                                    <div
+                                        style={{
+                                            height: 1,
+                                            background: "var(--neutral-alpha-medium)",
+                                            flex: 1,
+                                        }}
+                                    />
                                 </Row>
-                                
+
                                 <Row gap="12" fillWidth>
                                     <Button
                                         variant="secondary"
@@ -395,16 +414,12 @@ export default function RegisterPage() {
                                     </Button>
                                 </Row>
                             </Column>
-                            
+
                             <Row horizontal="center" gap="8" center>
                                 <Text variant="body-default-s" onBackground="neutral-medium">
                                     Already have an account?
                                 </Text>
-                                <Button
-                                    variant="tertiary"
-                                    label="Sign in"
-                                    href="/login"
-                                />
+                                <Button variant="tertiary" label="Sign in" href="/login" />
                             </Row>
                         </Column>
                     </form>
@@ -417,7 +432,7 @@ export default function RegisterPage() {
      */
     const handleVerifyOTP = async (e: FormEvent) => {
         e.preventDefault();
-        
+
         if (!otp || otp.length < 6) {
             addToast({
                 variant: "danger",
@@ -427,7 +442,7 @@ export default function RegisterPage() {
         }
 
         setIsLoading(true);
-        
+
         try {
             await authClient.emailOtp.verifyEmail({
                 email,
@@ -443,7 +458,8 @@ export default function RegisterPage() {
                         setIsLoading(false);
                         addToast({
                             variant: "danger",
-                            message: error?.message || "Invalid verification code. Please try again.",
+                            message:
+                                error?.message || "Invalid verification code. Please try again.",
                         });
                     },
                 },
@@ -466,7 +482,7 @@ export default function RegisterPage() {
         }
 
         setIsLoading(true);
-        
+
         try {
             await authClient.emailOtp.sendVerificationOtp({
                 email,
@@ -559,20 +575,20 @@ export default function RegisterPage() {
                             {renderForm()}
                         </Column>
                         <Row horizontal="center" padding="16" gap="8">
-                            <Button 
+                            <Button
                                 data-border="rounded"
                                 weight="default"
-                                variant="tertiary" 
+                                variant="tertiary"
                                 size="s"
-                                label="Terms" 
+                                label="Terms"
                                 href="/terms"
                             />
-                            <Button 
+                            <Button
                                 data-border="rounded"
                                 weight="default"
-                                variant="tertiary" 
+                                variant="tertiary"
                                 size="s"
-                                label="Privacy" 
+                                label="Privacy"
                                 href="/privacy"
                             />
                         </Row>
@@ -581,4 +597,4 @@ export default function RegisterPage() {
             </Row>
         </Column>
     );
-} 
+}

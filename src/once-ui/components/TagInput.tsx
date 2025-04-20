@@ -2,13 +2,13 @@
 
 import React, {
     useState,
-    KeyboardEventHandler,
-    ChangeEventHandler,
-    FocusEventHandler,
+    type KeyboardEventHandler,
+    type ChangeEventHandler,
+    type FocusEventHandler,
     forwardRef,
 } from "react";
 
-import { Flex, Chip, Input, InputProps } from ".";
+import { Chip, Flex, Input, type InputProps } from ".";
 
 interface TagInputProps extends Omit<InputProps, "onChange" | "value"> {
     value: string[];

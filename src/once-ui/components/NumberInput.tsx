@@ -1,11 +1,12 @@
 "use client";
 
-import React, { forwardRef, useState } from "react";
+import classNames from "classnames";
+import type React from "react";
+import { forwardRef, useState } from "react";
 import { Input } from ".";
 import { Flex } from ".";
 import { IconButton } from ".";
 import styles from "./NumberInput.module.scss";
-import classNames from "classnames";
 
 interface NumberInputProps
     extends Omit<React.ComponentProps<typeof Input>, "type" | "value" | "onChange"> {
@@ -29,7 +30,7 @@ const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(
             const newValue = e.target.value;
             setLocalValue(newValue);
 
-            const numValue = parseFloat(newValue);
+            const numValue = Number.parseFloat(newValue);
             if (!isNaN(numValue) && onChange) {
                 onChange(numValue);
             }
@@ -44,7 +45,7 @@ const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(
         };
 
         const increment = () => {
-            const currentValue = parseFloat(localValue) || 0;
+            const currentValue = Number.parseFloat(localValue) || 0;
             const newValue = currentValue + step;
             if (max === undefined || newValue <= max) {
                 updateValue(newValue);
@@ -52,7 +53,7 @@ const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(
         };
 
         const decrement = () => {
-            const currentValue = parseFloat(localValue) || 0;
+            const currentValue = Number.parseFloat(localValue) || 0;
             const newValue = currentValue - step;
             if (min === undefined || newValue >= min) {
                 updateValue(newValue);

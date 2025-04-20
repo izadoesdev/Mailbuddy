@@ -1,17 +1,18 @@
 "use client";
 
-import React, {
-    useState,
-    useEffect,
-    forwardRef,
-    InputHTMLAttributes,
-    useCallback,
-    ReactNode,
-} from "react";
 import classNames from "classnames";
+import type React from "react";
+import {
+    type InputHTMLAttributes,
+    type ReactNode,
+    forwardRef,
+    useCallback,
+    useEffect,
+    useState,
+} from "react";
 import { Flex, Text } from ".";
-import styles from "./Input.module.scss";
 import useDebounce from "../hooks/useDebounce";
+import styles from "./Input.module.scss";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     id: string;

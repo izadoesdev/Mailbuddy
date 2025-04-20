@@ -1,11 +1,11 @@
+import { useUser } from "@/libs/auth/client";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import type { Email } from "../types";
-import { useUser } from "@/libs/auth/client";
 
 // Extended Email type with AI search properties
-type AISearchEmail = Email & { 
-    aiScore?: number 
+type AISearchEmail = Email & {
+    aiScore?: number;
 };
 
 export function useAISearch() {
@@ -24,14 +24,14 @@ export function useAISearch() {
             console.log(`Performing AI search for user: ${user.id}`);
 
             // Use the new API endpoint that handles both vector search and email retrieval
-            const response = await fetch('/api/ai-search', {
-                method: 'POST',
+            const response = await fetch("/api/ai-search", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
                     query,
-                    topK: 10
+                    topK: 10,
                 }),
             });
 
@@ -42,9 +42,9 @@ export function useAISearch() {
             }
 
             const data = await response.json();
-            
+
             // Check if data is valid and has the success property
-            if (!data || (typeof data.success === 'boolean' && !data.success)) {
+            if (!data || (typeof data.success === "boolean" && !data.success)) {
                 console.error(`AI Search Error: ${data?.error || "Unknown error"}`);
                 throw new Error(data?.error || "Failed to perform AI search");
             }
@@ -52,20 +52,20 @@ export function useAISearch() {
             // Ensure emails array exists even if empty
             const emails = data.emails || [];
             const vectorResults = data.vectorResults || [];
-            
+
             console.log(`AI Search found ${emails.length} matching emails`);
-            
+
             return {
                 ...data,
                 emails,
-                vectorResults
+                vectorResults,
             };
         },
         onSuccess: (data) => {
             // Safely check if emails array exists and has items
             const emails = Array.isArray(data.emails) ? data.emails : [];
             const vectorResults = Array.isArray(data.vectorResults) ? data.vectorResults : [];
-            
+
             if (emails.length === 0) {
                 // No emails found, create fallbacks if we have vector results
                 if (vectorResults.length > 0) {
@@ -114,7 +114,7 @@ export function useAISearch() {
                             fetchedAt: new Date(),
                             updatedAt: new Date(),
                             createdAt: new Date(),
-                            aiScore: result.score
+                            aiScore: result.score,
                         };
                         return email;
                     });

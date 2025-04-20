@@ -6,7 +6,7 @@ export function extractName(emailString: string, fromName?: string): string {
     if (fromName) {
         return fromName;
     }
-    
+
     // Otherwise extract from email string format (Name <email@example.com>)
     const namePart = emailString?.split("<")?.[0]?.trim();
     // Remove quotes if present

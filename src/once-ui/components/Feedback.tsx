@@ -1,7 +1,8 @@
 "use client";
 
-import React, { forwardRef, ReactNode } from "react";
-import { IconButton, Button, Icon, Flex, Text } from ".";
+import type React from "react";
+import { type ReactNode, forwardRef } from "react";
+import { Button, Flex, Icon, IconButton, Text } from ".";
 
 interface FeedbackProps extends Omit<React.ComponentProps<typeof Flex>, "title"> {
     variant?: "info" | "danger" | "warning" | "success";

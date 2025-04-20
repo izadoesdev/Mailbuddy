@@ -1,22 +1,22 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { signOut } from "@/libs/auth/client";
 import {
-    Heading,
-    Text,
-    Card,
-    useToast,
     Background,
     Button,
-    Spinner,
-    Icon,
+    Card,
     Column,
-    Row,
-    Line,
+    Heading,
+    Icon,
     InlineCode,
+    Line,
+    Row,
+    Spinner,
+    Text,
+    useToast,
 } from "@/once-ui/components";
-import { signOut } from "@/libs/auth/client";
+import { useRouter } from "next/navigation";
+import React, { useState, useCallback, useEffect } from "react";
 
 // Helper function for client-side logging
 const log = (message: string, data?: any) => {

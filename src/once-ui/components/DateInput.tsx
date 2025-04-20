@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
-import { Input, DropdownWrapper, Flex, DatePicker } from ".";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
+import { DatePicker, DropdownWrapper, Flex, Input } from ".";
 
 interface DateInputProps extends Omit<React.ComponentProps<typeof Input>, "onChange" | "value"> {
     id: string;

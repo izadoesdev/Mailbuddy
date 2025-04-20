@@ -1,27 +1,26 @@
 "use client";
 
-import { useState, useEffect, Suspense, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { type FormEvent, Suspense, useEffect, useState } from "react";
 
-import {
-    Heading,
-    Text,
-    Button,
-    Logo,
-    Row,
-    Column,
-    Background,
-    Input,
-    PasswordInput,
-    useToast,
-    Spinner,
-    Icon,
-    Feedback,
-    SmartLink,
-} from "@/once-ui/components";
-import { authClient, signIn } from "@/libs/auth/client";
 import { effects } from "@/app/resources/config";
-
+import { authClient, signIn } from "@/libs/auth/client";
+import {
+    Background,
+    Button,
+    Column,
+    Feedback,
+    Heading,
+    Icon,
+    Input,
+    Logo,
+    PasswordInput,
+    Row,
+    SmartLink,
+    Spinner,
+    Text,
+    useToast,
+} from "@/once-ui/components";
 
 function LoginPage() {
     const router = useRouter();
@@ -30,7 +29,9 @@ function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [view, setView] = useState<"password" | "magic" | "forgot" | "magic-sent" | "verification-needed">("password");
+    const [view, setView] = useState<
+        "password" | "magic" | "forgot" | "magic-sent" | "verification-needed"
+    >("password");
     const [verifyingToken, setVerifyingToken] = useState(false);
 
     // Check for magic link token in URL
@@ -124,7 +125,7 @@ function LoginPage() {
                     setIsLoading(false);
                     // Check if this is an email verification error
                     if (
-                        error?.code === "EMAIL_NOT_VERIFIED" || 
+                        error?.code === "EMAIL_NOT_VERIFIED" ||
                         error?.message?.toLowerCase().includes("not verified") ||
                         error?.code === "auth/email-not-verified"
                     ) {
@@ -135,7 +136,9 @@ function LoginPage() {
                     } else {
                         addToast({
                             variant: "danger",
-                            message: error?.message || "Login failed. Please check your credentials and try again.",
+                            message:
+                                error?.message ||
+                                "Login failed. Please check your credentials and try again.",
                         });
                     }
                 },
@@ -149,26 +152,26 @@ function LoginPage() {
     const sendVerificationEmail = async () => {
         try {
             // First check if the API has a dedicated email verification sending method
-                await authClient.sendVerificationEmail({
-                    email,
-                    callbackURL: "/inbox",
-                    fetchOptions: {
-                        onSuccess: () => {
-                            addToast({
-                                variant: "success",
-                                message: "Verification email sent!",
-                            });
-                        },
-                        onError: () => {
-                            addToast({
-                                variant: "danger",
-                                message: "Failed to send verification email. Please try again later.",
-                            });
-                        }
-                    }
-                });
-                // Fallback to using the auth provider's method
-                console.log("Email verification method not available");
+            await authClient.sendVerificationEmail({
+                email,
+                callbackURL: "/inbox",
+                fetchOptions: {
+                    onSuccess: () => {
+                        addToast({
+                            variant: "success",
+                            message: "Verification email sent!",
+                        });
+                    },
+                    onError: () => {
+                        addToast({
+                            variant: "danger",
+                            message: "Failed to send verification email. Please try again later.",
+                        });
+                    },
+                },
+            });
+            // Fallback to using the auth provider's method
+            console.log("Email verification method not available");
         } catch (error) {
             console.error("Error sending verification email:", error);
         }
@@ -264,17 +267,17 @@ function LoginPage() {
             case "magic-sent":
                 return (
                     <Column gap="24" fillWidth horizontal="center">
-                    <Button
-                        variant="tertiary"
-                        weight="default"
-                        prefixIcon="chevronLeft"
-                        data-border="rounded"
-                        label="Back to login"
-                        onClick={() => {
-                            setView("password");
-                            setIsLoading(false);
-                        }}
-                    />
+                        <Button
+                            variant="tertiary"
+                            weight="default"
+                            prefixIcon="chevronLeft"
+                            data-border="rounded"
+                            label="Back to login"
+                            onClick={() => {
+                                setView("password");
+                                setIsLoading(false);
+                            }}
+                        />
                         <Button
                             variant="secondary"
                             label="Resend magic link"
@@ -375,34 +378,32 @@ function LoginPage() {
                     <form onSubmit={handleEmailPasswordLogin}>
                         <Column fillWidth gap="32">
                             <Column gap="-1" fillWidth>
-                            <Input
-                                id="login-email"
-                                label="Email address"
-                                radius="top"
-                                type="email"
-                                name="email"
-                                autoComplete="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                            <PasswordInput
-                                id="login-password"
-                                radius="bottom"
-                                label="Password"
-                                name="password"
-                                autoComplete="current-password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                            <Row fillWidth horizontal="end" paddingTop="12" paddingRight="12">
-                            <SmartLink
-                                onClick={() => setView("forgot")}
-                            >
-                                <Text onBackground="brand-medium">Forgot password?</Text>
-                            </SmartLink>
-                            </Row>
+                                <Input
+                                    id="login-email"
+                                    label="Email address"
+                                    radius="top"
+                                    type="email"
+                                    name="email"
+                                    autoComplete="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                                <PasswordInput
+                                    id="login-password"
+                                    radius="bottom"
+                                    label="Password"
+                                    name="password"
+                                    autoComplete="current-password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                                <Row fillWidth horizontal="end" paddingTop="12" paddingRight="12">
+                                    <SmartLink onClick={() => setView("forgot")}>
+                                        <Text onBackground="brand-medium">Forgot password?</Text>
+                                    </SmartLink>
+                                </Row>
                             </Column>
 
                             <Button
@@ -412,14 +413,28 @@ function LoginPage() {
                                 fillWidth
                                 disabled={isLoading}
                             />
-                            
+
                             <Column gap="16" fillWidth>
                                 <Row horizontal="center" gap="16" vertical="center">
-                                    <div style={{ height: 1, background: "var(--neutral-alpha-medium)", flex: 1 }} />
-                                    <Text variant="label-default-s" onBackground="neutral-medium">OR</Text>
-                                    <div style={{ height: 1, background: "var(--neutral-alpha-medium)", flex: 1 }} />
+                                    <div
+                                        style={{
+                                            height: 1,
+                                            background: "var(--neutral-alpha-medium)",
+                                            flex: 1,
+                                        }}
+                                    />
+                                    <Text variant="label-default-s" onBackground="neutral-medium">
+                                        OR
+                                    </Text>
+                                    <div
+                                        style={{
+                                            height: 1,
+                                            background: "var(--neutral-alpha-medium)",
+                                            flex: 1,
+                                        }}
+                                    />
                                 </Row>
-                                
+
                                 <Row gap="12" fillWidth>
                                     <Button
                                         variant="secondary"
@@ -444,16 +459,12 @@ function LoginPage() {
                                     </Button>
                                 </Row>
                             </Column>
-                            
+
                             <Row horizontal="center" gap="8" center>
                                 <Text variant="body-default-s" onBackground="neutral-medium">
                                     Don't have an account?
                                 </Text>
-                                <Button
-                                    variant="tertiary"
-                                    label="Sign up"
-                                    href="/register"
-                                />
+                                <Button variant="tertiary" label="Sign up" href="/register" />
                             </Row>
                         </Column>
                     </form>
@@ -471,7 +482,8 @@ function LoginPage() {
                             Check your email
                         </Heading>
                         <Text variant="body-default-m" onBackground="neutral-medium">
-                            We've sent a magic link to <strong>{email}</strong>. Click the link to sign in.
+                            We've sent a magic link to <strong>{email}</strong>. Click the link to
+                            sign in.
                         </Text>
                     </Column>
                 );
@@ -482,7 +494,8 @@ function LoginPage() {
                             Verify your email
                         </Heading>
                         <Text variant="body-default-m" onBackground="neutral-medium">
-                            Please check your email at <strong>{email}</strong> and click the verification link to activate your account.
+                            Please check your email at <strong>{email}</strong> and click the
+                            verification link to activate your account.
                         </Text>
                     </Column>
                 );
@@ -515,7 +528,8 @@ function LoginPage() {
                             Access your account
                         </Heading>
                         <Feedback icon gap="8" vertical="center">
-                            If you're part of the hackathon testing crew, please DM me on Discord (@.hyteq) for demo instructions to get the full experience!
+                            If you're part of the hackathon testing crew, please DM me on Discord
+                            (@.hyteq) for demo instructions to get the full experience!
                         </Feedback>
                     </Column>
                 );
@@ -590,20 +604,20 @@ function LoginPage() {
                                 {renderForm()}
                             </Column>
                             <Row horizontal="center" padding="16" gap="8">
-                                <Button 
+                                <Button
                                     data-border="rounded"
                                     weight="default"
-                                    variant="tertiary" 
+                                    variant="tertiary"
                                     size="s"
-                                    label="Terms" 
+                                    label="Terms"
                                     href="/terms"
                                 />
-                                <Button 
+                                <Button
                                     data-border="rounded"
                                     weight="default"
-                                    variant="tertiary" 
+                                    variant="tertiary"
                                     size="s"
-                                    label="Privacy" 
+                                    label="Privacy"
                                     href="/privacy"
                                 />
                             </Row>
@@ -621,4 +635,4 @@ export default function Page() {
             <LoginPage />
         </Suspense>
     );
-};
+}

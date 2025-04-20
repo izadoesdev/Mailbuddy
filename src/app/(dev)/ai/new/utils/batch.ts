@@ -1,11 +1,11 @@
 "use server";
 
-import { BATCH_SIZES } from "../constants";
 import type { Email } from "@/app/(main)/inbox/types";
-import { storeEmail } from "./vectors";
+import { BATCH_SIZES } from "../constants";
 // import { processEmail } from "./groq";
 import { cleanEmail } from "./clean";
 import { saveEmailAIMetadata } from "./database";
+import { storeEmail } from "./vectors";
 
 /**
  * Process a batch of emails with AI and store them in the vector database
@@ -70,7 +70,7 @@ import { saveEmailAIMetadata } from "./database";
 //                     category: aiData.category || "Uncategorized",
 //                     priority: aiData.priority || "Medium",
 //                     summary: aiData.summary || "No summary available",
-//                     modelUsed: "groq", 
+//                     modelUsed: "groq",
 //                 };
 
 //                 // Add priorityExplanation if available

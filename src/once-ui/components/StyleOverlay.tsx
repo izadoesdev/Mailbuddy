@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useState } from "react";
-import { IconButton, StylePanel, Flex, Background } from ".";
+import { Background, Flex, IconButton, StylePanel } from ".";
 import styles from "./StyleOverlay.module.scss";
 
 interface StyleOverlayProps extends React.ComponentProps<typeof Flex> {

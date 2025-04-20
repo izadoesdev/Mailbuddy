@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/libs/db";
-import type { gmail_v1 } from "googleapis";
-import { encryptText, encodeEncryptedData } from "@/libs/utils/encryption";
-import { extractContentFromParts } from "@/libs/utils/email-content";
 import { auth } from "@/libs/auth";
-import { headers } from "next/headers";
-import { withGmailApi } from "../utils/withGmail";
+import { prisma } from "@/libs/db";
+import { extractContentFromParts } from "@/libs/utils/email-content";
+import { encodeEncryptedData, encryptText } from "@/libs/utils/encryption";
 import type { GaxiosResponse } from "gaxios";
+import type { gmail_v1 } from "googleapis";
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
+import { withGmailApi } from "../utils/withGmail";
 
 // Constants
 const GMAIL_USER_ID = "me";
@@ -302,11 +302,11 @@ async function performFullSync(
 
             // Process batch in parallel with withGmailApi for each message
             const results = await Promise.allSettled(
-                batch.map((msg) => 
+                batch.map((msg) =>
                     withGmailApi(userId, accessToken, refreshToken, (gmail) =>
-                        processMessage(gmail, msg.id, userId)
-                    )
-                )
+                        processMessage(gmail, msg.id, userId),
+                    ),
+                ),
             );
 
             // Count successful operations
@@ -373,7 +373,7 @@ async function processUserChanges(
                         return gmail.users.getProfile({
                             userId: GMAIL_USER_ID,
                         });
-                    }
+                    },
                 );
 
                 if (!profile) {
@@ -414,7 +414,7 @@ async function processUserChanges(
                     // Request all history types to ensure we don't miss any changes
                     historyTypes: ["messageAdded", "messageDeleted", "labelAdded", "labelRemoved"],
                 });
-            }
+            },
         );
 
         if (!historyResponse || !historyResponse.data) {
@@ -436,7 +436,7 @@ async function processUserChanges(
         // Process each history record
         const messageIds = new Set<string>();
         const deletedMessageIds = new Set<string>();
-        
+
         // Stats for logging
         let addedCount = 0;
         let deletedCount = 0;
@@ -471,7 +471,7 @@ async function processUserChanges(
                     labelAddedCount++;
                 }
             }
-            
+
             // Labels removed (like marking as unread, removing a star)
             for (const labelRemoved of record.labelsRemoved || []) {
                 if (labelRemoved.message?.id) {
@@ -480,14 +480,16 @@ async function processUserChanges(
                 }
             }
         }
-        
+
         // Log stats about the changes
-        log(`History changes for user ${userId}: ${addedCount} messages added, ${deletedCount} messages deleted, ${labelAddedCount} label additions, ${labelRemovedCount} label removals`);
+        log(
+            `History changes for user ${userId}: ${addedCount} messages added, ${deletedCount} messages deleted, ${labelAddedCount} label additions, ${labelRemovedCount} label removals`,
+        );
 
         // Process deleted messages if any
         if (deletedMessageIds.size > 0) {
             log(`Processing ${deletedMessageIds.size} deleted messages for user ${userId}`);
-            
+
             try {
                 // Delete emails from our database - this will cascade to related data due to DB constraints
                 await prisma.email.deleteMany({
@@ -498,7 +500,7 @@ async function processUserChanges(
                         userId,
                     },
                 });
-                
+
                 // Ensure messages are deleted too - might be redundant with cascading deletes
                 await prisma.message.deleteMany({
                     where: {
@@ -508,7 +510,7 @@ async function processUserChanges(
                         userId,
                     },
                 });
-                
+
                 log(`Successfully deleted ${deletedMessageIds.size} messages from database`);
             } catch (error) {
                 log(`Error deleting messages from database: ${error}`);
@@ -528,11 +530,11 @@ async function processUserChanges(
 
             // Process batch in parallel using withGmailApi for each message
             const results = await Promise.allSettled(
-                batch.map((messageId) => 
-                    withGmailApi(userId, accessToken, refreshToken, (gmail) => 
-                        processMessage(gmail, messageId, userId)
-                    )
-                )
+                batch.map((messageId) =>
+                    withGmailApi(userId, accessToken, refreshToken, (gmail) =>
+                        processMessage(gmail, messageId, userId),
+                    ),
+                ),
             );
 
             // Count successful operations
@@ -658,18 +660,24 @@ export async function GET() {
                 if (!user.syncState || !user.syncState.historyId) {
                     // Perform a full sync for new users or those without a history ID
                     log(`Performing full sync for user ${userId} (no history ID)`);
-                    success = await performFullSync(userId, account.accessToken, account.refreshToken);
+                    success = await performFullSync(
+                        userId,
+                        account.accessToken,
+                        account.refreshToken,
+                    );
                 } else {
                     // Get history ID and perform incremental sync
                     const historyId = user.syncState.historyId;
-                    log(`Performing incremental sync for user ${userId} with history ID ${historyId}`);
+                    log(
+                        `Performing incremental sync for user ${userId} with history ID ${historyId}`,
+                    );
 
                     // Process changes
                     const result = await processUserChanges(
                         userId,
                         account.accessToken,
                         account.refreshToken,
-                        historyId
+                        historyId,
                     );
                     success = result.success;
                     newHistoryId = result.newHistoryId;
@@ -742,7 +750,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const userId = session.user.id
+        const userId = session.user.id;
 
         // Set sync in progress
         await prisma.syncState.upsert({
@@ -785,7 +793,12 @@ export async function POST(request: Request) {
                     const { historyId } = await getOrCreateSyncState(userId);
 
                     // Process changes
-                    await processUserChanges(userId, account.accessToken || "", account.refreshToken, historyId || null);
+                    await processUserChanges(
+                        userId,
+                        account.accessToken || "",
+                        account.refreshToken,
+                        historyId || null,
+                    );
                 }
 
                 // Update sync state when done

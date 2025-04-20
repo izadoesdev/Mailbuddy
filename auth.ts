@@ -1,11 +1,11 @@
+import index from "@/app/(dev)/ai/new/index";
+import env from "@/libs/env";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { prisma, redis } from "./src/libs/db";
-import { customSession, emailOTP, multiSession, magicLink, twoFactor } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
-import index from "@/app/(dev)/ai/new/index";
+import { customSession, emailOTP, magicLink, multiSession, twoFactor } from "better-auth/plugins";
 import { Resend } from "resend";
-import env from "@/libs/env";
+import { prisma, redis } from "./src/libs/db";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -40,18 +40,18 @@ export const auth = betterAuth({
         minPasswordLength: 8,
         maxPasswordLength: 32,
         requireEmailVerification: true,
-        sendResetPassword: async ({user, url, token}, request) => {
+        sendResetPassword: async ({ user, url, token }, request) => {
             await resend.emails.send({
-              from: "noreply@mailbuddy.dev",
-              to: user.email,
-              subject: "Reset your password",
-              text: `Click the link to reset your password: ${url}`,
+                from: "noreply@mailbuddy.dev",
+                to: user.email,
+                subject: "Reset your password",
+                text: `Click the link to reset your password: ${url}`,
             });
-          },
+        },
     },
     emailVerification: {
         autoSignInAfterVerification: true,
-        sendVerificationEmail: async ({user, url, token}, request) => {
+        sendVerificationEmail: async ({ user, url, token }, request) => {
             await resend.emails.send({
                 from: "noreply@mailbuddy.dev",
                 to: user.email,
@@ -69,17 +69,17 @@ export const auth = betterAuth({
         },
     },
     secondaryStorage: {
-		get: async (key) => {
-			const value = await redis.get(key);
-			return value ? value : null;
-		},
-		set: async (key, value, ttl) => {
-			if (ttl) await redis.set(key, value, 'EX', ttl);
-			else await redis.set(key, value);
-		},
-		delete: async (key) => {
+        get: async (key) => {
+            const value = await redis.get(key);
+            return value ? value : null;
+        },
+        set: async (key, value, ttl) => {
+            if (ttl) await redis.set(key, value, "EX", ttl);
+            else await redis.set(key, value);
+        },
+        delete: async (key) => {
             await redis.del(key);
-        }
+        },
     },
     plugins: [
         multiSession(),

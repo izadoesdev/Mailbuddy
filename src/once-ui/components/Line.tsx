@@ -1,6 +1,7 @@
 "use client";
 
-import React, { forwardRef } from "react";
+import type React from "react";
+import { forwardRef } from "react";
 import { Flex } from ".";
 
 interface LineProps extends React.ComponentProps<typeof Flex> {

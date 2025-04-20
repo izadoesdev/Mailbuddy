@@ -1,17 +1,17 @@
 "use client";
 
+import classNames from "classnames";
 import React, {
     useState,
     useEffect,
     forwardRef,
-    TextareaHTMLAttributes,
+    type TextareaHTMLAttributes,
     useCallback,
-    ReactNode,
+    type ReactNode,
 } from "react";
-import classNames from "classnames";
 import { Flex, Text } from ".";
-import styles from "./Input.module.scss";
 import useDebounce from "../hooks/useDebounce";
+import styles from "./Input.module.scss";
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
     id: string;

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { ReactNode, forwardRef } from "react";
+import type React from "react";
+import { type ReactNode, forwardRef } from "react";
 
 import { Flex, Text } from ".";
 

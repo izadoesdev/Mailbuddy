@@ -1,7 +1,7 @@
 "use server";
 
-import { Index } from "@upstash/vector";
 import env from "@/libs/env";
+import { Index } from "@upstash/vector";
 
 // Initialize the vector index with environment variables
 const vectorIndex = new Index({

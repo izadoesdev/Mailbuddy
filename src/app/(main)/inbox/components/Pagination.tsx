@@ -1,5 +1,5 @@
+import { Button, Column, IconButton, Row, Select, Text } from "@/once-ui/components";
 import React from "react";
-import { Row, Button, Text, Column, Select, IconButton } from "@/once-ui/components";
 
 interface PaginationProps {
     page: number;
@@ -51,28 +51,32 @@ export function Pagination({
                     disabled={page <= 1 || isLoading || isFetching}
                     aria-label="Previous page"
                 />
-                
+
                 {maxPage > 3 && (
                     <Row width={4}>
-                    <Select
-                        height="s"
-                        labelAsPlaceholder
-                        id="page-select"
-                        label="Go to page"
-                        options={pageNumbers.map((num) => ({
-                            value: num.toString(),
-                            label: num.toString()
-                        }))}
-                        value={page.toString()}
-                        onSelect={(value) => {
-                            const numValue = Number.parseInt(value, 10);
-                            if (!Number.isNaN(numValue) && numValue >= 1 && numValue <= maxPage) {
-                                onPageChange(numValue);
-                            }
-                        }}
-                        disabled={isLoading || isFetching}
-                        aria-label="Go to specific page"
-                    />
+                        <Select
+                            height="s"
+                            labelAsPlaceholder
+                            id="page-select"
+                            label="Go to page"
+                            options={pageNumbers.map((num) => ({
+                                value: num.toString(),
+                                label: num.toString(),
+                            }))}
+                            value={page.toString()}
+                            onSelect={(value) => {
+                                const numValue = Number.parseInt(value, 10);
+                                if (
+                                    !Number.isNaN(numValue) &&
+                                    numValue >= 1 &&
+                                    numValue <= maxPage
+                                ) {
+                                    onPageChange(numValue);
+                                }
+                            }}
+                            disabled={isLoading || isFetching}
+                            aria-label="Go to specific page"
+                        />
                     </Row>
                 )}
 
@@ -89,8 +93,7 @@ export function Pagination({
             {showCount && !isLoading && (
                 <Row horizontal="center">
                     <Text variant="label-default-s" onBackground="neutral-weak">
-                        {startItem}-{endItem}{" "}
-                        {totalCount !== undefined && `of ${totalCount}`}
+                        {startItem}-{endItem} {totalCount !== undefined && `of ${totalCount}`}
                     </Text>
                 </Row>
             )}

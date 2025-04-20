@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import styles from "./HoloFx.module.scss";
-import { Flex } from ".";
-import { CSSProperties } from "react";
 import classNames from "classnames";
+import type React from "react";
+import { useEffect, useRef } from "react";
+import type { CSSProperties } from "react";
+import { Flex } from ".";
+import styles from "./HoloFx.module.scss";
 
 interface MaskOptions {
     maskPosition?: string;
@@ -33,7 +34,7 @@ interface HoloFxProps extends React.ComponentProps<typeof Flex> {
     };
 }
 
-const formatMask = (maskPosition: string = "100 200"): string => {
+const formatMask = (maskPosition = "100 200"): string => {
     const [x, y] = maskPosition.split(" ");
     const formattedX = `${x}%`;
     const formattedY = `${y ? y : x}%`;

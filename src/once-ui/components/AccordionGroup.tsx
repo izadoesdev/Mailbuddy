@@ -1,5 +1,5 @@
+import { Accordion, Column, type Flex, Line } from "@/once-ui/components";
 import React from "react";
-import { Column, Accordion, Line, Flex } from "@/once-ui/components";
 
 export type AccordionItem = {
     title: string;

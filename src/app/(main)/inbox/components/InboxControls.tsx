@@ -1,21 +1,21 @@
-import React, { useState, useMemo } from "react";
-import type { KeyboardEvent } from "react";
 import {
-    Row,
-    Text,
-    Input,
-    Icon,
-    Button,
     Avatar,
-    Scroller,
+    Button,
     Column,
-    UserMenu,
-    User,
-    Flex,
     Dropdown,
     DropdownWrapper,
+    Flex,
+    Icon,
+    Input,
+    Row,
+    Scroller,
     Tag,
+    Text,
+    User,
+    UserMenu,
 } from "@/once-ui/components";
+import React, { useState, useMemo } from "react";
+import type { KeyboardEvent } from "react";
 
 interface CategoryOption {
     value: string;
@@ -76,48 +76,48 @@ export function InboxControls({
     const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
 
     // Organize categories by type
-    const { 
-        mainCategories, 
-        folderCategories, 
-        aiPriorityCategories, 
-        aiTopicCategories,
-    } = useMemo(() => {
-        const main: CategoryOption[] = [];
-        const folder: CategoryOption[] = [];
-        const aiPriority: CategoryOption[] = [];
-        const aiTopic: CategoryOption[] = [];
+    const { mainCategories, folderCategories, aiPriorityCategories, aiTopicCategories } =
+        useMemo(() => {
+            const main: CategoryOption[] = [];
+            const folder: CategoryOption[] = [];
+            const aiPriority: CategoryOption[] = [];
+            const aiTopic: CategoryOption[] = [];
 
-        for (const option of categoryOptions) {
-            // System folders
-            if (['inbox', 'all', 'sent', 'drafts', 'trash', 'starred'].some(key => option.value.includes(key))) {
-                main.push(option);
-            } 
-            // AI Priority Categories
-            else if (option.value.startsWith('priority-')) {
-                aiPriority.push(option);
+            for (const option of categoryOptions) {
+                // System folders
+                if (
+                    ["inbox", "all", "sent", "drafts", "trash", "starred"].some((key) =>
+                        option.value.includes(key),
+                    )
+                ) {
+                    main.push(option);
+                }
+                // AI Priority Categories
+                else if (option.value.startsWith("priority-")) {
+                    aiPriority.push(option);
+                }
+                // AI Topic Categories
+                else if (option.value.startsWith("topic-")) {
+                    aiTopic.push(option);
+                }
+                // User created folders
+                else {
+                    folder.push(option);
+                }
             }
-            // AI Topic Categories
-            else if (option.value.startsWith('topic-')) {
-                aiTopic.push(option);
-            }
-            // User created folders
-            else {
-                folder.push(option);
-            }
-        }
 
-        return { 
-            mainCategories: main, 
-            folderCategories: folder, 
-            aiPriorityCategories: aiPriority, 
-            aiTopicCategories: aiTopic,
-        };
-    }, [categoryOptions]);
+            return {
+                mainCategories: main,
+                folderCategories: folder,
+                aiPriorityCategories: aiPriority,
+                aiTopicCategories: aiTopic,
+            };
+        }, [categoryOptions]);
 
     // Handle local search change without triggering parent search
     const handleSearchChange = (value: string) => {
         setLocalSearchQuery(value);
-        
+
         // Don't call onSearchChange here anymore
         // Only clear AI search if active
         if (isAISearchActive && onClearAISearch) {
@@ -127,7 +127,7 @@ export function InboxControls({
 
     // Handle search submission when Enter key is pressed
     const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
+        if (e.key === "Enter") {
             onSearchChange(localSearchQuery);
         }
     };
@@ -149,7 +149,7 @@ export function InboxControls({
     // Handle category change
     const handleCategoryChange = (value: string) => {
         if (onCategoryChange) {
-            onCategoryChange(value);            
+            onCategoryChange(value);
         }
     };
 
@@ -162,91 +162,90 @@ export function InboxControls({
 
     // Group AI priority categories (by urgency)
     const groupedPriorities = useMemo(() => {
-        const urgent = aiPriorityCategories.filter(c => c.value.includes('urgent'));
-        const high = aiPriorityCategories.filter(c => c.value.includes('high'));
-        const medium = aiPriorityCategories.filter(c => c.value.includes('medium'));
-        const low = aiPriorityCategories.filter(c => c.value.includes('low'));
-        
+        const urgent = aiPriorityCategories.filter((c) => c.value.includes("urgent"));
+        const high = aiPriorityCategories.filter((c) => c.value.includes("high"));
+        const medium = aiPriorityCategories.filter((c) => c.value.includes("medium"));
+        const low = aiPriorityCategories.filter((c) => c.value.includes("low"));
+
         return { urgent, high, medium, low };
     }, [aiPriorityCategories]);
 
     // Group AI topic categories by type
     const groupedTopics = useMemo(() => {
-        const workBusiness = aiTopicCategories.filter(c => 
-            ['work', 'job', 'financial', 'legal', 'invoices', 'receipts'].some(
-                key => c.value.includes(key)
-            )
+        const workBusiness = aiTopicCategories.filter((c) =>
+            ["work", "job", "financial", "legal", "invoices", "receipts"].some((key) =>
+                c.value.includes(key),
+            ),
         );
-        
-        const personalSocial = aiTopicCategories.filter(c => 
-            ['personal', 'social', 'healthcare'].some(
-                key => c.value.includes(key)
-            )
+
+        const personalSocial = aiTopicCategories.filter((c) =>
+            ["personal", "social", "healthcare"].some((key) => c.value.includes(key)),
         );
-        
-        const updatesMarketing = aiTopicCategories.filter(c => 
-            ['updates', 'newsletters', 'promotions', 'marketing'].some(
-                key => c.value.includes(key)
-            )
+
+        const updatesMarketing = aiTopicCategories.filter((c) =>
+            ["updates", "newsletters", "promotions", "marketing"].some((key) =>
+                c.value.includes(key),
+            ),
         );
-        
-        const eventsTravel = aiTopicCategories.filter(c => 
-            ['events', 'scheduling', 'travel', 'shipping'].some(
-                key => c.value.includes(key)
-            )
+
+        const eventsTravel = aiTopicCategories.filter((c) =>
+            ["events", "scheduling", "travel", "shipping"].some((key) => c.value.includes(key)),
         );
-        
-        const other = aiTopicCategories.filter(c => 
-            !workBusiness.includes(c) && 
-            !personalSocial.includes(c) && 
-            !updatesMarketing.includes(c) && 
-            !eventsTravel.includes(c)
+
+        const other = aiTopicCategories.filter(
+            (c) =>
+                !workBusiness.includes(c) &&
+                !personalSocial.includes(c) &&
+                !updatesMarketing.includes(c) &&
+                !eventsTravel.includes(c),
         );
-        
+
         return {
             workBusiness,
             personalSocial,
             updatesMarketing,
             eventsTravel,
-            other
+            other,
         };
     }, [aiTopicCategories]);
 
     // Get badge color based on the category option or default to neutral
-    const getBadgeColor = (category: CategoryOption): "danger" | "warning" | "info" | "success" | "neutral" => {
-        if (category.color === 'red') return 'danger';
-        if (category.color === 'orange' || category.color === 'yellow') return 'warning';
-        if (category.color === 'blue') return 'info';
-        if (category.color === 'green') return 'success';
-        if (category.value.includes('urgent')) return 'danger';
-        if (category.value.includes('high')) return 'warning';
-        if (category.value.includes('medium')) return 'info';
-        if (category.value.includes('low')) return 'success';
-        return 'neutral';
+    const getBadgeColor = (
+        category: CategoryOption,
+    ): "danger" | "warning" | "info" | "success" | "neutral" => {
+        if (category.color === "red") return "danger";
+        if (category.color === "orange" || category.color === "yellow") return "warning";
+        if (category.color === "blue") return "info";
+        if (category.color === "green") return "success";
+        if (category.value.includes("urgent")) return "danger";
+        if (category.value.includes("high")) return "warning";
+        if (category.value.includes("medium")) return "info";
+        if (category.value.includes("low")) return "success";
+        return "neutral";
     };
 
     // Get current category label
     const getCurrentCategoryLabel = () => {
-        const found = categoryOptions.find(cat => cat.value === currentCategory);
+        const found = categoryOptions.find((cat) => cat.value === currentCategory);
         return found ? found.label : "Inbox";
     };
 
     // Choose dropdown icon based on category type
     const getCategoryIcon = (category: CategoryOption) => {
         if (category.icon) return category.icon;
-        
-        if (category.value.includes('inbox') || category.value.includes('all')) return 'inbox';
-        if (category.value.includes('sent')) return 'send';
-        if (category.value.includes('draft')) return 'edit';
-        if (category.value.includes('trash')) return 'trash';
-        if (category.value.includes('starred')) return 'star';
-        
-        return 'folder';
+
+        if (category.value.includes("inbox") || category.value.includes("all")) return "inbox";
+        if (category.value.includes("sent")) return "send";
+        if (category.value.includes("draft")) return "edit";
+        if (category.value.includes("trash")) return "trash";
+        if (category.value.includes("starred")) return "star";
+
+        return "folder";
     };
 
     // Render dropdown item for a category
     const renderCategoryItem = (category: CategoryOption) => (
-        <Flex 
+        <Flex
             key={category.value}
             data-value={category.value}
             padding="8"
@@ -266,11 +265,7 @@ export function InboxControls({
                 <Text variant="body-default-s">{category.label}</Text>
             </Row>
             {category.badge && (
-                <Tag 
-                    variant={getBadgeColor(category)}
-                    size="s"
-                    label={category.badge}
-                />
+                <Tag variant={getBadgeColor(category)} size="s" label={category.badge} />
             )}
         </Flex>
     );
@@ -278,7 +273,7 @@ export function InboxControls({
     // Render category group
     const renderCategoryGroup = (categories: CategoryOption[]) => {
         if (categories.length === 0) return null;
-        
+
         return (
             <Flex direction="column" gap="4" paddingTop="8">
                 {/* <Text variant="body-strong-xs" paddingX="8" paddingBottom="4" onBackground="neutral-weak">{categories[0].label}</Text> */}
@@ -295,11 +290,12 @@ export function InboxControls({
     );
 
     // User folders dropdown content
-    const userFoldersDropdown = folderCategories.length > 0 ? (
-        <Flex direction="column" padding="8" gap="4" minWidth={16}>
-            {folderCategories.map(renderCategoryItem)}
-        </Flex>
-    ) : null;
+    const userFoldersDropdown =
+        folderCategories.length > 0 ? (
+            <Flex direction="column" padding="8" gap="4" minWidth={16}>
+                {folderCategories.map(renderCategoryItem)}
+            </Flex>
+        ) : null;
 
     // AI priorities dropdown content
     const prioritiesDropdown = (
@@ -326,19 +322,28 @@ export function InboxControls({
     const userDropdownContent = (
         <Flex direction="column" padding="8" minWidth={12}>
             {user?.name && (
-                <Flex direction="column" paddingBottom="12" paddingTop="4" paddingX="8" gap="2" borderBottom="neutral-alpha-medium">
+                <Flex
+                    direction="column"
+                    paddingBottom="12"
+                    paddingTop="4"
+                    paddingX="8"
+                    gap="2"
+                    borderBottom="neutral-alpha-medium"
+                >
                     <Text variant="heading-strong-xs">{user.name}</Text>
-                    <Text variant="body-default-xs" onBackground="neutral-weak">{user.email}</Text>
+                    <Text variant="body-default-xs" onBackground="neutral-weak">
+                        {user.email}
+                    </Text>
                 </Flex>
             )}
             <Flex direction="column" fillWidth paddingTop="8" gap="2">
-                <Button 
+                <Button
                     fillWidth
                     justifyContent="start"
                     weight="default"
                     variant="tertiary"
                     size="s"
-                    label="Account Settings" 
+                    label="Account Settings"
                     prefixIcon="settings"
                     href="/profile"
                 />
@@ -348,13 +353,13 @@ export function InboxControls({
                     weight="default"
                     variant="tertiary"
                     size="s"
-                    label="Help & Support" 
+                    label="Help & Support"
                     prefixIcon="helpCircle"
                     onClick={() => {
-                        window.open('/support', '_blank');
+                        window.open("/support", "_blank");
                     }}
                 />
-                <Button 
+                <Button
                     fillWidth
                     justifyContent="start"
                     weight="default"
@@ -364,13 +369,13 @@ export function InboxControls({
                     prefixIcon="calendar"
                     href="/calendar"
                 />
-                <Button 
+                <Button
                     fillWidth
                     justifyContent="start"
                     weight="default"
                     variant="tertiary"
                     size="s"
-                    label="Sign Out" 
+                    label="Sign Out"
                     prefixIcon="logout"
                     onClick={handleSignOut}
                 />
@@ -422,18 +427,28 @@ export function InboxControls({
                         }
                     />
                 </Row>
-                <UserMenu 
+                <UserMenu
                     name={user?.name || "User"}
                     subline={user?.email || "user@example.com"}
                     avatarProps={{
                         src: user?.image,
-                        value: user?.name?.charAt(0) || "U"
+                        value: user?.name?.charAt(0) || "U",
                     }}
                     dropdown={userDropdownContent}
                 />
             </Row>
 
-            <Row paddingX="8" paddingY="8" gap="24" data-border="rounded" background="neutral-alpha-weak" topRadius="m" borderTop="neutral-alpha-medium" borderLeft="neutral-alpha-medium" borderRight="neutral-alpha-medium">
+            <Row
+                paddingX="8"
+                paddingY="8"
+                gap="24"
+                data-border="rounded"
+                background="neutral-alpha-weak"
+                topRadius="m"
+                borderTop="neutral-alpha-medium"
+                borderLeft="neutral-alpha-medium"
+                borderRight="neutral-alpha-medium"
+            >
                 {isAISearchActive && onClearAISearch ? (
                     <Row fillWidth horizontal="space-between" vertical="center">
                         <Button
@@ -442,10 +457,14 @@ export function InboxControls({
                             onClick={handleClearAISearch}
                         />
                         {isAISearchLoading ? (
-                            <Text variant="body-default-s" onBackground="neutral-weak">Searching...</Text>
+                            <Text variant="body-default-s" onBackground="neutral-weak">
+                                Searching...
+                            </Text>
                         ) : (
                             <Text variant="body-default-s" onBackground="neutral-weak">
-                                {localSearchQuery ? `AI searching for: "${localSearchQuery}"` : "AI search results"}
+                                {localSearchQuery
+                                    ? `AI searching for: "${localSearchQuery}"`
+                                    : "AI search results"}
                             </Text>
                         )}
                     </Row>
@@ -480,7 +499,7 @@ export function InboxControls({
                                     selectedOption={currentCategory}
                                     minWidth={18}
                                 />
-                                
+
                                 {/* User folders dropdown - only show if there are user folders */}
                                 {userFoldersDropdown && folderCategories.length > 0 && (
                                     <DropdownWrapper
@@ -488,7 +507,7 @@ export function InboxControls({
                                             <Button
                                                 size="s"
                                                 weight="default"
-                                                label="My Folders" 
+                                                label="My Folders"
                                                 prefixIcon="folder"
                                                 variant="secondary"
                                                 suffixIcon="chevronDown"
@@ -524,7 +543,7 @@ export function InboxControls({
                                             minWidth={18}
                                         />
                                     )}
-                                    
+
                                     {/* AI Topics dropdown */}
                                     {aiTopicCategories.length > 0 && (
                                         <DropdownWrapper
@@ -547,7 +566,7 @@ export function InboxControls({
                                 </Row>
                             )}
                         </Flex>
-                        
+
                         {onSync && (
                             <Button
                                 size="s"

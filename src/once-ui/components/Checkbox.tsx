@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, forwardRef } from "react";
 import classNames from "classnames";
-import { Flex, Icon, InteractiveDetails, InteractiveDetailsProps } from ".";
+import type React from "react";
+import { forwardRef, useEffect, useState } from "react";
+import { Flex, Icon, InteractiveDetails, type InteractiveDetailsProps } from ".";
 import styles from "./SharedInteractiveStyles.module.scss";
 
 interface CheckboxProps

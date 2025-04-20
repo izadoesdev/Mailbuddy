@@ -1,12 +1,13 @@
 "use client";
 
-import React, { forwardRef, useState, useEffect } from "react";
 import classNames from "classnames";
+import type React from "react";
+import { forwardRef, useEffect, useState } from "react";
+import type { ComponentProps } from "react";
+import { Flex } from "./Flex";
 import { Grid } from "./Grid";
 import { Logo } from "./Logo";
 import styles from "./LogoCloud.module.scss";
-import type { ComponentProps } from "react";
-import { Flex } from "./Flex";
 
 type LogoProps = ComponentProps<typeof Logo>;
 

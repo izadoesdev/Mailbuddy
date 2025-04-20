@@ -1,8 +1,9 @@
 import classNames from "classnames";
+import type React from "react";
+import { forwardRef } from "react";
 import { Flex, Text } from ".";
-import styles from "./Option.module.scss";
 import { ElementType } from "./ElementType";
-import React, { forwardRef } from "react";
+import styles from "./Option.module.scss";
 
 export interface OptionProps {
     label: React.ReactNode;

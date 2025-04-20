@@ -6,8 +6,9 @@
         "export": "next export",
         "build": "next build",
         "start": "next start",
+        "typecheck": "tsc --noEmit",
         "biome-write": "bun x @biomejs/biome format --write .",
-        "lint": "next lint"
+        "lint": "biome check --write ."
     },
     "dependencies": {
         "@faker-js/faker": "^9.7.0",

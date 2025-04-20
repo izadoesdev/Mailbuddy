@@ -1,7 +1,7 @@
-import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
-import type { InboxResponse, Thread, Email } from "../types";
 import { useToast } from "@/once-ui/components";
+import { type UseQueryOptions, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
+import type { Email, InboxResponse, Thread } from "../types";
 
 interface FetchEmailsParams {
     page: number;
@@ -30,20 +30,22 @@ const fetchEmails = async ({
     isStarred,
     isUnread,
     signal,
-}: Omit<FetchEmailsParams, "enabled"> & { signal?: AbortSignal }): Promise<InboxResponseWithError> => {
+}: Omit<FetchEmailsParams, "enabled"> & {
+    signal?: AbortSignal;
+}): Promise<InboxResponseWithError> => {
     try {
         const params = new URLSearchParams();
         params.append("page", page.toString());
         params.append("pageSize", pageSize.toString());
-        
+
         if (searchQuery) params.append("search", searchQuery);
         if (category) {
-            if (category.startsWith('category-')) {
-                const aiCategory = category.replace('category-', '');
+            if (category.startsWith("category-")) {
+                const aiCategory = category.replace("category-", "");
                 params.append("aiCategory", aiCategory);
                 console.log(`Using AI category: ${aiCategory}`);
-            } else if (category.startsWith('priority-')) {
-                const aiPriority = category.replace('priority-', '');
+            } else if (category.startsWith("priority-")) {
+                const aiPriority = category.replace("priority-", "");
                 params.append("aiPriority", aiPriority);
                 console.log(`Using AI priority: ${aiPriority}`);
             } else {
@@ -53,7 +55,7 @@ const fetchEmails = async ({
         }
         if (isStarred !== undefined) params.append("isStarred", isStarred.toString());
         if (isUnread !== undefined) params.append("isUnread", isUnread.toString());
-        
+
         const response = await fetch(`/api/inbox?${params.toString()}`, { signal });
 
         // Get the response data
@@ -61,7 +63,7 @@ const fetchEmails = async ({
 
         // Check if the API returned an error message
         if (data.error) {
-            console.warn(`API returned error: ${data.error} (${data.errorType || 'unknown'})`);
+            console.warn(`API returned error: ${data.error} (${data.errorType || "unknown"})`);
             return {
                 threads: [],
                 totalCount: 0,
@@ -69,7 +71,7 @@ const fetchEmails = async ({
                 pageSize,
                 hasMore: false,
                 error: data.error,
-                errorType: data.errorType
+                errorType: data.errorType,
             };
         }
 
@@ -82,7 +84,7 @@ const fetchEmails = async ({
                 pageSize,
                 hasMore: false,
                 error: "No emails found",
-                errorType: "not_found"
+                errorType: "not_found",
             };
         }
 
@@ -96,7 +98,7 @@ const fetchEmails = async ({
                 pageSize,
                 hasMore: false,
                 error: "Failed to load emails",
-                errorType: "api_error"
+                errorType: "api_error",
             };
         }
 
@@ -109,7 +111,7 @@ const fetchEmails = async ({
                 pageSize,
                 hasMore: false,
                 error: "Invalid response format",
-                errorType: "format_error"
+                errorType: "format_error",
             };
         }
 
@@ -122,7 +124,7 @@ const fetchEmails = async ({
                     ? new Date(Number.parseInt(thread.internalDate))
                     : new Date(),
             };
-            
+
             // Format dates for all emails in the thread
             if (thread.emails && Array.isArray(thread.emails)) {
                 formattedThread.emails = thread.emails.map((email: Email) => ({
@@ -132,7 +134,7 @@ const fetchEmails = async ({
                         : new Date(email.createdAt),
                 }));
             }
-            
+
             return formattedThread;
         });
 
@@ -143,17 +145,17 @@ const fetchEmails = async ({
             pageSize: data.pageSize || pageSize,
             hasMore: data.hasMore || false,
             error: data.error,
-            errorType: data.errorType
+            errorType: data.errorType,
         };
     } catch (error) {
         // Check if this was an abort error from the AbortController
-        if (error instanceof DOMException && error.name === 'AbortError') {
+        if (error instanceof DOMException && error.name === "AbortError") {
             // This is an expected error when we abort a request, no need to log it
             console.log("Request was cancelled");
         } else {
             console.warn("Error in fetchEmails:", error);
         }
-        
+
         // Return empty inbox with error information
         return {
             threads: [],
@@ -162,7 +164,7 @@ const fetchEmails = async ({
             pageSize,
             hasMore: false,
             error: error instanceof Error ? error.message : "Unknown error",
-            errorType: "client_error"
+            errorType: "client_error",
         };
     }
 };
@@ -192,33 +194,33 @@ export function useInboxData({
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
             }
-            
+
             // Create a new AbortController for this request
             if (!signal) {
                 abortControllerRef.current = new AbortController();
                 signal = abortControllerRef.current.signal;
             }
-            
-            return fetchEmails({ 
-                page, 
-                pageSize, 
-                searchQuery, 
-                category, 
-                isStarred, 
+
+            return fetchEmails({
+                page,
+                pageSize,
+                searchQuery,
+                category,
+                isStarred,
                 isUnread,
-                signal 
+                signal,
             });
         },
         staleTime: 60 * 1000, // 1 minute
         retry: false, // Disable retries to prevent multiple error messages
         enabled, // Only run the query when enabled is true
         // Always start with loading state to prevent "empty inbox" flash
-        placeholderData: () => ({ 
+        placeholderData: () => ({
             threads: [],
             totalCount: 0,
             page,
             pageSize,
-            hasMore: false
+            hasMore: false,
         }),
     };
 
@@ -246,9 +248,9 @@ export function useInboxData({
 
         // Check for API-level errors (those included in the response)
         if (data?.error && !hasShownErrorToast.current && enabled && !isFirstLoad.current) {
-            console.warn(`API Error: ${data.error} (${data.errorType || 'unknown'})`);
+            console.warn(`API Error: ${data.error} (${data.errorType || "unknown"})`);
             // Don't show toast for sync-in-progress errors
-            if (data.errorType !== 'sync_in_progress') {
+            if (data.errorType !== "sync_in_progress") {
                 addToast({
                     variant: "danger",
                     message: data.error,
@@ -259,7 +261,7 @@ export function useInboxData({
         // Check for network-level errors
         else if (error && !hasShownErrorToast.current && enabled && !isFirstLoad.current) {
             // Don't show error toast for aborted requests
-            if (!(error instanceof DOMException && error.name === 'AbortError')) {
+            if (!(error instanceof DOMException && error.name === "AbortError")) {
                 console.error("Error fetching emails:", error);
                 addToast({
                     variant: "danger",
@@ -279,7 +281,7 @@ export function useInboxData({
     // Return the data in a more convenient format
     return {
         threads: data?.threads || [],
-        emails: data?.threads ? data.threads.flatMap(thread => thread.emails) : [],
+        emails: data?.threads ? data.threads.flatMap((thread) => thread.emails) : [],
         totalCount: data?.totalCount || 0,
         hasMore: data?.hasMore || false,
         error: data?.error || (error instanceof Error ? error.message : undefined),

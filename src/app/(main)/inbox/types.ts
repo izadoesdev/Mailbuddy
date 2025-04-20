@@ -1,4 +1,4 @@
-import type { Email as PrismaEmail, EmailAIMetadata } from "@prisma/client";
+import type { EmailAIMetadata, Email as PrismaEmail } from "@prisma/client";
 
 export interface Email extends PrismaEmail {
     aiMetadata: EmailAIMetadata | null;
@@ -29,16 +29,16 @@ export interface InboxResponse {
     pageSize: number;
 }
 
-export type GmailLabel = 
-    | "INBOX" 
-    | "SENT" 
-    | "DRAFT" 
-    | "TRASH" 
-    | "SPAM" 
-    | "STARRED" 
-    | "IMPORTANT" 
-    | "CATEGORY_SOCIAL" 
-    | "CATEGORY_UPDATES" 
-    | "CATEGORY_FORUMS" 
-    | "CATEGORY_PROMOTIONS" 
+export type GmailLabel =
+    | "INBOX"
+    | "SENT"
+    | "DRAFT"
+    | "TRASH"
+    | "SPAM"
+    | "STARRED"
+    | "IMPORTANT"
+    | "CATEGORY_SOCIAL"
+    | "CATEGORY_UPDATES"
+    | "CATEGORY_FORUMS"
+    | "CATEGORY_PROMOTIONS"
     | "CATEGORY_PERSONAL";

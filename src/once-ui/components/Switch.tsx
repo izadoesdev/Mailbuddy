@@ -1,11 +1,12 @@
 "use client";
 
-import React, { forwardRef } from "react";
 import classNames from "classnames";
+import type React from "react";
+import { forwardRef } from "react";
 
-import { Flex, InteractiveDetails, InteractiveDetailsProps, Spinner } from ".";
-import styles from "./Switch.module.scss";
+import { Flex, InteractiveDetails, type InteractiveDetailsProps, Spinner } from ".";
 import commonStyles from "./SharedInteractiveStyles.module.scss";
+import styles from "./Switch.module.scss";
 
 interface SwitchProps
     extends Omit<InteractiveDetailsProps, "onClick">,

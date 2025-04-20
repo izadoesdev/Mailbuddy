@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Flex, DatePicker } from ".";
+import type React from "react";
+import { useEffect, useState } from "react";
+import { DatePicker, Flex } from ".";
 
 export interface DateRange {
     startDate: Date | undefined;

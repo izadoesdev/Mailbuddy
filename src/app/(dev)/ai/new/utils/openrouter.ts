@@ -1,8 +1,8 @@
 "use server";
 
-import index from "../index";
-import { AI_PROMPTS, VECTOR_CONFIG, PRIORITY_LEVELS } from "../constants";
 import type { Email } from "@/app/(main)/inbox/types";
+import { AI_PROMPTS, PRIORITY_LEVELS, VECTOR_CONFIG } from "../constants";
+import index from "../index";
 import { cleanEmail } from "./clean";
 
 // Default model to use for OpenRouter requests
@@ -20,12 +20,7 @@ async function callOpenRouter(
         strict?: boolean; // New option to enforce strict validation
     } = {},
 ): Promise<string> {
-    const { 
-        model = DEFAULT_MODEL, 
-        temperature = 0.2, 
-        maxTokens = 150,
-        strict = false 
-    } = options;
+    const { model = DEFAULT_MODEL, temperature = 0.2, maxTokens = 150, strict = false } = options;
 
     // Ensure OpenRouter API key is available
     if (!process.env.OPENROUTER_API_KEY) {
@@ -158,40 +153,39 @@ export async function extractActionItems(email: Email): Promise<string[]> {
         const MAX_RETRIES = 3;
         let retries = 0;
         let actionItems: string[] = [];
-        
+
         while (retries < MAX_RETRIES) {
-            const temperature = 0.2 + (retries * 0.1); // Increase temperature slightly on retries
-            const result = await callOpenRouter(prompt, { 
-                temperature, 
+            const temperature = 0.2 + retries * 0.1; // Increase temperature slightly on retries
+            const result = await callOpenRouter(prompt, {
+                temperature,
                 maxTokens: 400,
-                model: retries > 0 ? "mistralai/ministral-3b" : DEFAULT_MODEL // Try better model on retry
+                model: retries > 0 ? "mistralai/ministral-3b" : DEFAULT_MODEL, // Try better model on retry
             });
-            
+
             // Try parsing as JSON
-            const parsedItems = tryParseJson<string[]>(result, 
-                (data) => Array.isArray(data) && data.every(item => typeof item === 'string')
+            const parsedItems = tryParseJson<string[]>(
+                result,
+                (data) => Array.isArray(data) && data.every((item) => typeof item === "string"),
             );
-            
+
             if (parsedItems !== null) {
                 return parsedItems;
             }
-            
+
             // Fallback parsing if JSON parse failed
             try {
                 // Traditional array extraction
                 const match = result.match(/\[([\s\S]*?)\]/);
                 if (match) {
                     // Clean up the JSON before parsing
-                    const jsonStr = match[0]
-                        .replace(/'/g, '"')
-                        .replace(/,\s*]/g, "]");
+                    const jsonStr = match[0].replace(/'/g, '"').replace(/,\s*]/g, "]");
 
                     const jsonArray = JSON.parse(jsonStr);
                     if (Array.isArray(jsonArray)) {
-                        return jsonArray.filter(item => typeof item === 'string');
+                        return jsonArray.filter((item) => typeof item === "string");
                     }
                 }
-                
+
                 // Fallback: extract bullet points or numbered items
                 const bulletItems = result.match(/(?:^|\n)[-*•]\s*(.+)(?:\n|$)/g);
                 if (bulletItems?.length) {
@@ -207,10 +201,10 @@ export async function extractActionItems(email: Email): Promise<string[]> {
             } catch (error) {
                 console.error("Error in fallback parsing:", error);
             }
-            
+
             retries++;
         }
-        
+
         return actionItems;
     } catch (error) {
         console.error("Error extracting action items with OpenRouter:", error);
@@ -239,27 +233,28 @@ export async function extractContactInfo(email: Email): Promise<Record<string, s
         // Maximum retries for getting valid JSON
         const MAX_RETRIES = 3;
         let retries = 0;
-        
+
         while (retries < MAX_RETRIES) {
-            const temperature = 0.1 + (retries * 0.1); // Increase temperature slightly on retries
-            const result = await callOpenRouter(prompt, { 
-                temperature, 
+            const temperature = 0.1 + retries * 0.1; // Increase temperature slightly on retries
+            const result = await callOpenRouter(prompt, {
+                temperature,
                 maxTokens: 300,
-                model: retries > 0 ? "mistralai/ministral-3b" : DEFAULT_MODEL // Try better model on retry
+                model: retries > 0 ? "mistralai/ministral-3b" : DEFAULT_MODEL, // Try better model on retry
             });
-            
+
             // Try parsing as JSON
-            const parsedInfo = tryParseJson<Record<string, string>>(result, 
-                (data) => typeof data === 'object' && data !== null && !Array.isArray(data)
+            const parsedInfo = tryParseJson<Record<string, string>>(
+                result,
+                (data) => typeof data === "object" && data !== null && !Array.isArray(data),
             );
-            
+
             if (parsedInfo !== null) {
                 return parsedInfo;
             }
-            
+
             // If JSON parsing failed, try fallback extraction
             const contactInfo: Record<string, string> = {};
-            
+
             // Look for Email: something@example.com patterns
             const emailMatch = result.match(
                 /email:?\s*([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i,
@@ -277,10 +272,10 @@ export async function extractContactInfo(email: Email): Promise<Record<string, s
             if (Object.keys(contactInfo).length > 0) {
                 return contactInfo;
             }
-            
+
             retries++;
         }
-        
+
         return {}; // If all attempts fail, return empty object
     } catch (error) {
         console.error("Error extracting contact info with OpenRouter:", error);
@@ -308,14 +303,14 @@ export async function processEmail(email: Email, userSettings?: any) {
         }
 
         // Add the user's custom prompt if it exists
-        const customPromptSection = userSettings?.customPrompt 
+        const customPromptSection = userSettings?.customPrompt
             ? `
 IMPORTANT - USER'S CUSTOM INSTRUCTIONS:
 ${userSettings.customPrompt}
 
 THE ABOVE INSTRUCTIONS FROM THE USER TAKE PRECEDENCE OVER ANY CONFLICTING STANDARD INSTRUCTIONS BELOW.
 `
-            : '';
+            : "";
 
         // Create a comprehensive prompt that extracts all information at once
         const prompt = `Analyze this email that was sent directly to the user and provide insights with a personal touch.
@@ -367,11 +362,14 @@ You MUST ONLY return a valid JSON object without any other text before or after.
         // Loop until we get valid JSON or hit retry limit
         while (jsonParsingAttempts < MAX_JSON_PARSING_RETRIES) {
             // Increase temperature slightly on retries to get different responses
-            const retryTemperature = 0.2 + (jsonParsingAttempts * 0.1);
-            
+            const retryTemperature = 0.2 + jsonParsingAttempts * 0.1;
+
             // Use a more powerful model for comprehensive analysis
             const result = await callOpenRouter(prompt, {
-                model: jsonParsingAttempts === 0 ? "google/gemini-flash-1.5-8b" : "mistralai/ministral-3b",
+                model:
+                    jsonParsingAttempts === 0
+                        ? "google/gemini-flash-1.5-8b"
+                        : "mistralai/ministral-3b",
                 temperature: retryTemperature,
                 maxTokens: 800,
             });
@@ -380,38 +378,46 @@ You MUST ONLY return a valid JSON object without any other text before or after.
             try {
                 // First check if response is wrapped in code blocks (```json ... ```)
                 let cleanedResult = result;
-                
+
                 // Remove markdown code block formatting if present
                 const codeBlockMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
                 if (codeBlockMatch?.[1]) {
                     cleanedResult = codeBlockMatch[1].trim();
                 }
-                
+
                 // Parse the JSON
                 const parsedData = JSON.parse(cleanedResult);
-                
+
                 // Validate required fields exist
                 if (!parsedData.category || !parsedData.priority || !parsedData.summary) {
                     jsonParsingAttempts++;
                 } else {
                     // Successfully parsed valid JSON with required fields
-                    
+
                     // If we successfully parsed JSON data, return it
                     return {
                         category: parsedData.category || "Uncategorized",
                         priority: parsedData.priority || "Medium",
                         priorityExplanation: parsedData.priorityExplanation || "",
                         summary: parsedData.summary || "No summary available",
-                        actionItems: Array.isArray(parsedData.actionItems) ? parsedData.actionItems : [],
-                        importantDates: Array.isArray(parsedData.importantDates) ? parsedData.importantDates : [],
-                        deadlines: typeof parsedData.deadlines === "object" ? parsedData.deadlines : {},
-                        contactInfo: typeof parsedData.contactInfo === "object" ? parsedData.contactInfo : {},
+                        actionItems: Array.isArray(parsedData.actionItems)
+                            ? parsedData.actionItems
+                            : [],
+                        importantDates: Array.isArray(parsedData.importantDates)
+                            ? parsedData.importantDates
+                            : [],
+                        deadlines:
+                            typeof parsedData.deadlines === "object" ? parsedData.deadlines : {},
+                        contactInfo:
+                            typeof parsedData.contactInfo === "object"
+                                ? parsedData.contactInfo
+                                : {},
                     };
                 }
             } catch (error) {
                 console.error(`JSON parsing error on attempt ${jsonParsingAttempts + 1}:`, error);
                 jsonParsingAttempts++;
-                
+
                 // If we're at the last attempt, no need to log about retrying
                 if (jsonParsingAttempts < MAX_JSON_PARSING_RETRIES) {
                     console.log("Retrying with different model/parameters...");
@@ -421,7 +427,7 @@ You MUST ONLY return a valid JSON object without any other text before or after.
 
         // If we couldn't get valid JSON after all retries, fall back to individual processing
         console.log("Falling back to individual processing methods after JSON parsing failures");
-        
+
         // Get priority with explanation
         const priorityInfo = await getPriorityWithExplanation(email);
 
@@ -459,15 +465,15 @@ function tryParseJson<T>(jsonString: string, validator?: (data: any) => boolean)
         if (codeBlockMatch?.[1]) {
             cleanedJson = codeBlockMatch[1].trim();
         }
-        
+
         // Parse JSON
         const parsed = JSON.parse(cleanedJson);
-        
+
         // Validate if validator function provided
         if (validator && !validator(parsed)) {
             return null;
         }
-        
+
         return parsed as T;
     } catch (e) {
         return null;

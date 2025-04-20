@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/once-ui/components";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 /**
  * Trigger a background sync for the current user

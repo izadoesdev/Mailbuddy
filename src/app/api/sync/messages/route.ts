@@ -1,9 +1,9 @@
-import { google } from "googleapis";
 import { auth } from "@/libs/auth";
-import { headers } from "next/headers";
 import { prisma } from "@/libs/db";
-import type { gmail_v1 } from "googleapis";
 import env from "@/libs/env";
+import { google } from "googleapis";
+import type { gmail_v1 } from "googleapis";
+import { headers } from "next/headers";
 
 // Constants
 const DEFAULT_BATCH_SIZE = 500;

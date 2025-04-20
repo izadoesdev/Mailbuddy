@@ -1,21 +1,21 @@
-import type React from "react";
 import {
-    Text,
-    Row,
-    Column,
-    IconButton,
     Avatar,
     Button,
-    Heading,
-    Tag,
-    Icon,
+    Column,
     Dialog,
+    Heading,
+    Icon,
+    IconButton,
+    Row,
+    Tag,
+    Text,
     useToast,
 } from "@/once-ui/components";
-import type { Email, Thread } from "../types";
-import { extractName, getInitials, formatDate } from "../utils";
 import DOMPurify from "dompurify";
-import { useMemo, useState, useEffect } from "react";
+import type React from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { Email, Thread } from "../types";
+import { extractName, formatDate, getInitials } from "../utils";
 
 interface EmailDetailProps {
     email: Email;
@@ -35,7 +35,7 @@ interface EmailDetailProps {
  */
 function decodeHtmlEntities(html: string): string {
     if (!html) return "";
-    
+
     // Create a temporary DOM element
     const txt = document.createElement("textarea");
     txt.innerHTML = html;
@@ -50,22 +50,22 @@ function decodeHtmlEntities(html: string): string {
  */
 function hasEmailStyling(html: string): boolean {
     if (!html) return false;
-    
+
     // Check for common style-related patterns
     const stylePatterns = [
-        /<style[^>]*>/i,                   // Style tags
-        /style=["'][^"']+["']/i,           // Inline style attributes
-        /<font[^>]*>/i,                    // Font tags
-        /<h[1-6][^>]*>/i,                  // Heading tags
-        /<div[^>]*class=/i,                // Divs with classes
-        /<table[^>]*>/i,                   // Tables (often used for layout)
-        /<span[^>]*style=/i,               // Spans with styles
-        /<p[^>]*style=/i,                  // Paragraphs with styles
-        /<link[^>]*rel=["']stylesheet["']/i // External stylesheets
+        /<style[^>]*>/i, // Style tags
+        /style=["'][^"']+["']/i, // Inline style attributes
+        /<font[^>]*>/i, // Font tags
+        /<h[1-6][^>]*>/i, // Heading tags
+        /<div[^>]*class=/i, // Divs with classes
+        /<table[^>]*>/i, // Tables (often used for layout)
+        /<span[^>]*style=/i, // Spans with styles
+        /<p[^>]*style=/i, // Paragraphs with styles
+        /<link[^>]*rel=["']stylesheet["']/i, // External stylesheets
     ];
-    
+
     // Return true if any of the patterns match
-    return stylePatterns.some(pattern => pattern.test(html));
+    return stylePatterns.some((pattern) => pattern.test(html));
 }
 
 /**
@@ -75,80 +75,83 @@ function hasEmailStyling(html: string): boolean {
  */
 function formatPlainTextEmail(content: string): string {
     if (!content) return "";
-    
+
     // Check if content is already HTML
-    if (content.includes('<') && content.includes('>')) {
+    if (content.includes("<") && content.includes(">")) {
         return content;
     }
-    
+
     // Format plain text by:
     // 1. Replace multiple consecutive line breaks with paragraph breaks
     // 2. Replace single line breaks with <br>
     // 3. Convert URLs to actual links
     // 4. Preserve indentation and spacing
-    
+
     // Replace URLs with actual links
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-    let formattedContent = content.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
-    
+    let formattedContent = content.replace(
+        urlRegex,
+        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>',
+    );
+
     // Detect and format email addresses
     const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
     formattedContent = formattedContent.replace(emailRegex, '<a href="mailto:$1">$1</a>');
-    
+
     // Format paragraphs (multiple line breaks)
-    formattedContent = formattedContent.replace(/\n{2,}/g, '</p><p>');
-    
+    formattedContent = formattedContent.replace(/\n{2,}/g, "</p><p>");
+
     // Format single line breaks
-    formattedContent = formattedContent.replace(/\n/g, '<br />');
-    
+    formattedContent = formattedContent.replace(/\n/g, "<br />");
+
     // Wrap the whole content in paragraphs
     formattedContent = `<p>${formattedContent}</p>`;
-    
+
     // Format potential lists (lines starting with - or * or numbers)
     const listItemRegex = /<p>(\s*)[-*•]\s+(.+?)<\/p>/g;
-    formattedContent = formattedContent.replace(listItemRegex, '<ul><li>$2</li></ul>');
-    
+    formattedContent = formattedContent.replace(listItemRegex, "<ul><li>$2</li></ul>");
+
     // Clean up multiple adjacent list tags
-    formattedContent = formattedContent.replace(/<\/ul>\s*<ul>/g, '');
-    
+    formattedContent = formattedContent.replace(/<\/ul>\s*<ul>/g, "");
+
     return formattedContent;
 }
 
-export function EmailDetail({ 
-    email, 
+export function EmailDetail({
+    email,
     thread,
-    onClose, 
+    onClose,
     onReply,
     onForward,
     onTrash,
-    onSelectEmail
+    onSelectEmail,
 }: EmailDetailProps) {
     // Use fromName if available, otherwise extract from the from field
     const senderName = (email as any).fromName || extractName(email.from ?? "");
     // Use fromEmail if available
     const senderEmail = (email as any).fromEmail || email.from;
-    
+
     // Dialog state for trash confirmation
     const [isTrashDialogOpen, setIsTrashDialogOpen] = useState(false);
-    
+
     // Reset document state when component is mounted/unmounted to fix any stuck dialog issues
     useEffect(() => {
         // Reset document state on mount in case of previous issues
         document.body.style.overflow = "";
-        
+
         // Make sure all elements are interactive
         setTimeout(() => {
-            const elements = document.querySelectorAll('*');
+            const elements = document.querySelectorAll("*");
             for (const el of elements) {
                 if (el instanceof HTMLElement) {
                     el.inert = false;
                 }
             }
         }, 0);
-        
+
         return () => {
             document.body.style.overflow = "";
-            const elements = document.querySelectorAll('*');
+            const elements = document.querySelectorAll("*");
             for (const el of elements) {
                 if (el instanceof HTMLElement) {
                     el.inert = false;
@@ -156,12 +159,12 @@ export function EmailDetail({
             }
         };
     }, []);
-    
+
     useEffect(() => {
         if (!isTrashDialogOpen) {
             setTimeout(() => {
                 document.body.style.overflow = "";
-                const elements = document.querySelectorAll('*');
+                const elements = document.querySelectorAll("*");
                 for (const el of elements) {
                     if (el instanceof HTMLElement) {
                         el.inert = false;
@@ -170,11 +173,11 @@ export function EmailDetail({
             }, 300); // Match the animation duration from Dialog.tsx
         }
     }, [isTrashDialogOpen]);
-    
+
     const emailHasStyling = useMemo(() => {
         return hasEmailStyling(email.body || "");
     }, [email.body]);
-    
+
     // Format the email content if it's plain text
     const formattedEmailContent = useMemo(() => {
         if (emailHasStyling) {
@@ -202,26 +205,26 @@ export function EmailDetail({
         // Show confirmation dialog instead of immediately deleting
         setIsTrashDialogOpen(true);
     };
-    
+
     const confirmTrash = () => {
         if (onTrash) {
             onTrash(email);
         }
-        
+
         // Make everything interactive again before closing dialog
         document.body.style.overflow = "";
-        const elements = document.querySelectorAll('*');
+        const elements = document.querySelectorAll("*");
         for (const el of elements) {
             if (el instanceof HTMLElement) {
                 el.inert = false;
             }
         }
-        
+
         setIsTrashDialogOpen(false);
-        
+
         // Delayed cleanup to handle any persistence
         setTimeout(() => {
-            const elements = document.querySelectorAll('*');
+            const elements = document.querySelectorAll("*");
             for (const el of elements) {
                 if (el instanceof HTMLElement) {
                     el.inert = false;
@@ -230,22 +233,22 @@ export function EmailDetail({
             document.body.style.overflow = "";
         }, 500);
     };
-    
+
     const cancelTrash = () => {
         // Make everything interactive again before closing dialog
         document.body.style.overflow = "";
-        const elements = document.querySelectorAll('*');
+        const elements = document.querySelectorAll("*");
         for (const el of elements) {
             if (el instanceof HTMLElement) {
                 el.inert = false;
             }
         }
-        
+
         setIsTrashDialogOpen(false);
-        
+
         // Delayed cleanup to handle any persistence
         setTimeout(() => {
-            const elements = document.querySelectorAll('*');
+            const elements = document.querySelectorAll("*");
             for (const el of elements) {
                 if (el instanceof HTMLElement) {
                     el.inert = false;
@@ -285,7 +288,13 @@ export function EmailDetail({
 
     return (
         <>
-            <Column fill radius="m" border="neutral-alpha-medium" background="overlay" overflow="hidden">
+            <Column
+                fill
+                radius="m"
+                border="neutral-alpha-medium"
+                background="overlay"
+                overflow="hidden"
+            >
                 <Column fill>
                     <Row
                         horizontal="space-between"
@@ -299,7 +308,7 @@ export function EmailDetail({
                             {hasMultipleEmails && (
                                 <Row vertical="center" gap="4">
                                     <Icon name="chat" size="s" onBackground="brand-medium" />
-                                    <Tag 
+                                    <Tag
                                         variant="brand"
                                         label={`${thread?.emails?.length || 0} emails in thread`}
                                     />
@@ -344,68 +353,96 @@ export function EmailDetail({
                             />
                         </Row>
                     </Row>
-                    
+
                     {/* Thread emails list if we have multiple emails */}
                     {hasMultipleEmails && (
-                        <Column fillWidth paddingX="16" paddingY="8" gap="8" borderBottom="neutral-alpha-medium">
-                            <Row fillWidth horizontal="space-between" paddingX="8" vertical="center">
+                        <Column
+                            fillWidth
+                            paddingX="16"
+                            paddingY="8"
+                            gap="8"
+                            borderBottom="neutral-alpha-medium"
+                        >
+                            <Row
+                                fillWidth
+                                horizontal="space-between"
+                                paddingX="8"
+                                vertical="center"
+                            >
                                 <Row vertical="center" gap="4">
                                     <Icon name="chat" size="s" onBackground="brand-medium" />
                                     <Text variant="body-strong-s">Emails in this thread</Text>
                                 </Row>
-                                <Tag 
-                                    variant="brand"
-                                    label={`${thread?.emails?.length} total`}
-                                />
+                                <Tag variant="brand" label={`${thread?.emails?.length} total`} />
                             </Row>
-                            <Column fillWidth gap="4" style={{ maxHeight: "200px" }} overflowY="auto">
+                            <Column
+                                fillWidth
+                                gap="4"
+                                style={{ maxHeight: "200px" }}
+                                overflowY="auto"
+                            >
                                 {thread?.emails?.map((threadEmail, index) => (
-                                    <Row 
+                                    <Row
                                         key={threadEmail.id}
                                         fillWidth
                                         paddingX="8"
                                         paddingY="4"
                                         radius="s"
-                                        background={threadEmail.id === email.id ? "neutral-alpha-medium" : "transparent"}
+                                        background={
+                                            threadEmail.id === email.id
+                                                ? "neutral-alpha-medium"
+                                                : "transparent"
+                                        }
                                         cursor="pointer"
                                         onClick={() => handleEmailSelect(threadEmail)}
                                     >
                                         <Column fillWidth gap="2">
                                             <Row fillWidth horizontal="space-between">
                                                 <Row gap="4" vertical="center">
-                                                    <Text 
-                                                        variant="label-default-xs" 
+                                                    <Text
+                                                        variant="label-default-xs"
                                                         onBackground="neutral-weak"
                                                     >
                                                         #{index + 1}
                                                     </Text>
-                                                    <Text 
-                                                        variant={threadEmail.isRead ? "body-default-s" : "body-strong-s"}
-                                                        style={{ 
+                                                    <Text
+                                                        variant={
+                                                            threadEmail.isRead
+                                                                ? "body-default-s"
+                                                                : "body-strong-s"
+                                                        }
+                                                        style={{
                                                             maxWidth: "70%",
                                                             overflow: "hidden",
                                                             textOverflow: "ellipsis",
-                                                            whiteSpace: "nowrap" 
+                                                            whiteSpace: "nowrap",
                                                         }}
                                                     >
                                                         {extractName(threadEmail.from || "")}
                                                     </Text>
                                                 </Row>
-                                                <Text variant="label-default-xs" onBackground="neutral-weak">
+                                                <Text
+                                                    variant="label-default-xs"
+                                                    onBackground="neutral-weak"
+                                                >
                                                     {formatDate(
                                                         threadEmail.internalDate
-                                                            ? new Date(Number.parseInt(threadEmail.internalDate))
-                                                            : new Date(threadEmail.createdAt)
+                                                            ? new Date(
+                                                                  Number.parseInt(
+                                                                      threadEmail.internalDate,
+                                                                  ),
+                                                              )
+                                                            : new Date(threadEmail.createdAt),
                                                     )}
                                                 </Text>
                                             </Row>
-                                            <Text 
-                                                variant="body-default-xs" 
+                                            <Text
+                                                variant="body-default-xs"
                                                 onBackground="neutral-weak"
-                                                style={{ 
+                                                style={{
                                                     overflow: "hidden",
                                                     textOverflow: "ellipsis",
-                                                    whiteSpace: "nowrap" 
+                                                    whiteSpace: "nowrap",
                                                 }}
                                             >
                                                 {threadEmail.snippet || "No preview available"}
@@ -418,106 +455,126 @@ export function EmailDetail({
                     )}
 
                     <Column fill overflowY="auto" paddingY="12" gap="16">
-                    <Row gap="16" vertical="center" paddingX="24" fillWidth fitHeight>
-                        <Avatar size="l" value={getInitials(senderName)} />
-                        <Column gap="4">
-                            <Text variant="body-strong-m">{senderName}</Text>
-                            <Text variant="body-default-s" onBackground="neutral-weak">
-                                {senderEmail}
+                        <Row gap="16" vertical="center" paddingX="24" fillWidth fitHeight>
+                            <Avatar size="l" value={getInitials(senderName)} />
+                            <Column gap="4">
+                                <Text variant="body-strong-m">{senderName}</Text>
+                                <Text variant="body-default-s" onBackground="neutral-weak">
+                                    {senderEmail}
+                                </Text>
+                                <Text variant="label-default-s" onBackground="neutral-weak">
+                                    To: {email.to || "me"}
+                                </Text>
+                            </Column>
+                            <Text
+                                variant="label-default-s"
+                                onBackground="neutral-weak"
+                                style={{ marginLeft: "auto" }}
+                            >
+                                {formatDate(
+                                    email.internalDate
+                                        ? new Date(Number.parseInt(email.internalDate))
+                                        : new Date(email.createdAt),
+                                )}
                             </Text>
-                            <Text variant="label-default-s" onBackground="neutral-weak">
-                                To: {email.to || "me"}
-                            </Text>
-                        </Column>
-                        <Text
-                            variant="label-default-s"
-                            onBackground="neutral-weak"
-                            style={{ marginLeft: "auto" }}
-                        >
-                            {formatDate(
-                                email.internalDate
-                                    ? new Date(Number.parseInt(email.internalDate))
-                                    : new Date(email.createdAt)
-                            )}
-                        </Text>
-                    </Row>
-
-                    {email.labels?.length > 0 && (
-                        <Row gap="8" wrap paddingY="12" paddingX="24">
-                            {email.labels
-                                .filter((label: string) => !["UNREAD", "INBOX"].includes(label))
-                                .map((label: string) => (
-                                    <Tag size="m" key={label} label={label.replace("CATEGORY_", "")} />
-                                ))}
                         </Row>
-                    )}
 
-                    {/* AI Metadata Card - With TiltFx effect */}
-                    {email.aiMetadata && (
-                        <Column fillWidth paddingX="24" gap="8">
-                                <Column 
-                                    fillWidth 
-                                    radius="l" 
-                                    border="brand-alpha-medium" 
-                                    background="brand-alpha-weak" 
+                        {email.labels?.length > 0 && (
+                            <Row gap="8" wrap paddingY="12" paddingX="24">
+                                {email.labels
+                                    .filter((label: string) => !["UNREAD", "INBOX"].includes(label))
+                                    .map((label: string) => (
+                                        <Tag
+                                            size="m"
+                                            key={label}
+                                            label={label.replace("CATEGORY_", "")}
+                                        />
+                                    ))}
+                            </Row>
+                        )}
+
+                        {/* AI Metadata Card - With TiltFx effect */}
+                        {email.aiMetadata && (
+                            <Column fillWidth paddingX="24" gap="8">
+                                <Column
+                                    fillWidth
+                                    radius="l"
+                                    border="brand-alpha-medium"
+                                    background="brand-alpha-weak"
                                     padding="16"
                                     gap="12"
                                     position="relative"
                                 >
-                                    <Icon 
-                                        radius="full" 
-                                        padding="8" 
-                                        solid="brand-medium" 
-                                        position="absolute" 
-                                        right="16" 
-                                        top="16" 
-                                        onSolid="brand-strong" 
-                                        name="sparkles" 
-                                        size="xs" 
+                                    <Icon
+                                        radius="full"
+                                        padding="8"
+                                        solid="brand-medium"
+                                        position="absolute"
+                                        right="16"
+                                        top="16"
+                                        onSolid="brand-strong"
+                                        name="sparkles"
+                                        size="xs"
                                     />
-                                    
+
                                     {/* AI Insights Header */}
                                     <Heading variant="heading-strong-s" color="brand">
                                         AI Insights
                                     </Heading>
-                                    
+
                                     {/* Category and Priority in a single row */}
                                     <Row gap="8" wrap>
                                         {email.aiMetadata.category && (
-                                            <Tag 
+                                            <Tag
                                                 label={`Category: ${email.aiMetadata.category}`}
-                                                variant={getPriorityColor(email.aiMetadata.priority || undefined) as any}
+                                                variant={
+                                                    getPriorityColor(
+                                                        email.aiMetadata.priority || undefined,
+                                                    ) as any
+                                                }
                                             />
                                         )}
-                                        
+
                                         {email.aiMetadata.priority && (
-                                            <Tag 
+                                            <Tag
                                                 label={`Priority: ${email.aiMetadata.priority}`}
-                                                variant={getPriorityColor(email.aiMetadata.priority) as any}
+                                                variant={
+                                                    getPriorityColor(
+                                                        email.aiMetadata.priority,
+                                                    ) as any
+                                                }
                                             />
                                         )}
                                     </Row>
 
                                     {/* Summary */}
                                     {email.aiMetadata.summary && (
-                                        <Column fillWidth
-                                            gap="4"
-                                        >
-                                            <Text variant="label-default-s" onBackground="neutral-weak">
+                                        <Column fillWidth gap="4">
+                                            <Text
+                                                variant="label-default-s"
+                                                onBackground="neutral-weak"
+                                            >
                                                 Summary
                                             </Text>
                                             {/* Priority Explanation - only if exists */}
                                             {email.aiMetadata.priorityExplanation && (
-                                                <Row 
-                                                    gap="8" 
-                                                    vertical="center" 
+                                                <Row
+                                                    gap="8"
+                                                    vertical="center"
                                                     padding="8"
                                                     radius="xl"
                                                     background="brand-alpha-weak"
                                                     marginBottom="4"
                                                 >
-                                                    <Icon onBackground="brand-medium" size="s" name="infoCircle"/>
-                                                    <Text onBackground="brand-strong" variant="body-default-s">
+                                                    <Icon
+                                                        onBackground="brand-medium"
+                                                        size="s"
+                                                        name="infoCircle"
+                                                    />
+                                                    <Text
+                                                        onBackground="brand-strong"
+                                                        variant="body-default-s"
+                                                    >
                                                         {email.aiMetadata.priorityExplanation}
                                                     </Text>
                                                 </Row>
@@ -529,34 +586,44 @@ export function EmailDetail({
                                     )}
 
                                     {/* Key Points */}
-                                    {email.aiMetadata.keywords && email.aiMetadata.keywords.length > 0 && (
-                                        <Column gap="4" fillWidth>
-                                            <Text variant="label-default-s" onBackground="neutral-weak">
-                                                Key Points
-                                            </Text>
+                                    {email.aiMetadata.keywords &&
+                                        email.aiMetadata.keywords.length > 0 && (
                                             <Column gap="4" fillWidth>
-                                                {first2Keywords?.map((keyword: string) => (
-                                                    <Row 
-                                                        key={`keyword-${keyword}`} 
-                                                        gap="8" 
-                                                        vertical="center"
-                                                        padding="8"
-                                                        radius="xl"
-                                                        background="brand-alpha-weak"
-                                                    >
-                                                        <Icon name="checkCircle" size="s" onBackground="brand-medium" />
-                                                        <Text variant="body-default-s">{keyword}</Text>
-                                                    </Row>
-                                                ))}
+                                                <Text
+                                                    variant="label-default-s"
+                                                    onBackground="neutral-weak"
+                                                >
+                                                    Key Points
+                                                </Text>
+                                                <Column gap="4" fillWidth>
+                                                    {first2Keywords?.map((keyword: string) => (
+                                                        <Row
+                                                            key={`keyword-${keyword}`}
+                                                            gap="8"
+                                                            vertical="center"
+                                                            padding="8"
+                                                            radius="xl"
+                                                            background="brand-alpha-weak"
+                                                        >
+                                                            <Icon
+                                                                name="checkCircle"
+                                                                size="s"
+                                                                onBackground="brand-medium"
+                                                            />
+                                                            <Text variant="body-default-s">
+                                                                {keyword}
+                                                            </Text>
+                                                        </Row>
+                                                    ))}
+                                                </Column>
                                             </Column>
-                                        </Column>
-                                    )}
+                                        )}
                                 </Column>
-                        </Column>
-                    )}
+                            </Column>
+                        )}
 
-                    <Row fillWidth fitHeight paddingX="8">
-                        <style>{`
+                        <Row fillWidth fitHeight paddingX="8">
+                            <style>{`
                             /* Base styles for all emails */
                             .email-body {
                                 width: 100%;
@@ -609,13 +676,13 @@ export function EmailDetail({
                                 color: var(--static-black);
                             }
                         `}</style>
-                        <div
-                            className={`email-body ${!emailHasStyling ? 'no-styling' : 'has-styling'}`}
-                            dangerouslySetInnerHTML={{
-                                __html: DOMPurify.sanitize(formattedEmailContent),
-                            }}
-                        />
-                    </Row>
+                            <div
+                                className={`email-body ${!emailHasStyling ? "no-styling" : "has-styling"}`}
+                                dangerouslySetInnerHTML={{
+                                    __html: DOMPurify.sanitize(formattedEmailContent),
+                                }}
+                            />
+                        </Row>
                     </Column>
 
                     <Row
@@ -627,44 +694,32 @@ export function EmailDetail({
                         data-border="rounded"
                     >
                         <Row gap="8" maxWidth={12.5}>
-                            <Button 
+                            <Button
                                 fillWidth
-                                variant="secondary" 
+                                variant="secondary"
                                 label="Forward"
                                 onClick={handleForwardClick}
                             />
-                            <Button 
+                            <Button
                                 fillWidth
-                                label="Reply" 
-                                prefixIcon="reply" 
+                                label="Reply"
+                                prefixIcon="reply"
                                 onClick={handleReplyClick}
                             />
                         </Row>
                     </Row>
                 </Column>
             </Column>
-            
+
             {/* Trash Confirmation Dialog */}
-            <Dialog
-                isOpen={isTrashDialogOpen}
-                onClose={cancelTrash}
-                title="Move to Trash"
-            >
+            <Dialog isOpen={isTrashDialogOpen} onClose={cancelTrash} title="Move to Trash">
                 <Column gap="16">
                     <Text variant="body-default-m">
                         Are you sure you want to move this email to trash?
                     </Text>
                     <Row gap="8" horizontal="end">
-                        <Button 
-                            variant="secondary" 
-                            label="Cancel" 
-                            onClick={cancelTrash} 
-                        />
-                        <Button 
-                            variant="danger" 
-                            label="Move to Trash" 
-                            onClick={confirmTrash} 
-                        />
+                        <Button variant="secondary" label="Cancel" onClick={cancelTrash} />
+                        <Button variant="danger" label="Move to Trash" onClick={confirmTrash} />
                     </Row>
                 </Column>
             </Dialog>

@@ -1,6 +1,6 @@
 import type { Email } from "@/app/(main)/inbox/types";
 import { convert } from "html-to-text";
-import { EMAIL_CLEANING, SIGNATURE_PATTERNS, REPLY_PATTERNS } from "../constants";
+import { EMAIL_CLEANING, REPLY_PATTERNS, SIGNATURE_PATTERNS } from "../constants";
 
 /**
  * Clean email body text to remove signatures, quoted replies, etc.
@@ -17,15 +17,15 @@ function cleanEmailBody(body: string): string {
         cleanedText = convert(body, {
             selectors: [
                 {
-                    selector: 'img',
-                    format: 'skip',
-                    options: { ignoreHref: true }
+                    selector: "img",
+                    format: "skip",
+                    options: { ignoreHref: true },
                 },
                 {
-                    selector: 'a',
-                    options: { ignoreHref: true }
-                }
-            ]
+                    selector: "a",
+                    options: { ignoreHref: true },
+                },
+            ],
         });
     } catch (error) {
         console.error("[cleanEmailBody] HTML conversion error:", error);
