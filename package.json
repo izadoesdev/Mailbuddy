@@ -8,7 +8,7 @@
         "start": "next start",
         "typecheck": "tsc --noEmit",
         "biome-write": "bun x @biomejs/biome format --write .",
-        "lint": "biome check --write ."
+        "lint": "biome check"
     },
     "dependencies": {
         "@faker-js/faker": "^9.7.0",
