@@ -572,10 +572,10 @@ function InboxPage() {
     const handleErrorAction = useCallback(() => {
         if (errorType === "no_gmail_account") {
             // Redirect to settings page to connect Gmail account
-            router.push("/settings?tab=accounts");
+            router.push("/profile?tab=accounts");
         } else if (errorType === "invalid_credentials") {
             // Redirect to settings page to reconnect Gmail account
-            router.push("/settings?tab=accounts");
+            router.push("/profile?tab=accounts");
         } else if (errorType === "no_emails_synced") {
             // Trigger initial sync
             performInitialSync();

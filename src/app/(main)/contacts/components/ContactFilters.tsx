@@ -119,7 +119,7 @@ export function ContactFilters({
                     label="Account Settings"
                     prefixIcon="settings"
                     onClick={() => {
-                        window.location.href = "/settings";
+                        window.location.href = "/profile";
                     }}
                 />
                 <Button
