@@ -1,8 +1,0 @@
-{
-    "crons": [
-        {
-            "path": "/api/background-sync",
-            "schedule": "0 0 * * *"
-        }
-    ]
-}

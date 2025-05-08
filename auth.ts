@@ -83,7 +83,7 @@ export const auth = betterAuth({
     },
     plugins: [
         multiSession(),
-        nextCookies(),
+        nextCookies(),  
         twoFactor(),
         emailOTP({
             sendVerificationOTP: async ({ email, otp }) => {

@@ -90,6 +90,20 @@ export default function RootLayout({
                     src="https://cloud.umami.is/script.js"
                     data-website-id="daf3c389-edda-4092-aed1-bd93cd7b2761"
                 />
+                <Script
+                src="https://app.databuddy.cc/databuddy.js"
+                data-client-id="rhW0oqd511QgVTw1P31WT"
+                data-api-url="https://api.databuddy.cc"
+                data-track-screen-views="true"
+                data-track-performance="true"
+                data-track-web-vitals="false"
+                data-track-errors="true"
+                // data-enable-batching="true"
+                // data-batch-size="20"
+                // data-batch-timeout="5000"
+                strategy="afterInteractive"
+                defer
+                />
                 <script
                     dangerouslySetInnerHTML={{
                         __html: `

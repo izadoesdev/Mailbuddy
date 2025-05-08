@@ -107,6 +107,9 @@ bun install
 cp .env.example .env.local
 # Fill in required environment variables
 
+# Generate the prisma client & push the schema to your local database
+bunx prisma db push
+
 # Start development server
 bun run dev
 ```
